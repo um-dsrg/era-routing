@@ -7,7 +7,13 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 CXX := g++
-CPPFLAGS ?= -MMD -MP
+CXXFLAGS := -MMD -MP
+
+release: CXXFLAGS += -O3
+release: $(BUILD_DIR)/$(TARGET_EXEC)
+
+debug: CXXFLAGS += -DDEBUG -g
+debug: $(BUILD_DIR)/$(TARGET_EXEC)
 
 # linking the executable
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
@@ -16,11 +22,14 @@ $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 # compiling the c++ source files
 $(BUILD_DIR)/%.cc.o: %.cc
 	$(MKDIR_P) $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: clean
+.PHONY: clean cleanall
 
 clean:
+	$(RM) -r $(BUILD_DIR)/*
+
+cleanall:
 	$(RM) -r $(BUILD_DIR)
 
 # including the header files
