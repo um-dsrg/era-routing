@@ -9,10 +9,10 @@ DEPS := $(OBJS:.o=.d)
 CXX := g++
 CXXFLAGS := -MMD -MP
 
-release: CXXFLAGS += -O3
+release: CXXFLAGS += -O3 -Werror
 release: $(BUILD_DIR)/$(TARGET_EXEC)
 
-debug: CXXFLAGS += -DDEBUG -g
+debug: CXXFLAGS += -DDEBUG -g -Werror -Wall
 debug: $(BUILD_DIR)/$(TARGET_EXEC)
 
 # linking the executable
