@@ -7,7 +7,7 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 CXX := g++
-CXXFLAGS := -MMD -MP
+CXXFLAGS := -MMD -MP -std=c++11
 
 release: CXXFLAGS += -O3 -Werror
 release: $(BUILD_DIR)/$(TARGET_EXEC)
