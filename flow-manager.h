@@ -9,16 +9,6 @@
 class FlowManager
 {
 public:
-  /**
-   *  \brief Load the Flows from the file given and stores them in the vector flows
-   *
-   *  Load and parse the flows in the given LGF file. The flows are stored in the vector flows.
-   *
-   *  \param lgfPath The full path to the LGF file
-   *  \return nothing
-   */
-  void LoadFlowsFromFile (const std::string& lgfPath);
-private:
   /*Structure that defines a flow*/
   struct Flow
   {
@@ -52,6 +42,23 @@ private:
     }
   };
 
+  /**
+   *  \brief Returns a constant pointer to the flows vector
+   *  \return A constant pointer to the flows vector
+   */
+  const std::vector<Flow>* GetFlows () const;
+
+  /**
+   *  \brief Load the Flows from the file given and stores them in the vector flows
+   *
+   *  Load and parse the flows in the given LGF file. The flows are stored in the vector flows.
+   *
+   *  \param lgfPath The full path to the LGF file
+   *  \return nothing
+   */
+  void LoadFlowsFromFile (const std::string& lgfPath);
+
+private:
   /**
    *  \brief Sets the cursor to the @flow section
    *

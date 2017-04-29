@@ -4,6 +4,12 @@
 
 #include "flow-manager.h"
 
+const std::vector<FlowManager::Flow>*
+FlowManager::GetFlows() const
+{
+  return &flows;
+}
+
 void
 FlowManager::LoadFlowsFromFile(const std::string& lgfPath)
 {
