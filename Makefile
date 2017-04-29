@@ -8,6 +8,8 @@ DEPS := $(OBJS:.o=.d)
 
 CXX := g++
 CXXFLAGS := -MMD -MP -std=c++11
+LDFLAGS := -L /home/noel/libraries/lemon/lib -lemon
+INCLUDES := -I /home/noel/libraries/lemon/include
 
 release: CXXFLAGS += -O3 -Werror
 release: $(BUILD_DIR)/$(TARGET_EXEC)
@@ -17,12 +19,12 @@ debug: $(BUILD_DIR)/$(TARGET_EXEC)
 
 # linking the executable
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	$(CXX) $(OBJS) $(LDFLAGS) -o $@
 
 # compiling the c++ source files
 $(BUILD_DIR)/%.cc.o: %.cc
 	$(MKDIR_P) $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 .PHONY: clean cleanall
 
