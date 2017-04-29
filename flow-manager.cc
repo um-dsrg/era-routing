@@ -7,7 +7,7 @@
 const std::vector<FlowManager::Flow>*
 FlowManager::GetFlows() const
 {
-  return &flows;
+  return &m_flows;
 }
 
 void
@@ -134,7 +134,7 @@ FlowManager::ParseFlow (std::string& line)
       std::cout << flow << std::endl;
 #endif
 
-      flows.push_back(flow);
+      m_flows.push_back(flow);
     }
   catch (std::invalid_argument e)
     {

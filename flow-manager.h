@@ -78,6 +78,6 @@ private:
    *  \return nothing
    */
   void ParseFlow (std::string& line);
-  std::vector<Flow> flows;
+  std::vector<Flow> m_flows;
 };
 #endif /* FLOW_MANAGER_H */
