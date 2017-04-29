@@ -1,7 +1,17 @@
 #include <iostream>
 
+#include "flow-manager.h"
+
 int main()
 {
-  std::cout << "Sample Output" << std::endl;
-  return 0;
+  try
+    {
+      FlowManager flowManager;
+      flowManager.LoadFlowsFromFile("/home/noel/Development/source-code/lp-solver/sample.lgf");
+    }
+  catch (...)
+    {
+      return EXIT_FAILURE;
+    }
+  return EXIT_SUCCESS;
 }

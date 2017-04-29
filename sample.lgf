@@ -29,7 +29,7 @@ label   coordinates     type
 5	7	8	  30		1
 6	8	9	  30		1
 7	9	10	  30		1
-@commodities
-#Commodity ID / Source Node / Sink Node / Port Number / DataRate Incl. Headers (Mbps) / Packet Size (bytes) / No. of Packets / Protocol (TCP=T/UDP=U) / Start Time (Seconds) / End Time (Seconds)
-#ID	Source	Sink	Port	DR	PS	NP    Prtcl	 Start 	       End
+@flows
+#Flow ID / Source Node / Destination Node / Port Number / DataRate Incl. Headers (Mbps) / Packet Size (bytes) / No. of Packets / Protocol (TCP=T/UDP=U) / Start Time (Seconds) / End Time (Seconds)
+#ID	Source	Dest	Port	DR	PS	NP    Prtcl	 Start 	       End
 0	0	8	1400	2	1470	10    U		 0	       100
