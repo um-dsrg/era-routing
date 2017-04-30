@@ -10,7 +10,7 @@ int main()
     {
       FlowManager flowManager;
       flowManager.LoadFlowsFromFile(lgfPath);
-      GraphManager graphManager;
+      GraphManager graphManager (flowManager.GetFlows());
       graphManager.ParseGraph(lgfPath);
     }
   catch (...)
