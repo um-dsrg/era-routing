@@ -1,13 +1,17 @@
 #include <iostream>
 
 #include "flow-manager.h"
+#include "graph-manager.h"
 
 int main()
 {
+  const std::string lgfPath ("/home/noel/Development/source-code/lp-solver/sample.lgf");
   try
     {
       FlowManager flowManager;
-      flowManager.LoadFlowsFromFile("/home/noel/Development/source-code/lp-solver/sample.lgf");
+      flowManager.LoadFlowsFromFile(lgfPath);
+      GraphManager graphManager;
+      graphManager.ParseGraph(lgfPath);
     }
   catch (...)
     {
