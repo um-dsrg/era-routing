@@ -2,6 +2,7 @@
 #define GRAPH_MANAGER_H
 
 #include <map>
+#include <tinyxml2.h>
 
 #include <lemon/smart_graph.h>
 #include <lemon/lgf_reader.h>
@@ -15,15 +16,16 @@
 class GraphManager
 {
 public:
-  GraphManager(const std::vector<FlowManager::Flow>* flows);
+  GraphManager(const std::vector<FlowManager::Flow>* flows, tinyxml2::XMLDocument* xmlDoc);
 
   /**
    *  \brief Parse the LGF file contents into a LEMON graph
    *  \param lgfPath The full path to the LGF file
    */
   void ParseGraph (const std::string& lgfPath);
-
-  // TODO: To IMPLEMENT AND COMMENT
+  /**
+   *  \brief Finds the optimal solution
+   */
   void FindOptimalSolution ();
 private:
   // Linear Programming Functions /////////////////////////////////////////////
@@ -81,6 +83,9 @@ private:
   // Key (<FlowID, Link>), Value (The fraction of flow represented by FlowID that will pass on
   // the link represented by Link.)
   std::map<std::pair<uint32_t, lemon::SmartDigraph::Arc>, lemon::Lp::Col> m_optimalFlowRatio;
+
+  // XML Log //////////////////////////////////////////////////////////////////
+  tinyxml2::XMLDocument* m_xmlDoc;
 };
 
 #endif /* GRAPH_MANAGER_H */

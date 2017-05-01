@@ -2,13 +2,15 @@
 
 #include "graph-manager.h"
 
-GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows): m_nodeType(m_graph),
-                                                                         m_linkCapacity(m_graph),
-                                                                         m_linkDelay(m_graph),
-                                                                         m_nodeCoordinates(m_graph),
-                                                                         m_nodeShape(m_graph),
-                                                                         m_nodeColour(m_graph),
-                                                                         m_flows(flows)
+GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows,
+                           tinyxml2::XMLDocument* xmlDoc) : m_nodeType(m_graph),
+                                                            m_linkCapacity(m_graph),
+                                                            m_linkDelay(m_graph),
+                                                            m_nodeCoordinates(m_graph),
+                                                            m_nodeShape(m_graph),
+                                                            m_nodeColour(m_graph),
+                                                            m_flows(flows),
+                                                            m_xmlDoc(xmlDoc)
 {}
 
 void
