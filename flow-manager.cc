@@ -20,7 +20,9 @@ FlowManager::LoadFlowsFromFile(const std::string& lgfPath)
   try
     {
       lgfFile.open(lgfPath, std::ifstream::in); // Open the file as Read Only
-      std::cout << "Loading commodities from: " << lgfPath << std::endl;
+#ifdef DEBUG
+      std::cout << "Loading flows from: " << lgfPath << std::endl;
+#endif
 
       // Set the file cursor to the appropriate line
       SetFileCursorToFlows(lgfFile);
