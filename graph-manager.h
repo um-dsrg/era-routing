@@ -20,7 +20,6 @@ public:
   /**
    *  \brief Parse the LGF file contents into a LEMON graph
    *  \param lgfPath The full path to the LGF file
-   *  \return nothing
    */
   void ParseGraph (const std::string& lgfPath);
 
@@ -33,14 +32,34 @@ private:
    *
    *  Associate an LP variable with each link for each flow. The value of this variable is found
    *  by the optimal solution and it represents the fraction of flow X that will pass onto link Y.
-   *
-   *  \return nothing
    */
   void AddFlows ();
+  /**
+   *  \brief Adds the capacity constraint to the LP problem.
+   *
+   *  Adds the capacity constraint to the LP problem such that no link is used beyond
+   *  its capacity.
+   */
   void AddCapacityConstraint ();
+  /**
+   *  \brief Adds the balance constraint to the LP problem.
+   *
+   *  Adds the balance constraint to the LP problem. This condition will ensure that the flow's
+   *  source node will transmit all the flow it has available, the destination node will receive
+   *  all the data being transmitted and intermediate nodes do not hold any packets.
+   */
   void AddBalanceConstraint ();
+  /**
+   *  \brief Adds the objective of the LP problem
+   *
+   *  Adds the LP objective. The current objective is to minimise the total network cost. The
+   *  link cost is set equal to the link's delay and the network cost is calculated by multiplying
+   *  the link cost with the amount of flow passing through that link.
+   */
   void AddObjective ();
 
+  // LP Solver ////////////////////////////////////////////////////////////////
+  void SolveLpProblem ();
   lemon::Lp m_lpSolver;
 
   // Graph Related Variables //////////////////////////////////////////////////

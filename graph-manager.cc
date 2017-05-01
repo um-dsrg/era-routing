@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include "graph-manager.h"
 
 GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows): m_nodeType(m_graph),
@@ -37,7 +39,21 @@ GraphManager::ParseGraph(const std::string &lgfPath)
 void
 GraphManager::FindOptimalSolution()
 {
-  // TODO: TO IMPLEMENT
+  // Add the flows
+  AddFlows();
+
+  // Add the constraints
+  AddCapacityConstraint();
+  AddBalanceConstraint();
+
+  // Add the objective
+  AddObjective();
+
+  // Set the solver to find the solution with minimal cost
+  m_lpSolver.min();
+
+  // Solve the problem
+  SolveLpProblem();
 }
 
 void
@@ -45,9 +61,7 @@ GraphManager::AddFlows ()
 {
   for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
     {
-      for (lemon::SmartDigraph::ArcIt link = lemon::SmartDigraph::ArcIt(m_graph);
-           link != lemon::INVALID;
-           ++link)
+      for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
         {
           // Add an LP variable that will store the fraction of the flow(represented by flow.id)
           // that will pass on the Link represented by link.
@@ -67,115 +81,106 @@ GraphManager::AddFlows ()
 void
 GraphManager::AddCapacityConstraint ()
 {
+  // Loop through all the available links on the graph and add the capacity constraint.
+  for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
+    {
+      lemon::Lp::Expr linkTotalCapacity;
 
+      // Adding all the flow fractions that are passing on the link referred to by link.
+      for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+        {
+          linkTotalCapacity += m_optimalFlowRatio[std::make_pair(flow.id, link)];
+        }
+
+      // Adding the constraint in the LP problem
+      m_lpSolver.addRow(linkTotalCapacity <= m_linkCapacity[link]);
+    }
 }
 
 void
 GraphManager::AddBalanceConstraint ()
 {
+  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows
+    {
+      // Looping through all the nodes
+      for (lemon::SmartDigraph::NodeIt node(m_graph); node != lemon::INVALID; ++node)
+        {
+          lemon::Lp::Expr nodeBalanceExpression;
 
+          // Add all outgoing flows from the node
+          for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, node);
+               outgoingLink != lemon::INVALID; ++outgoingLink)
+            {
+              nodeBalanceExpression += m_optimalFlowRatio[std::make_pair(flow.id, outgoingLink)];
+            }
+
+          // Subtract all incoming flows from the node
+          for (lemon::SmartDigraph::InArcIt incomingLink (m_graph, node);
+               incomingLink != lemon::INVALID; ++incomingLink)
+            {
+              nodeBalanceExpression -= m_optimalFlowRatio[std::make_pair(flow.id, incomingLink)];
+            }
+
+          uint32_t nodeId = uint32_t (m_graph.id(node)); // Current node's ID
+
+          if (flow.source == nodeId) // Source Node
+            {
+              m_lpSolver.addRow(nodeBalanceExpression == flow.dataRate);
+            }
+          else if (flow.destination == nodeId) // Sink Node
+            {
+              m_lpSolver.addRow(nodeBalanceExpression == -flow.dataRate);
+            }
+          else // Intermediate node
+            {
+              m_lpSolver.addRow(nodeBalanceExpression == 0);
+            }
+        }
+    }
 }
 
 void
 GraphManager::AddObjective ()
 {
+  lemon::Lp::Expr objective;
 
+  //minimise the link cost * fraction of flow passing through it.
+
+  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+    {
+      for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
+        {
+          // Retrieving the link delay (i.e. the cost) and multiplying it with the flow fraction
+          // passing through that link. This is repeated for all Flows on all links.
+          objective += (m_linkDelay[link] * m_optimalFlowRatio[std::make_pair(flow.id, link)]);
+        }
+    }
+
+  // Set the objective
+  m_lpSolver.obj (objective);
 }
 
-// void
-// CommodityUtilities::AddLpCapacityConstraint()
-// {
-//   // Loop through all the arcs
-//   for (l_ArcIt arc = m_graphUtilities.GetArcIterator();
-//        arc != lemon::INVALID; ++arc)
-//     {
-//       l_LpExpr capacitySummationPerArc;
+void
+GraphManager::SolveLpProblem ()
+{
+  auto startTime = std::chrono::high_resolution_clock::now();
+  m_lpSolver.solve();
+  auto endTime = std::chrono::high_resolution_clock::now();
 
-//       // Loop through all the commodities
-//       for (CommoditySize_t commodityId = 0; commodityId < m_commodities.size(); commodityId++)
-//         {
-//           // Add the flow of the particular commodity on the Arc defined by arc
-//           capacitySummationPerArc += m_flowPerArcPerCommodity[std::make_pair (commodityId, arc)];
-//         }
+  std::chrono::duration<double, std::milli> durationInMs = endTime - startTime;
 
-//       // Add the capacity constraint
-//       m_lpSolver.addRow (capacitySummationPerArc <= m_graphUtilities.GetArcCapacity(arc));
-//     }
-// }
-
-// void
-// CommodityUtilities::AddLpBalanceConstraint()
-// {
-//   // Loop through all the commodities
-//   int commodityId = 0;
-//   for (CommodityProperties& commodity : m_commodities)
-//     {
-//       // Loop through all the nodes
-//       for (l_NodeIt currentNode = m_graphUtilities.GetNodeIterator();
-//            currentNode != lemon::INVALID; ++currentNode)
-//         {
-//           l_LpExpr nodeBalanceConstraint;
-
-//           // Add the outgoing flows going out of the node
-//           for (l_OutArcIt outgoingArc = m_graphUtilities.GetOutgoingArcsIterator(currentNode);
-//                outgoingArc != lemon::INVALID; ++outgoingArc)
-//             {
-//               nodeBalanceConstraint += m_flowPerArcPerCommodity[std::make_pair(commodityId, outgoingArc)];
-//             }
-
-//           // Subtract the flows going in the node
-//           for (l_InArcIt incomingArc = m_graphUtilities.GetIncomingArcsIterator(currentNode);
-//                incomingArc != lemon::INVALID; ++incomingArc)
-//             {
-//               nodeBalanceConstraint -= m_flowPerArcPerCommodity[std::make_pair(commodityId, incomingArc)];
-//             }
-
-//           if (commodity.GetSourceId() == m_graphUtilities.GetNodeId(currentNode))
-//             {
-//               // Source Node
-//               double actualDataRate = CalculateActualCommodityDataRate(commodity);
-//               NS_LOG_INFO("The actual data rate for commodity " << commodityId << " is "
-//                           << actualDataRate << "Mbps from (" << commodity.GetDataRate() << "Mbps)");
-
-//               m_lpSolver.addRow(nodeBalanceConstraint == CalculateActualCommodityDataRate(commodity));
-//             }
-//           else if (commodity.GetSinkId() == m_graphUtilities.GetNodeId(currentNode))
-//             {
-//               // Sink Node
-//               m_lpSolver.addRow(nodeBalanceConstraint == -CalculateActualCommodityDataRate(commodity));
-//             }
-//           else
-//             {
-//               // Intermediate node
-//               m_lpSolver.addRow(nodeBalanceConstraint == 0);
-//             }
-//         }
-
-//       commodityId++;
-//     }
-// }
-
-// void
-// CommodityUtilities::AddLpObjective()
-// {
-//   l_LpExpr objective;
-
-//   // Loop through all commodities
-//   for (CommoditySize_t commodityId = 0; commodityId < m_commodities.size(); commodityId++)
-//     {
-//       for (l_ArcIt arc = m_graphUtilities.GetArcIterator();
-//            arc != lemon::INVALID; ++arc)
-//         {
-//           // Get the flow of commodity k on arc i,j and multiplying it
-//           // with the link cost.
-//           objective += (m_graphUtilities.GetArcCost(arc) *
-//                         m_flowPerArcPerCommodity[std::make_pair(commodityId, arc)]);
-//         }
-//     }
-
-//   // We need to find the solution with minimal cost
-//   m_lpSolver.min ();
-
-//   // Define objective
-//   m_lpSolver.obj (objective);
-// }
+  if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
+    {
+#ifdef DEBUG
+      std::cout << "Optimal Solution FOUND.\n"
+                << "Solver took: " << durationInMs.count() << "ms" << std::endl;
+#endif
+    }
+  else
+    {
+#ifdef DEBUG
+      std::cout << "Optimal Solution NOT FOUND."
+                << "Solver took: " << durationInMs.count() << "ms" << std::endl;
+#endif
+    }
+}
