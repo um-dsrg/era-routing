@@ -8,7 +8,7 @@ DEPS := $(OBJS:.o=.d)
 
 CXX := g++
 CXXFLAGS := -MMD -MP -std=c++11
-LDFLAGS := -L /home/noel/libraries/lemon/lib -lemon
+LDFLAGS := -L /home/noel/libraries/lemon/lib -lemon -lglpk
 INCLUDES := -I /home/noel/libraries/lemon/include
 
 release: CXXFLAGS += -O3 -Werror
