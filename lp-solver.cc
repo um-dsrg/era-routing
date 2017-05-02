@@ -7,11 +7,17 @@
 
 int main(int argc, char *argv[])
 {
-  // TODO: ADD Command line parameter parsing.
-  const std::string lgfPath ("/home/noel/Development/source-code/lp-solver/sample.lgf");
-  const std::string xmlLogPath ("/home/noel/Development/source-code/lp-solver/log.xml");
+  if (argc != 3)
+    {
+      std::cerr << "Incorrect number of command-line arguments were passed." << std::endl;
+      return EXIT_FAILURE;
+    }
+
   try
     {
+      const std::string lgfPath (argv[1]);
+      const std::string xmlLogPath (argv[2]);
+
       FlowManager flowManager;
       flowManager.LoadFlowsFromFile(lgfPath);
       GraphManager graphManager (flowManager.GetFlows());
