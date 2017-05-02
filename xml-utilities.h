@@ -8,7 +8,7 @@ public:
    *  \brief Returns the root node of the XML file
    *  \param xmlDoc A pointer to the XML document
    */
-  static tinyxml2::XMLNode* GetRootNode (tinyxml2::XMLDocument* xmlDoc);
+  static tinyxml2::XMLNode* GetRootNode (tinyxml2::XMLDocument& xmlDoc);
 
   /**
    *  \brief Inserts the root node.
@@ -16,14 +16,14 @@ public:
    *  \param rootElementName The name given to the root element
    *  \return Pointer to the newly created root node.
    */
-  static tinyxml2::XMLNode* InsertRootNode (tinyxml2::XMLDocument* xmlDoc,
+  static tinyxml2::XMLNode* InsertRootNode (tinyxml2::XMLDocument& xmlDoc,
                                             const std::string& rootElementName);
 
   /**
    *  \brief Insert a time stamp in the Root Element
    *  \param xmlDoc The XML Document
    */
-  static void InsertTimeStampInRootElement (const tinyxml2::XMLDocument* xmlDoc);
+  static void InsertTimeStampInRootElement (tinyxml2::XMLDocument& xmlDoc);
   /**
    *  \brief Save the XML file and add XML Declaration
    *
@@ -35,7 +35,7 @@ public:
    *  \param insertDecleration A boolean flag that determines whether an XML declaration is added
    *                           before saving the file.
    */
-  static void SaveXmlFile (const std::string& fileFullPath, tinyxml2::XMLDocument* xmlDoc,
+  static void SaveXmlFile (const std::string& fileFullPath, tinyxml2::XMLDocument& xmlDoc,
                            bool insertDeclaration = true);
 private:
   XmlUtilities();
