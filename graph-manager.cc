@@ -64,6 +64,7 @@ GraphManager::AddLogsInXmlFile(tinyxml2::XMLDocument& xmlDoc)
   LogDuration(xmlDoc);
   LogOptimalSolution(xmlDoc);
   LogNetworkTopology(xmlDoc);
+  LogNodeConfiguration(xmlDoc);
 }
 
 void
@@ -252,7 +253,7 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
 }
 
 void
-GraphManager::LogNetworkTopology(tinyxml2::XMLDocument &xmlDoc)
+GraphManager::LogNetworkTopology(tinyxml2::XMLDocument& xmlDoc)
 {
   using namespace tinyxml2;
   XMLNode* rootNode = XmlUtilities::GetRootNode(xmlDoc);
@@ -287,4 +288,26 @@ GraphManager::LogNetworkTopology(tinyxml2::XMLDocument &xmlDoc)
     xmlDoc.NewComment("Delay (ms), Capacity (Mbps), Node Type (T=Terminal, S=Switch)");
   networkTopologyElement->InsertFirstChild(unitsComment);
   rootNode->InsertEndChild(networkTopologyElement);
+}
+
+void
+GraphManager::LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc)
+{
+  // Here we need to log the node's configuration parameters!
+  using namespace tinyxml2;
+  XMLNode* rootNode = XmlUtilities::GetRootNode(xmlDoc);
+
+  XMLElement* nodeConfiguration = xmlDoc.NewElement("NodeConfiguration");
+
+  for (lemon::SmartDigraph::NodeIt node(m_graph); node != lemon::INVALID; ++node)
+    {
+      XMLElement* nodeElement = xmlDoc.NewElement("Node");
+      nodeElement->SetAttribute("Id", m_graph.id(node));
+      nodeElement->SetAttribute("X", m_nodeCoordinates[node].x);
+      nodeElement->SetAttribute("Y", m_nodeCoordinates[node].y);
+
+      nodeConfiguration->InsertFirstChild(nodeElement);
+    }
+
+  rootNode->InsertEndChild(nodeConfiguration);
 }

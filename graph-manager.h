@@ -91,6 +91,7 @@ private:
   void LogDuration (tinyxml2::XMLDocument& xmlDoc);
   void LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc);
   void LogNetworkTopology (tinyxml2::XMLDocument& xmlDoc);
+  void LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc);
 };
 
 #endif /* GRAPH_MANAGER_H */
