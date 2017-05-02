@@ -16,7 +16,7 @@
 class GraphManager
 {
 public:
-  GraphManager(const std::vector<FlowManager::Flow>* flows, tinyxml2::XMLDocument* xmlDoc);
+  GraphManager(const std::vector<FlowManager::Flow>* flows);
 
   /**
    *  \brief Parse the LGF file contents into a LEMON graph
@@ -27,6 +27,8 @@ public:
    *  \brief Finds the optimal solution
    */
   void FindOptimalSolution ();
+
+  void AddLogsInXmlFile (tinyxml2::XMLDocument& xmlDoc);
 private:
   // Linear Programming Functions /////////////////////////////////////////////
   /**
@@ -84,8 +86,9 @@ private:
   // the link represented by Link.)
   std::map<std::pair<uint32_t, lemon::SmartDigraph::Arc>, lemon::Lp::Col> m_optimalFlowRatio;
 
-  // XML Log //////////////////////////////////////////////////////////////////
-  tinyxml2::XMLDocument* m_xmlDoc;
+  // XML Functionality ////////////////////////////////////////////////////////
+  void LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc);
+  void LogNetworkTopology (tinyxml2::XMLDocument& xmlDoc);
 };
 
 #endif /* GRAPH_MANAGER_H */

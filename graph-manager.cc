@@ -1,16 +1,15 @@
 #include <chrono>
 
 #include "graph-manager.h"
+#include "xml-utilities.h"
 
-GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows,
-                           tinyxml2::XMLDocument* xmlDoc) : m_nodeType(m_graph),
-                                                            m_linkCapacity(m_graph),
-                                                            m_linkDelay(m_graph),
-                                                            m_nodeCoordinates(m_graph),
-                                                            m_nodeShape(m_graph),
-                                                            m_nodeColour(m_graph),
-                                                            m_flows(flows),
-                                                            m_xmlDoc(xmlDoc)
+GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows): m_nodeType(m_graph),
+                                                                         m_linkCapacity(m_graph),
+                                                                         m_linkDelay(m_graph),
+                                                                         m_nodeCoordinates(m_graph),
+                                                                         m_nodeShape(m_graph),
+                                                                         m_nodeColour(m_graph),
+                                                                         m_flows(flows)
 {}
 
 void
@@ -56,6 +55,13 @@ GraphManager::FindOptimalSolution()
 
   // Solve the problem
   SolveLpProblem();
+}
+
+void
+GraphManager::AddLogsInXmlFile(tinyxml2::XMLDocument& xmlDoc)
+{
+  LogOptimalSolution(xmlDoc);
+  LogNetworkTopology(xmlDoc);
 }
 
 void
@@ -185,4 +191,87 @@ GraphManager::SolveLpProblem ()
                 << "Solver took: " << durationInMs.count() << "ms" << std::endl;
 #endif
     }
+}
+
+void
+GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
+{
+  using namespace tinyxml2;
+  XMLNode* rootNode = XmlUtilities::GetRootNode(xmlDoc);
+
+  XMLElement* optimalSolutionElement = xmlDoc.NewElement("OptimalSolution");
+
+  // We need to loop through all the flows.
+  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+    {
+      XMLElement* flowElement = xmlDoc.NewElement("Flow");
+      flowElement->SetAttribute("Id", flow.id);
+      flowElement->SetAttribute("SourceNode", flow.source);
+      flowElement->SetAttribute("DestinationNode", flow.destination);
+      flowElement->SetAttribute("PortNumber", flow.portNumber);
+      flowElement->SetAttribute("DataRate", flow.dataRate);
+      flowElement->SetAttribute("PacketSize", flow.packetSize);
+      flowElement->SetAttribute("NumOfPackets", flow.numOfPackets);
+      flowElement->SetAttribute("Protocol", std::string(1,flow.protocol).c_str());
+      flowElement->SetAttribute("StartTime", flow.startTime);
+      flowElement->SetAttribute("EndTime", flow.endTime);
+      // We need to loop through the optimal solution here.
+
+      for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
+        {
+          double flowRatio = m_lpSolver.primal(m_optimalFlowRatio[std::make_pair(flow.id, link)]);
+          if (flowRatio > 0)
+            {
+              // Add element here.
+              XMLElement* linkElement = xmlDoc.NewElement("Link");
+              linkElement->SetAttribute("Id", m_graph.id(link));
+              linkElement->SetAttribute("FlowRate", flowRatio);
+              flowElement->InsertFirstChild(linkElement);
+            }
+        }
+      optimalSolutionElement->InsertFirstChild(flowElement);
+    }
+
+  XMLComment* unitsComment = xmlDoc.NewComment("DataRate (Mbps), PacketSize (bytes),"
+                                               "Protocol (U=UDP,T=TCP), Time (Seconds)");
+  optimalSolutionElement->InsertFirstChild(unitsComment);
+  rootNode->InsertEndChild(optimalSolutionElement);
+}
+
+void
+GraphManager::LogNetworkTopology(tinyxml2::XMLDocument &xmlDoc)
+{
+  using namespace tinyxml2;
+  XMLNode* rootNode = XmlUtilities::GetRootNode(xmlDoc);
+
+  XMLElement* networkTopologyElement = xmlDoc.NewElement("NetworkTopology");
+  networkTopologyElement->SetAttribute("NumberOfNodes", lemon::countNodes(m_graph));
+  networkTopologyElement->SetAttribute("NumberOfLinks", lemon::countArcs(m_graph));
+
+  // We need to loop through all the links and add their details.
+  for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
+    {
+      lemon::SmartDigraph::Node sourceNode = m_graph.source(link);
+      lemon::SmartDigraph::Node destinationNode = m_graph.target(link);
+      int sourceNodeId = m_graph.id(sourceNode);
+      int destinationNodeId = m_graph.id(destinationNode);
+
+      XMLElement* linkElement = xmlDoc.NewElement("Link");
+      linkElement->SetAttribute("Id", m_graph.id(link));
+      linkElement->SetAttribute("SourceNode", sourceNodeId);
+      linkElement->SetAttribute("SourceNodeType", std::string(1, m_nodeType[sourceNode]).c_str());
+      linkElement->SetAttribute("DestinationNode", destinationNodeId);
+      linkElement->SetAttribute("DestinationNodeType",
+                                std::string(1, m_nodeType[destinationNode]).c_str());
+      linkElement->SetAttribute("Delay", m_linkDelay[link]);
+      linkElement->SetAttribute("Capacity", m_linkCapacity[link]);
+
+      networkTopologyElement->InsertFirstChild(linkElement);
+    }
+
+  // Add a comment that will describe the units being used.
+  XMLComment* unitsComment =
+    xmlDoc.NewComment("Delay (ms), Capacity (Mbps), Node Type (T=Terminal, S=Switch)");
+  networkTopologyElement->InsertFirstChild(unitsComment);
+  rootNode->InsertEndChild(networkTopologyElement);
 }

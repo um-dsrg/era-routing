@@ -22,7 +22,7 @@ XmlUtilities::InsertRootNode (XMLDocument& xmlDoc,
 }
 
 void
-XmlUtilities::SaveXmlFile(const std::string &fileFullPath, tinyxml2::XMLDocument& xmlDoc,
+XmlUtilities::SaveXmlFile(const std::string& fileFullPath, tinyxml2::XMLDocument& xmlDoc,
                           bool insertDeclaration)
 {
   try

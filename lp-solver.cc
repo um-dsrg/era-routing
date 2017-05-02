@@ -12,17 +12,20 @@ int main(int argc, char *argv[])
   const std::string xmlLogPath ("/home/noel/Development/source-code/lp-solver/log.xml");
   try
     {
-      tinyxml2::XMLDocument xmlLogFile;
-
       FlowManager flowManager;
       flowManager.LoadFlowsFromFile(lgfPath);
-      GraphManager graphManager (flowManager.GetFlows(), &xmlLogFile);
+      GraphManager graphManager (flowManager.GetFlows());
       graphManager.ParseGraph(lgfPath);
       graphManager.FindOptimalSolution();
 
       // XML Logging
+      tinyxml2::XMLDocument xmlLogFile;
       XmlUtilities::InsertRootNode(xmlLogFile, "Log");
       XmlUtilities::InsertTimeStampInRootElement(xmlLogFile);
+      // Generating the Optimal Solution + Network Topology elements in the XML log file
+      graphManager.AddLogsInXmlFile(xmlLogFile);
+
+      // Save the XML file.
       XmlUtilities::SaveXmlFile(xmlLogPath, xmlLogFile);
     }
   catch (...)
