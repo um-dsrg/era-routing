@@ -65,6 +65,7 @@ private:
   // LP Solver ////////////////////////////////////////////////////////////////
   void SolveLpProblem ();
   lemon::Lp m_lpSolver;
+  double m_duration;
 
   // Graph Related Variables //////////////////////////////////////////////////
   lemon::SmartDigraph m_graph;
@@ -87,6 +88,7 @@ private:
   std::map<std::pair<uint32_t, lemon::SmartDigraph::Arc>, lemon::Lp::Col> m_optimalFlowRatio;
 
   // XML Functionality ////////////////////////////////////////////////////////
+  void LogDuration (tinyxml2::XMLDocument& xmlDoc);
   void LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc);
   void LogNetworkTopology (tinyxml2::XMLDocument& xmlDoc);
 };

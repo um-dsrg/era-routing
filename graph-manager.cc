@@ -3,7 +3,8 @@
 #include "graph-manager.h"
 #include "xml-utilities.h"
 
-GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows): m_nodeType(m_graph),
+GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows): m_duration(0.0),
+                                                                         m_nodeType(m_graph),
                                                                          m_linkCapacity(m_graph),
                                                                          m_linkDelay(m_graph),
                                                                          m_nodeCoordinates(m_graph),
@@ -60,6 +61,7 @@ GraphManager::FindOptimalSolution()
 void
 GraphManager::AddLogsInXmlFile(tinyxml2::XMLDocument& xmlDoc)
 {
+  LogDuration(xmlDoc);
   LogOptimalSolution(xmlDoc);
   LogNetworkTopology(xmlDoc);
 }
@@ -176,21 +178,32 @@ GraphManager::SolveLpProblem ()
   auto endTime = std::chrono::high_resolution_clock::now();
 
   std::chrono::duration<double, std::milli> durationInMs = endTime - startTime;
+  m_duration = durationInMs.count();
 
   if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
     {
 #ifdef DEBUG
       std::cout << "Optimal Solution FOUND.\n"
-                << "Solver took: " << durationInMs.count() << "ms" << std::endl;
+                << "Solver took: " << m_duration << "ms" << std::endl;
 #endif
     }
   else
     {
 #ifdef DEBUG
       std::cout << "Optimal Solution NOT FOUND."
-                << "Solver took: " << durationInMs.count() << "ms" << std::endl;
+                << "Solver took: " << m_duration << "ms" << std::endl;
 #endif
     }
+}
+
+void
+GraphManager::LogDuration (tinyxml2::XMLDocument& xmlDoc)
+{
+  using namespace tinyxml2;
+  XMLNode* rootNode = XmlUtilities::GetRootNode(xmlDoc);
+  XMLElement* durationElement = xmlDoc.NewElement("Duration");
+  durationElement->SetAttribute("Time(ms)", m_duration);
+  rootNode->InsertFirstChild(durationElement);
 }
 
 void
