@@ -3,6 +3,7 @@
 
 #include "flow-manager.h"
 #include "graph-manager.h"
+#include "xml-utilities.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,6 +19,11 @@ int main(int argc, char *argv[])
       GraphManager graphManager (flowManager.GetFlows(), &xmlLogFile);
       graphManager.ParseGraph(lgfPath);
       graphManager.FindOptimalSolution();
+
+      // XML Logging
+      XmlUtilities::InsertRootNode(xmlLogFile, "Log");
+      XmlUtilities::InsertTimeStampInRootElement(xmlLogFile);
+      XmlUtilities::SaveXmlFile(xmlLogPath, xmlLogFile);
     }
   catch (...)
     {
