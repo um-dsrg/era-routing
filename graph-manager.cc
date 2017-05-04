@@ -203,7 +203,7 @@ GraphManager::LogDuration (tinyxml2::XMLDocument& xmlDoc)
   using namespace tinyxml2;
   XMLNode* rootNode = XmlUtilities::GetRootNode(xmlDoc);
   XMLElement* durationElement = xmlDoc.NewElement("Duration");
-  durationElement->SetAttribute("Time(ms)", m_duration);
+  durationElement->SetAttribute("Time_ms", m_duration);
   rootNode->InsertFirstChild(durationElement);
 }
 
