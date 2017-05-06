@@ -1,4 +1,6 @@
 #include <chrono>
+#include <set>
+#include <assert.h>
 
 #include "graph-manager.h"
 #include "xml-utilities.h"
@@ -36,6 +38,40 @@ GraphManager::ParseGraph(const std::string &lgfPath)
                 << "Error: " << e.what() << std::endl;
       throw;
     }
+}
+
+void
+GraphManager::VerifyFlows()
+{
+  try
+    {
+      for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+        {
+          // Checking that the source is valid
+          if (m_graph.valid(m_graph.nodeFromId(flow.source)) != true)
+            {
+              std::string errorMessage("Flow " + std::to_string(flow.id) + " has an invalid source"
+                                       " node with id " + std::to_string(flow.source));
+              throw std::invalid_argument (errorMessage.c_str());
+            }
+
+          // Checking that the destination is valid
+          if (m_graph.valid(m_graph.nodeFromId(flow.destination)) != true)
+            {
+              std::string errorMessage("Flow " + std::to_string(flow.id) + " has an invalid"
+                                       " destination node with id "
+                                       + std::to_string(flow.destination));
+              throw std::invalid_argument (errorMessage.c_str());
+            }
+        }
+    }
+  catch (std::invalid_argument& e)
+    {
+      std::cerr << e.what() << std::endl;
+      throw;
+    }
+
+  // Throw an exception if something is not right.
 }
 
 void
@@ -191,7 +227,7 @@ GraphManager::SolveLpProblem ()
   else
     {
 #ifdef DEBUG
-      std::cout << "Optimal Solution NOT FOUND."
+      std::cout << "Optimal Solution NOT FOUND.\n"
                 << "Solver took: " << m_duration << "ms" << std::endl;
 #endif
     }
@@ -262,28 +298,67 @@ GraphManager::LogNetworkTopology(tinyxml2::XMLDocument& xmlDoc)
   networkTopologyElement->SetAttribute("NumberOfNodes", lemon::countNodes(m_graph));
   networkTopologyElement->SetAttribute("NumberOfLinks", lemon::countArcs(m_graph));
 
+  std::set<int> visitedLinks;
+
   // We need to loop through all the links and add their details.
   for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
     {
-      lemon::SmartDigraph::Node sourceNode = m_graph.source(link);
-      lemon::SmartDigraph::Node destinationNode = m_graph.target(link);
-      int sourceNodeId = m_graph.id(sourceNode);
-      int destinationNodeId = m_graph.id(destinationNode);
+      int linkId (m_graph.id(link));
+      int oppositeLinkId (0);
 
-      XMLElement* linkElement = xmlDoc.NewElement("Link");
-      linkElement->SetAttribute("Id", m_graph.id(link));
-      linkElement->SetAttribute("SourceNode", sourceNodeId);
-      linkElement->SetAttribute("SourceNodeType", std::string(1, m_nodeType[sourceNode]).c_str());
-      linkElement->SetAttribute("DestinationNode", destinationNodeId);
-      linkElement->SetAttribute("DestinationNodeType",
-                                std::string(1, m_nodeType[destinationNode]).c_str());
-      linkElement->SetAttribute("Delay", m_linkDelay[link]);
-      linkElement->SetAttribute("Capacity", m_linkCapacity[link]);
+      // This link is already stored in the XML file. Skip it.
+      if (visitedLinks.find(linkId) != visitedLinks.end()) continue;
 
-      networkTopologyElement->InsertFirstChild(linkElement);
+      lemon::SmartDigraph::Arc oppositeLink;
+
+      double currentLinkDelay (m_linkDelay[link]);
+      bool pairFound (false);
+
+      // Check if link with opposite source and destination exists.
+      for (lemon::ConArcIt<lemon::SmartDigraph> oppositeLinkIt (m_graph,
+                                                                m_graph.target(link),
+                                                                m_graph.source(link));
+           oppositeLinkIt != lemon::INVALID; ++oppositeLinkIt)
+        {
+          oppositeLinkId = m_graph.id(oppositeLinkIt);
+          // This link is already stored in the XML file. Skip it.
+          if (visitedLinks.find(oppositeLinkId) != visitedLinks.end()) continue;
+
+          if (currentLinkDelay == m_linkDelay[oppositeLinkIt])
+            {
+              pairFound = true;
+              oppositeLink = oppositeLinkIt;
+              break;
+            }
+        }
+
+      if (!pairFound) // If no pair was found issue a warning.
+        {
+          std::cerr << "Warning: Link " << linkId << " has no opposite link."<< std::endl;
+          visitedLinks.insert(linkId);
+
+          XMLElement* linkElement = xmlDoc.NewElement("Link");
+          linkElement->SetAttribute("Delay", m_linkDelay[link]);
+          linkElement->InsertFirstChild(CreateLinkElement(xmlDoc, link));
+
+          networkTopologyElement->InsertFirstChild(linkElement);
+        }
+      else // A pair is found.
+        {
+          assert(m_linkDelay[link] == m_linkDelay[oppositeLink]);
+          visitedLinks.insert(linkId);
+          visitedLinks.insert(oppositeLinkId);
+
+          XMLElement* linkElement = xmlDoc.NewElement("Link");
+          linkElement->SetAttribute("Delay", m_linkDelay[link]);
+          linkElement->InsertFirstChild(CreateLinkElement(xmlDoc, link));
+          linkElement->InsertFirstChild(CreateLinkElement(xmlDoc, oppositeLink));
+
+          networkTopologyElement->InsertFirstChild(linkElement);
+        }
     }
 
-  // Add a comment that will describe the units being used.
+  // Add a comment in the XML file that will describe the units being used.
   XMLComment* unitsComment =
     xmlDoc.NewComment("Delay (ms), Capacity (Mbps), Node Type (T=Terminal, S=Switch)");
   networkTopologyElement->InsertFirstChild(unitsComment);
@@ -310,4 +385,27 @@ GraphManager::LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc)
     }
 
   rootNode->InsertEndChild(nodeConfiguration);
+}
+
+tinyxml2::XMLElement*
+GraphManager::CreateLinkElement (tinyxml2::XMLDocument& xmlDoc, lemon::SmartDigraph::Arc& link)
+{
+  using namespace tinyxml2;
+  lemon::SmartDigraph::Node sourceNode = m_graph.source(link);
+  lemon::SmartDigraph::Node destinationNode = m_graph.target(link);
+  int sourceNodeId = m_graph.id(sourceNode);
+  int destinationNodeId = m_graph.id(destinationNode);
+
+  XMLElement* linkElement = xmlDoc.NewElement("LinkElement");
+
+  linkElement->SetAttribute("Id", m_graph.id(link));
+  linkElement->SetAttribute("SourceNode", sourceNodeId);
+  linkElement->SetAttribute("SourceNodeType",
+                            std::string(1, m_nodeType[sourceNode]).c_str());
+  linkElement->SetAttribute("DestinationNode", destinationNodeId);
+  linkElement->SetAttribute("DestinationNodeType",
+                            std::string(1, m_nodeType[destinationNode]).c_str());
+  linkElement->SetAttribute("Capacity", m_linkCapacity[link]);
+
+  return linkElement;
 }

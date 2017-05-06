@@ -23,6 +23,8 @@ public:
    *  \param lgfPath The full path to the LGF file
    */
   void ParseGraph (const std::string& lgfPath);
+
+  void VerifyFlows ();
   /**
    *  \brief Finds the optimal solution
    */
@@ -92,6 +94,9 @@ private:
   void LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc);
   void LogNetworkTopology (tinyxml2::XMLDocument& xmlDoc);
   void LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc);
+
+  tinyxml2::XMLElement* CreateLinkElement (tinyxml2::XMLDocument& xmlDoc,
+                                           lemon::SmartDigraph::Arc& link);
 };
 
 #endif /* GRAPH_MANAGER_H */

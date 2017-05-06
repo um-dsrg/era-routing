@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
       flowManager.LoadFlowsFromFile(lgfPath);
       GraphManager graphManager (flowManager.GetFlows());
       graphManager.ParseGraph(lgfPath);
+      graphManager.VerifyFlows();
       graphManager.FindOptimalSolution();
 
       // XML Logging
