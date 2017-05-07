@@ -11,6 +11,10 @@ label   coordinates     type
 5	(0,0)		T
 6	(0,0)		T
 7	(0,0)		T
+8	(0,0)		T
+9	(0,0)		T
+10	(0,0)		T
+11	(0,0)		T
 @arcs
                 label   capacity        delay
 # Src   Sink            (Mbps)          (ms)
@@ -25,6 +29,14 @@ label   coordinates     type
 6	7	8 	  30		 6
 6	7	9 	  30		 6
 6	7	10	  30		 6
+8	9	11	  30		 7
+9	8	12	  30		 7
+8	9	13	  30		 7
+9	8	14	  30		 7
+10	11	15	  30		 8
+11	10	16	  30		 8
+10	11	17	  30		 9
+11	10	18	  30		 9
 @flows
 #Flow ID / Source Node / Destination Node / Port Number / DataRate Incl. Headers (Mbps) / Packet Size (bytes) / No. of Packets / Protocol (TCP=T/UDP=U) / Start Time (Seconds) / End Time (Seconds)
 #ID	Source	Dest	Port	DR	PS	NP    Prtcl	 Start 	       End
