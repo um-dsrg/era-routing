@@ -99,6 +99,7 @@ GraphManager::AddLogsInXmlFile(tinyxml2::XMLDocument& xmlDoc)
 {
   LogDuration(xmlDoc);
   LogOptimalSolution(xmlDoc);
+  LogIncomingFlow(xmlDoc);
   LogNetworkTopology(xmlDoc);
   LogNodeConfiguration(xmlDoc);
 }
@@ -289,6 +290,73 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
 }
 
 void
+GraphManager::LogIncomingFlow (tinyxml2::XMLDocument& xmlDoc)
+{
+  struct FlowPair
+  {
+    uint32_t Id;
+    double flowValue;
+  };
+
+  // Node Id = key, FlowPair = value
+  std::map<uint32_t, std::vector<FlowPair>> incomingFlow;
+  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+    {
+      for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
+        {
+          uint32_t destinationId = m_graph.id(m_graph.target(link));
+          double flowValue = m_lpSolver.primal(m_optimalFlowRatio[std::make_pair(flow.id, link)]);
+
+          bool flowFound (false);
+          for (auto& flowPair : incomingFlow[destinationId])
+            {
+              if (flow.id == flowPair.Id)
+                {
+                  flowPair.flowValue += flowValue;
+                  flowFound = true;
+                }
+            }
+          if (!flowFound)
+            {
+              FlowPair currentPair;
+              currentPair.Id = flow.id;
+              currentPair.flowValue = flowValue;
+              incomingFlow[destinationId].push_back(currentPair);
+            }
+        }
+    }
+
+  // Sorting the vector
+  std::sort(incomingFlow[0].begin(), incomingFlow[0].end(), [](const FlowPair& lhs,
+                                                               const FlowPair& rhs) {
+              return lhs.Id < rhs.Id;
+            });
+
+  // Exporting the incoming flow to the XML log file.
+  using namespace tinyxml2;
+  XMLNode* rootNode = XmlUtilities::GetRootNode(xmlDoc);
+
+  XMLElement* incomingFlowElement = xmlDoc.NewElement("IncomingFlow");
+
+  for (const auto& incomingElement : incomingFlow)
+    {
+      // Create an element for that node.
+      XMLElement* nodeElement = xmlDoc.NewElement("Node");
+      nodeElement->SetAttribute("Id", incomingElement.first);
+
+      for (const auto& flowDetails : incomingElement.second)
+        {
+          XMLElement* flowElement = xmlDoc.NewElement("Flow");
+          flowElement->SetAttribute("Id", flowDetails.Id);
+          flowElement->SetAttribute("IncomingFlow", flowDetails.flowValue);
+          nodeElement->InsertEndChild(flowElement);
+        }
+      incomingFlowElement->InsertEndChild(nodeElement);
+    }
+  rootNode->InsertEndChild(incomingFlowElement);
+}
+
+void
 GraphManager::LogNetworkTopology(tinyxml2::XMLDocument& xmlDoc)
 {
   using namespace tinyxml2;
@@ -378,6 +446,7 @@ GraphManager::LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc)
     {
       XMLElement* nodeElement = xmlDoc.NewElement("Node");
       nodeElement->SetAttribute("Id", m_graph.id(node));
+      nodeElement->SetAttribute("Type", std::string(1, m_nodeType[node]).c_str());
       nodeElement->SetAttribute("X", m_nodeCoordinates[node].x);
       nodeElement->SetAttribute("Y", m_nodeCoordinates[node].y);
 
