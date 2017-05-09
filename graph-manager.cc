@@ -346,12 +346,17 @@ GraphManager::LogIncomingFlow (tinyxml2::XMLDocument& xmlDoc)
 
       for (const auto& flowDetails : incomingElement.second)
         {
-          XMLElement* flowElement = xmlDoc.NewElement("Flow");
-          flowElement->SetAttribute("Id", flowDetails.Id);
-          flowElement->SetAttribute("IncomingFlow", flowDetails.flowValue);
-          nodeElement->InsertEndChild(flowElement);
+          if (flowDetails.flowValue > 0) // Do not store elements that have a flow value of 0
+            {
+              XMLElement* flowElement = xmlDoc.NewElement("Flow");
+              flowElement->SetAttribute("Id", flowDetails.Id);
+              flowElement->SetAttribute("IncomingFlow", flowDetails.flowValue);
+              nodeElement->InsertEndChild(flowElement);
+            }
         }
-      incomingFlowElement->InsertEndChild(nodeElement);
+      // If this element has no children do not store it in the XML file
+      if (!nodeElement->NoChildren())
+        incomingFlowElement->InsertEndChild(nodeElement);
     }
   rootNode->InsertEndChild(incomingFlowElement);
 }
