@@ -30,6 +30,11 @@ public:
    */
   void FindOptimalSolution ();
 
+  /**
+   *  \brief Returns a bool that demonstrates whether the optimal solution was found or not
+   *  \return bool
+   */
+  bool OptimalSolutionFound ();
   void AddLogsInXmlFile (tinyxml2::XMLDocument& xmlDoc);
 private:
   // Linear Programming Functions /////////////////////////////////////////////
@@ -68,6 +73,7 @@ private:
   void SolveLpProblem ();
   lemon::Lp m_lpSolver;
   double m_duration;
+  bool m_optimalSolutionFound; /*!< True if optimal solution found. False otherwise. */
 
   // Graph Related Variables //////////////////////////////////////////////////
   lemon::SmartDigraph m_graph;

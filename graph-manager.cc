@@ -5,14 +5,16 @@
 #include "graph-manager.h"
 #include "xml-utilities.h"
 
-GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows): m_duration(0.0),
-                                                                         m_nodeType(m_graph),
-                                                                         m_linkCapacity(m_graph),
-                                                                         m_linkDelay(m_graph),
-                                                                         m_nodeCoordinates(m_graph),
-                                                                         m_nodeShape(m_graph),
-                                                                         m_nodeColour(m_graph),
-                                                                         m_flows(flows)
+GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows):
+  m_duration(0.0),
+  m_optimalSolutionFound(false),
+  m_nodeType(m_graph),
+  m_linkCapacity(m_graph),
+  m_linkDelay(m_graph),
+  m_nodeCoordinates(m_graph),
+  m_nodeShape(m_graph),
+  m_nodeColour(m_graph),
+  m_flows(flows)
 {}
 
 void
@@ -94,14 +96,24 @@ GraphManager::FindOptimalSolution()
   SolveLpProblem();
 }
 
+bool
+GraphManager::OptimalSolutionFound()
+{
+  return m_optimalSolutionFound;
+}
+
 void
 GraphManager::AddLogsInXmlFile(tinyxml2::XMLDocument& xmlDoc)
 {
   LogDuration(xmlDoc);
-  LogOptimalSolution(xmlDoc);
-  LogIncomingFlow(xmlDoc);
-  LogNetworkTopology(xmlDoc);
-  LogNodeConfiguration(xmlDoc);
+  // Log the solution and other relevant stuff only if an optimal solution was found.
+  if (m_optimalSolutionFound)
+    {
+      LogOptimalSolution(xmlDoc);
+      LogIncomingFlow(xmlDoc);
+      LogNetworkTopology(xmlDoc);
+      LogNodeConfiguration(xmlDoc);
+    }
 }
 
 void
@@ -220,6 +232,7 @@ GraphManager::SolveLpProblem ()
 
   if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
     {
+      m_optimalSolutionFound = true;
 #ifdef DEBUG
       std::cout << "Optimal Solution FOUND.\n"
                 << "Solver took: " << m_duration << "ms" << std::endl;
@@ -227,6 +240,7 @@ GraphManager::SolveLpProblem ()
     }
   else
     {
+      m_optimalSolutionFound = false;
 #ifdef DEBUG
       std::cout << "Optimal Solution NOT FOUND.\n"
                 << "Solver took: " << m_duration << "ms" << std::endl;

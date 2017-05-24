@@ -34,6 +34,9 @@ int main(int argc, char *argv[])
 
       // Save the XML file.
       XmlUtilities::SaveXmlFile(xmlLogPath, xmlLogFile);
+
+      // Throw an error if the optimal solution is not found.
+      if (!graphManager.OptimalSolutionFound()) return EXIT_FAILURE;
     }
   catch (...)
     {
