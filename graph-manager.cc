@@ -266,28 +266,30 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
 
   XMLElement* optimalSolutionElement = xmlDoc.NewElement("OptimalSolution");
 
-  // We need to loop through all the flows.
-  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+  // Looping through all the flows in reverse order.
+  for (auto flow = m_flows->rbegin(); flow != m_flows->rend(); ++flow)
     {
       XMLElement* flowElement = xmlDoc.NewElement("Flow");
-      flowElement->SetAttribute("Id", flow.id);
-      flowElement->SetAttribute("SourceNode", flow.source);
-      flowElement->SetAttribute("DestinationNode", flow.destination);
-      flowElement->SetAttribute("PortNumber", flow.portNumber);
-      flowElement->SetAttribute("DataRate", flow.dataRate);
-      flowElement->SetAttribute("PacketSize", flow.packetSize);
-      flowElement->SetAttribute("NumOfPackets", flow.numOfPackets);
-      flowElement->SetAttribute("Protocol", std::string(1,flow.protocol).c_str());
-      flowElement->SetAttribute("StartTime", flow.startTime);
-      flowElement->SetAttribute("EndTime", flow.endTime);
-      // We need to loop through the optimal solution here.
+      flowElement->SetAttribute("Id", (*flow).id);
+      flowElement->SetAttribute("SourceNode", (*flow).source);
+      flowElement->SetAttribute("DestinationNode", (*flow).destination);
+      flowElement->SetAttribute("PortNumber", (*flow).portNumber);
+      flowElement->SetAttribute("DataRate", (*flow).dataRate);
+      flowElement->SetAttribute("PacketSize", (*flow).packetSize);
+      flowElement->SetAttribute("NumOfPackets", (*flow).numOfPackets);
+      flowElement->SetAttribute("Protocol", std::string(1,(*flow).protocol).c_str());
+      flowElement->SetAttribute("StartTime", (*flow).startTime);
+      flowElement->SetAttribute("EndTime", (*flow).endTime);
 
+      // Looping through the optimal solution
       for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
         {
-          double flowRatio = m_lpSolver.primal(m_optimalFlowRatio[std::make_pair(flow.id, link)]);
+          double flowRatio =
+            m_lpSolver.primal(m_optimalFlowRatio[std::make_pair((*flow).id, link)]);
+
           if (flowRatio > 0)
             {
-              // Add element here.
+              // Add link element
               XMLElement* linkElement = xmlDoc.NewElement("Link");
               linkElement->SetAttribute("Id", m_graph.id(link));
               linkElement->SetAttribute("FlowRate", flowRatio);
