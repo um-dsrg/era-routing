@@ -11,7 +11,7 @@ CXXFLAGS := -MMD -MP -std=c++11
 LDFLAGS := -L ~/libraries/lemon/lib -lemon -lglpk -ltinyxml2
 INCLUDES := -I ~/libraries/lemon/include
 
-release: CXXFLAGS += -O3 -Werror
+release: CXXFLAGS += -O3 -Werror -Wall
 release: $(BUILD_DIR)/$(TARGET_EXEC)
 
 debug: CXXFLAGS += -DDEBUG -g -Werror -Wall
