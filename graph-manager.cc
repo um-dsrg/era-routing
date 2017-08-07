@@ -120,6 +120,7 @@ GraphManager::AddLogsInXmlFile(tinyxml2::XMLDocument& xmlDoc)
       LogIncomingFlow(xmlDoc);
       LogNetworkTopology(xmlDoc);
       LogNodeConfiguration(xmlDoc);
+      LogFlowDataRateUpdates (xmlDoc);
     }
 }
 
@@ -321,10 +322,14 @@ GraphManager::UpdateFlowDataRates ()
                    flowAllocatedDataRate << std::endl;
 #endif
 
-      // TODO: We need to add logging here. We need to store the details here.
-      // Logging will be added later.
-      // Update the flow rates. This will be used by the minimal cost function.
-      flow.dataRate = flowAllocatedDataRate;
+      // The flow data rate was modified. We take note such that we can add it in the
+      // log file.
+      if (flow.dataRate != flowAllocatedDataRate)
+        {
+          m_modifiedFlows.push_back (FlowDetails(flow.id, flow.dataRate,
+                                                 flowAllocatedDataRate));
+          flow.dataRate = flowAllocatedDataRate;
+        }
     }
 }
 
@@ -594,6 +599,26 @@ GraphManager::LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc)
     }
 
   rootNode->InsertEndChild(nodeConfiguration);
+}
+
+void
+GraphManager::LogFlowDataRateUpdates (tinyxml2::XMLDocument &xmlDoc)
+{
+  // Logging the flows that their data rates were modified
+  using namespace tinyxml2;
+  XMLNode* rootNode = XmlUtilities::GetRootNode (xmlDoc);
+
+  XMLElement* flowDataRateModElement = xmlDoc.NewElement ("FlowDataRateModifications");
+  for (auto& modFlow : m_modifiedFlows)
+    {
+      XMLElement* flowElement = xmlDoc.NewElement ("Flow");
+      flowElement->SetAttribute ("Id", modFlow.id);
+      flowElement->SetAttribute ("RequestedDataRate", modFlow.requestedDataRate);
+      flowElement->SetAttribute ("ReceivedDataRate", modFlow.receivedDataRate);
+      flowDataRateModElement->InsertEndChild (flowElement);
+    }
+
+  rootNode->InsertEndChild (flowDataRateModElement);
 }
 
 tinyxml2::XMLElement*
