@@ -90,7 +90,7 @@ GraphManager::FindOptimalSolution()
   AddObjective();
 
   // Set the solver to find the solution with minimal cost
-  m_lpSolver.min();
+  m_lpSolver.max ();
 
   // Solve the problem
   SolveLpProblem();
@@ -185,11 +185,11 @@ GraphManager::AddBalanceConstraint ()
 
           if (flow.source == nodeId) // Source Node
             {
-              m_lpSolver.addRow(nodeBalanceExpression == flow.dataRate);
+              m_lpSolver.addRow(nodeBalanceExpression <= flow.dataRate);
             }
           else if (flow.destination == nodeId) // Sink Node
             {
-              m_lpSolver.addRow(nodeBalanceExpression == -flow.dataRate);
+              m_lpSolver.addRow(nodeBalanceExpression >= -flow.dataRate);
             }
           else // Intermediate node
             {
@@ -210,9 +210,10 @@ GraphManager::AddObjective ()
     {
       for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
         {
+          objective += m_optimalFlowRatio[std::make_pair(flow.id, link)];
           // Retrieving the link delay (i.e. the cost) and multiplying it with the flow fraction
           // passing through that link. This is repeated for all Flows on all links.
-          objective += (m_linkDelay[link] * m_optimalFlowRatio[std::make_pair(flow.id, link)]);
+          // objective += (m_linkDelay[link] * m_optimalFlowRatio[std::make_pair(flow.id, link)]);
         }
     }
 
