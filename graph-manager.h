@@ -105,9 +105,18 @@ private:
   void UpdateFlowDataRates ();
 
   // LP Solver ////////////////////////////////////////////////////////////////
-  void SolveLpProblem ();
+  /**
+   * @brief SolveLpProblem
+   *
+   * Solves the LP problem and returns the time taken by the solver.
+   *
+   * @return The time taken in ms to solve the Lp problem.
+   */
+  double SolveLpProblem ();
+
   lemon::Lp m_lpSolver;
-  double m_duration;
+  double m_durationMaximumFlow; /*!< Stores the time taken to find the solution with maximum flow. */
+  double m_durationMinimumCost; /*!< Stores the time taken to find the solution with minimal cost. */
   bool m_optimalSolutionFound; /*!< True if optimal solution found. False otherwise. */
 
   // Graph Related Variables //////////////////////////////////////////////////
