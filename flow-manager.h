@@ -36,17 +36,17 @@ public:
                     << flow.destination << "\n"
                     << "Port Number: " << flow.portNumber << " Data Rate: " << flow.dataRate
                     << "Mbps\n"
-                    << "Packet Size: " << flow.packetSize << "bytes Num Of Packets: "
+                    << "Packet Size: " << flow.packetSize << "Bytes Num Of Packets: "
                     << flow.numOfPackets << " Protocol: " << flow.protocol << "\n"
                     << "Start Time: " << flow.startTime << "s End Time: " << flow.endTime << "s";
     }
   };
 
   /**
-   *  \brief Returns a constant pointer to the flows vector
-   *  \return A constant pointer to the flows vector
+   *  \brief Returns a pointer to the flows vector
+   *  \return A pointer to the flows vector
    */
-  const std::vector<Flow>* GetFlows () const;
+  std::vector<Flow>* GetFlows ();
 
   /**
    *  \brief Load the Flows from the file given and stores them in the vector flows

@@ -4,8 +4,8 @@
 
 #include "flow-manager.h"
 
-const std::vector<FlowManager::Flow>*
-FlowManager::GetFlows() const
+std::vector<FlowManager::Flow>*
+FlowManager::GetFlows()
 {
   return &m_flows;
 }

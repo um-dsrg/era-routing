@@ -5,7 +5,7 @@
 #include "graph-manager.h"
 #include "xml-utilities.h"
 
-GraphManager::GraphManager(const std::vector<FlowManager::Flow>* flows):
+GraphManager::GraphManager(std::vector<FlowManager::Flow>* flows):
   m_duration(0.0),
   m_optimalSolutionFound(false),
   m_nodeType(m_graph),
@@ -79,21 +79,27 @@ GraphManager::VerifyFlows()
 void
 GraphManager::FindOptimalSolution()
 {
-  // Add the flows
-  AddFlows();
+  try
+  {
+    // Find the maximum flows that can be passed through the network.
+    FindMaximumFlowSolution ();
+    if (!m_optimalSolutionFound)
+      throw std::runtime_error ("Maximal solution not found");
 
-  // Add the constraints
-  AddCapacityConstraint();
-  AddBalanceConstraint();
+    UpdateFlowDataRates (); // Update the flow data rates based on the Maximal flow solution.
 
-  // Add the objective
-  AddObjective();
+    m_lpSolver.clear (); // Resetting the LP Solver.
 
-  // Set the solver to find the solution with minimal cost
-  m_lpSolver.max ();
-
-  // Solve the problem
-  SolveLpProblem();
+    // Find the minimum network cost to route the flows given from the maximum flow solutions.
+    FindMinimumCostSolution ();
+    if (!m_optimalSolutionFound)
+      throw std::runtime_error ("Minimal cost solution not found");
+  }
+  catch (std::runtime_error& e)
+  {
+    std::cerr << e.what () << std::endl;
+    throw;
+  }
 }
 
 bool
@@ -114,6 +120,52 @@ GraphManager::AddLogsInXmlFile(tinyxml2::XMLDocument& xmlDoc)
       LogNetworkTopology(xmlDoc);
       LogNodeConfiguration(xmlDoc);
     }
+}
+
+void
+GraphManager::FindMaximumFlowSolution ()
+{
+  // Add the flows
+  AddFlows ();
+
+  // Add Capacity Constraint
+  AddCapacityConstraint ();
+
+  // The balance constraint when finding the maximal solution will allow flows to receive
+  // data rates smaller than what they have requested.
+  AddBalanceConstraint (true);
+
+  // Add the maximum flow objective
+  AddMaximumFlowObjective ();
+
+  // Set the solver to find the solution with the maximum value
+  m_lpSolver.max ();
+
+  // Find a solution to the LP problem
+  SolveLpProblem ();
+}
+
+void
+GraphManager::FindMinimumCostSolution ()
+{
+  // Add the flows
+  AddFlows();
+
+  // Add Capacity Constraint
+  AddCapacityConstraint();
+
+  // The balance constraint when finding the minmal cost solution will not allow flows to
+  // receive data rates smaller than what they have requested.
+  AddBalanceConstraint(false);
+
+  // Add the objective
+  AddMinimumCostObjective ();
+
+  // Set the solver to find the solution with minimal cost
+  m_lpSolver.max ();
+
+  // Solve the problem
+  SolveLpProblem();
 }
 
 void
@@ -158,7 +210,7 @@ GraphManager::AddCapacityConstraint ()
 }
 
 void
-GraphManager::AddBalanceConstraint ()
+GraphManager::AddBalanceConstraint (bool allowReducedFlowRate)
 {
   for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows
     {
@@ -185,11 +237,17 @@ GraphManager::AddBalanceConstraint ()
 
           if (flow.source == nodeId) // Source Node
             {
-              m_lpSolver.addRow(nodeBalanceExpression <= flow.dataRate);
+              if (allowReducedFlowRate)
+                  m_lpSolver.addRow (nodeBalanceExpression <= flow.dataRate);
+              else
+                  m_lpSolver.addRow(nodeBalanceExpression == flow.dataRate);
             }
           else if (flow.destination == nodeId) // Sink Node
             {
-              m_lpSolver.addRow(nodeBalanceExpression >= -flow.dataRate);
+              if (allowReducedFlowRate)
+                m_lpSolver.addRow (nodeBalanceExpression >= -flow.dataRate);
+              else
+                m_lpSolver.addRow(nodeBalanceExpression == -flow.dataRate);
             }
           else // Intermediate node
             {
@@ -200,7 +258,25 @@ GraphManager::AddBalanceConstraint ()
 }
 
 void
-GraphManager::AddObjective ()
+GraphManager::AddMaximumFlowObjective ()
+{
+  lemon::Lp::Expr objective;
+
+  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+    {
+      for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
+        {
+          // Maximise the flow passing through the network
+          objective += m_optimalFlowRatio[std::make_pair(flow.id, link)];
+        }
+    }
+
+  // Set the objective
+  m_lpSolver.obj (objective);
+}
+
+void
+GraphManager::AddMinimumCostObjective ()
 {
   lemon::Lp::Expr objective;
 
@@ -210,15 +286,45 @@ GraphManager::AddObjective ()
     {
       for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
         {
-          objective += m_optimalFlowRatio[std::make_pair(flow.id, link)];
           // Retrieving the link delay (i.e. the cost) and multiplying it with the flow fraction
           // passing through that link. This is repeated for all Flows on all links.
-          // objective += (m_linkDelay[link] * m_optimalFlowRatio[std::make_pair(flow.id, link)]);
+          objective += (m_linkDelay[link] * m_optimalFlowRatio[std::make_pair(flow.id, link)]);
         }
     }
 
   // Set the objective
   m_lpSolver.obj (objective);
+}
+
+void
+GraphManager::UpdateFlowDataRates ()
+{
+  for (FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+    {
+      // Get the source node.
+      lemon::SmartDigraph::Node sourceNode = m_graph.nodeFromId (flow.source);
+
+      double flowAllocatedDataRate (0.0);
+
+      for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode);
+           outgoingLink != lemon::INVALID; ++outgoingLink)
+        {
+          flowAllocatedDataRate +=
+              m_lpSolver.primal (m_optimalFlowRatio[std::make_pair(flow.id, outgoingLink)]);
+        }
+
+#ifdef DEBUG
+      std::cout << "Flow ID: " << flow.id << " Requested flow rate: " <<
+                   flow.dataRate << std::endl;
+      std::cout << "Flow ID: " << flow.id << " Received flow rate: " <<
+                   flowAllocatedDataRate << std::endl;
+#endif
+
+      // TODO: We need to add logging here. We need to store the details here.
+      // Logging will be added later.
+      // Update the flow rates. This will be used by the minimal cost function.
+      flow.dataRate = flowAllocatedDataRate;
+    }
 }
 
 void

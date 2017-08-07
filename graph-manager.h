@@ -16,7 +16,7 @@
 class GraphManager
 {
 public:
-  GraphManager(const std::vector<FlowManager::Flow>* flows);
+  GraphManager(std::vector<FlowManager::Flow>* flows);
 
   /**
    *  \brief Parse the LGF file contents into a LEMON graph
@@ -39,6 +39,22 @@ public:
 private:
   // Linear Programming Functions /////////////////////////////////////////////
   /**
+   * @brief FindMaximumFlowSolution
+   *
+   * Finds the maximum routes. This does not necessarily mean that it is the solution with
+   * minimum cost. The FindMinimumCostSolution function will be used after this to find the
+   * solution with minimum cost.
+   */
+  void FindMaximumFlowSolution ();
+
+  /**
+   * @brief FindMinimumCostSolution
+   *
+   * Given the flow values from the FindMaximumFlowSolution function, this function will find
+   * the routes that have the smallest cost.
+   */
+  void FindMinimumCostSolution ();
+  /**
    *  \brief Add the Flows to the LP problem
    *
    *  Associate an LP variable with each link for each flow. The value of this variable is found
@@ -58,16 +74,35 @@ private:
    *  Adds the balance constraint to the LP problem. This condition will ensure that the flow's
    *  source node will transmit all the flow it has available, the destination node will receive
    *  all the data being transmitted and intermediate nodes do not hold any packets.
-   */
-  void AddBalanceConstraint ();
-  /**
-   *  \brief Adds the objective of the LP problem
    *
-   *  Adds the LP objective. The current objective is to minimise the total network cost. The
+   * \param allowReducedFlowRate When set to true the balance constraint will allow flows to receive
+   * 														 less than what they have requested.
+   */
+  void AddBalanceConstraint (bool allowReducedFlowRate);
+  /**
+   *  \brief Adds the objective of the LP problem when finding the maximum flows
+   *
+   *  Adds the LP objective. The objective is to maximise the total network usage. Flows can have
+   *  smaller data rates than what they requested.
+   */
+  void AddMaximumFlowObjective ();
+  /**
+   *  \brief Adds the objective of the LP problem when finding the minimum cost
+   *
+   *  Adds the LP objective. The objective is to minimise the total network cost. The
    *  link cost is set equal to the link's delay and the network cost is calculated by multiplying
    *  the link cost with the amount of flow passing through that link.
    */
-  void AddObjective ();
+  void AddMinimumCostObjective ();
+
+  /**
+   * @brief UpdateFlowDataRates will update the flow data rates based on the maximal LP solution
+   *
+   * Once the optimal maximisation has complete, the requested data rate and the given data rate
+   * might not be the same. Therefore this function will update the flows with the data rate given
+   * by the maximal optimal solution.
+   */
+  void UpdateFlowDataRates ();
 
   // LP Solver ////////////////////////////////////////////////////////////////
   void SolveLpProblem ();
@@ -89,7 +124,7 @@ private:
   lemon::SmartDigraph::NodeMap<lemon::Color> m_nodeColour;
 
   // Flows ////////////////////////////////////////////////////////////////////
-  const std::vector<FlowManager::Flow> * m_flows;
+  std::vector<FlowManager::Flow> * m_flows;
 
   // Key (<FlowID, Link>), Value (The fraction of flow represented by FlowID that will pass on
   // the link represented by Link.)
