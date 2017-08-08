@@ -101,7 +101,6 @@ private:
    * Once the optimal maximisation has complete, the requested data rate and the given data rate
    * might not be the same. Therefore this function will update the flows with the data rate given
    * by the maximal optimal solution.
-   * If a flow has a data rate equal to 0, the number of packets will also be set to 0.
    */
   void UpdateFlowDataRates ();
 
