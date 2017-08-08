@@ -329,6 +329,12 @@ GraphManager::UpdateFlowDataRates ()
           m_modifiedFlows.push_back (FlowDetails(flow.id, flow.dataRate,
                                                  flowAllocatedDataRate));
           flow.dataRate = flowAllocatedDataRate;
+          if (flowAllocatedDataRate == 0)
+            {
+              // If the allocated data rate is equal to 0 then the flow cannot transmit
+              // anything. Therefore, we set the number of packets equal to 0.
+              flow.numOfPackets = 0;
+            }
         }
     }
 }
