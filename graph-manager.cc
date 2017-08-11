@@ -604,21 +604,24 @@ GraphManager::LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc)
 void
 GraphManager::LogFlowDataRateUpdates (tinyxml2::XMLDocument &xmlDoc)
 {
-  // Logging the flows that their data rates were modified
-  using namespace tinyxml2;
-  XMLNode* rootNode = XmlUtilities::GetRootNode (xmlDoc);
+  if ( m_modifiedFlows.size() > 0 )
+  {
+    // Logging the flows that their data rates were modified
+    using namespace tinyxml2;
+    XMLNode* rootNode = XmlUtilities::GetRootNode (xmlDoc);
 
-  XMLElement* flowDataRateModElement = xmlDoc.NewElement ("FlowDataRateModifications");
-  for (auto& modFlow : m_modifiedFlows)
-    {
-      XMLElement* flowElement = xmlDoc.NewElement ("Flow");
-      flowElement->SetAttribute ("Id", modFlow.id);
-      flowElement->SetAttribute ("RequestedDataRate", modFlow.requestedDataRate);
-      flowElement->SetAttribute ("ReceivedDataRate", modFlow.receivedDataRate);
-      flowDataRateModElement->InsertEndChild (flowElement);
-    }
+    XMLElement* flowDataRateModElement = xmlDoc.NewElement ("FlowDataRateModifications");
+    for (auto& modFlow : m_modifiedFlows)
+      {
+        XMLElement* flowElement = xmlDoc.NewElement ("Flow");
+        flowElement->SetAttribute ("Id", modFlow.id);
+        flowElement->SetAttribute ("RequestedDataRate", modFlow.requestedDataRate);
+        flowElement->SetAttribute ("ReceivedDataRate", modFlow.receivedDataRate);
+        flowDataRateModElement->InsertEndChild (flowElement);
+      }
 
-  rootNode->InsertEndChild (flowDataRateModElement);
+    rootNode->InsertEndChild (flowDataRateModElement);
+  }
 }
 
 tinyxml2::XMLElement*
