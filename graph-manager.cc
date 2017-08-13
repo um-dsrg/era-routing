@@ -87,14 +87,14 @@ GraphManager::FindOptimalSolution()
     if (!m_optimalSolutionFound)
       throw std::runtime_error ("Maximal solution not found");
 
-    UpdateFlowDataRates (); // Update the flow data rates based on the Maximal flow solution.
+    //UpdateFlowDataRates (); // Update the flow data rates based on the Maximal flow solution.
 
-    m_lpSolver.clear (); // Resetting the LP Solver.
+    //m_lpSolver.clear (); // Resetting the LP Solver.
 
     // Find the minimum network cost to route the flows given from the maximum flow solutions.
-    FindMinimumCostSolution ();
-    if (!m_optimalSolutionFound)
-      throw std::runtime_error ("Minimal cost solution not found");
+    //FindMinimumCostSolution ();
+    //if (!m_optimalSolutionFound)
+      //throw std::runtime_error ("Minimal cost solution not found");
   }
   catch (std::runtime_error& e)
   {
@@ -164,7 +164,7 @@ GraphManager::FindMinimumCostSolution ()
   AddMinimumCostObjective ();
 
   // Set the solver to find the solution with minimal cost
-  m_lpSolver.max ();
+  m_lpSolver.min ();
 
   // Solve the problem
   m_durationMinimumCost = SolveLpProblem();
@@ -264,14 +264,29 @@ GraphManager::AddMaximumFlowObjective ()
 {
   lemon::Lp::Expr objective;
 
-  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+  for (const FlowManager::Flow& flow : *m_flows)
+  {
+    // Get the flow's source node
+    //lemon::SmartDigraph::Node sourceNode = m_graph.nodeFromId(flow.source);
+
+    // Loop through all the source node's outgoing links
+    //for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode); 
+    //     outgoingLink != lemon::INVALID; ++outgoingLink)
+    //{
+    //  objective += m_optimalFlowRatio[std::make_pair(flow.id, outgoingLink)];
+    //}
+
+    // Get the flow's destination node.
+    lemon::SmartDigraph::Node destinationNode = m_graph.nodeFromId (flow.destination);
+    
+    // Loop through all the destination node's incoming links.
+    for (lemon::SmartDigraph::InArcIt incomingLink (m_graph, destinationNode);
+        incomingLink != lemon::INVALID; ++incomingLink)
     {
-      for (lemon::SmartDigraph::ArcIt link(m_graph); link != lemon::INVALID; ++link)
-        {
-          // Maximise the flow passing through the network
-          objective += m_optimalFlowRatio[std::make_pair(flow.id, link)];
-        }
+      // Add all the incoming flows of a node.
+      objective += m_optimalFlowRatio[std::make_pair(flow.id, incomingLink)];
     }
+  }
 
   // Set the objective
   m_lpSolver.obj (objective);
