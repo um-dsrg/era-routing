@@ -17,7 +17,7 @@ public:
               numOfPackets(0), protocol(0), startTime(0), endTime(0)
     {}
 
-    enum Protocol { Tcp = 'T', Udp = 'U' };
+    enum Protocol { Tcp = 'T', Ack = 'A', Udp = 'U' };
 
     uint32_t id;
     uint32_t source;

@@ -120,6 +120,8 @@ FlowManager::ParseFlow (std::string& line)
         flow.protocol = FlowManager::Flow::Protocol::Tcp;
       else if (parsedValue.compare("U") == 0)
         flow.protocol = FlowManager::Flow::Protocol::Udp;
+      else if (parsedValue.compare("A") == 0) // TCP Acknowledgement flow
+        flow.protocol = FlowManager::Flow::Protocol::Ack;
       else
         throw std::invalid_argument ("Unknown protocol type");
 
