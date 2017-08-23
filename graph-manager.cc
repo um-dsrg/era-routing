@@ -273,7 +273,17 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
       flowElement->SetAttribute("Id", (*flow).id);
       flowElement->SetAttribute("SourceNode", (*flow).source);
       flowElement->SetAttribute("DestinationNode", (*flow).destination);
-      flowElement->SetAttribute("PortNumber", (*flow).portNumber);
+
+      if ((*flow).protocol == FlowManager::Flow::Protocol::Tcp)
+        {
+          flowElement->SetAttribute("SrcPortNumber", (*flow).srcPortNumber);
+          flowElement->SetAttribute ("DstPortNumber", (*flow).dstPortNumber);
+        }
+      else
+        {
+          flowElement->SetAttribute ("PortNumber", (*flow).dstPortNumber);
+        }
+
       flowElement->SetAttribute("DataRate", (*flow).dataRate);
       flowElement->SetAttribute("PacketSize", (*flow).packetSize);
       flowElement->SetAttribute("NumOfPackets", (*flow).numOfPackets);
@@ -300,7 +310,10 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
     }
 
   XMLComment* unitsComment = xmlDoc.NewComment("DataRate (Mbps), PacketSize (bytes),"
-                                               "Protocol (U=UDP,T=TCP), Time (Seconds)");
+                                               "Protocol (U=UDP,T=TCP), Time (Seconds)."
+                                               "\nUnless Specified the port number refers "
+                                               "to the destination port number");
+
   optimalSolutionElement->InsertFirstChild(unitsComment);
   rootNode->InsertEndChild(optimalSolutionElement);
 }
