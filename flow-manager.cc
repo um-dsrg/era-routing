@@ -22,6 +22,7 @@ FlowManager::LoadFlowsFromFile(const std::string& lgfPath)
       lgfFile.open(lgfPath, std::ifstream::in); // Open the file as Read Only
 #ifdef DEBUG
       std::cout << "Loading flows from: " << lgfPath << std::endl;
+      std::cout << "--------------------" << std::endl;
 #endif
 
       // Set the file cursor to the appropriate line
@@ -32,6 +33,9 @@ FlowManager::LoadFlowsFromFile(const std::string& lgfPath)
         {
           ParseFlow(line);
         }
+
+      // Update the source port for TCP flows
+      AddTcpSourcePortToTcpFlows ();
     }
   catch (std::ifstream::failure e)
     {
@@ -100,7 +104,7 @@ FlowManager::ParseFlow (std::string& line)
 
       // Get Port Number
       flowSs >> parsedValue;
-      flow.portNumber = std::stoul (parsedValue);
+      flow.dstPortNumber = std::stoul (parsedValue);
 
       // Get Data Rate
       flowSs >> parsedValue;
@@ -120,6 +124,8 @@ FlowManager::ParseFlow (std::string& line)
         flow.protocol = FlowManager::Flow::Protocol::Tcp;
       else if (parsedValue.compare("U") == 0)
         flow.protocol = FlowManager::Flow::Protocol::Udp;
+      else if (parsedValue.compare("A") == 0) // TCP Acknowledgement flow
+        flow.protocol = FlowManager::Flow::Protocol::Ack;
       else
         throw std::invalid_argument ("Unknown protocol type");
 
@@ -130,6 +136,13 @@ FlowManager::ParseFlow (std::string& line)
       // Get End Time
       flowSs >> parsedValue;
       flow.endTime = std::stoul(parsedValue);
+
+      // Get the TCP Flow Id ONLY if it is an ACK flow
+      if (flow.protocol == FlowManager::Flow::Protocol::Ack)
+        {
+          flowSs >> parsedValue;
+          flow.tcpFlowId = std::stoul (parsedValue);
+        }
 
       // Outputting the flow values in debug builds only.
 #ifdef DEBUG
@@ -147,6 +160,54 @@ FlowManager::ParseFlow (std::string& line)
   catch (std::out_of_range e)
     {
       std::cerr << "Value out of range\n" << e.what() << std::endl;
+      throw;
+    }
+}
+
+void
+FlowManager::AddTcpSourcePortToTcpFlows ()
+{
+  try
+    {
+      // A lambda function that will return a pointer to the tcp flow
+      // associated with the ACK flow referenced to by ackFlow
+      auto getFlowByID = [this] (Flow& ackFlow) -> Flow*
+        {
+          for (auto& flow : m_flows)
+            {
+              // Found the flow. We need to verify that it is correct
+              if (flow.id == ackFlow.tcpFlowId)
+                {
+                  // The flow must be of type TCP and the source and destination
+                  // must be swapped.
+                  if (flow.protocol == Flow::Protocol::Tcp &&
+                      flow.source == ackFlow.destination &&
+                      flow.destination == ackFlow.source)
+                    return & flow;
+                }
+            }
+
+          std::string errorMsg ("ERROR: Flow with id " 
+                                + std::to_string(ackFlow.tcpFlowId) 
+                                + " not found OR Flow does not meet the requirements. "
+                                + "The flow must be TCP and the source and destination "
+                                + "of the ACK flow must be the reverse of the TCP data "
+                                + "flow");
+          throw std::invalid_argument (errorMsg);
+        };
+
+    for (auto& flow : m_flows) // Loop through all the flows of the Ack type
+      {
+        if (flow.protocol == Flow::Protocol::Ack)
+          {
+            Flow* tcpFlow = getFlowByID (flow);
+            tcpFlow->srcPortNumber = flow.dstPortNumber;
+          }
+      }
+    }
+  catch (std::invalid_argument e)
+    {
+      std::cerr << e.what() << std::endl;
       throw;
     }
 }
