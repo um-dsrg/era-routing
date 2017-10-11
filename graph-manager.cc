@@ -270,7 +270,7 @@ GraphManager::AddMaximumFlowObjective ()
     //lemon::SmartDigraph::Node sourceNode = m_graph.nodeFromId(flow.source);
 
     // Loop through all the source node's outgoing links
-    //for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode); 
+    //for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode);
     //     outgoingLink != lemon::INVALID; ++outgoingLink)
     //{
     //  objective += m_optimalFlowRatio[std::make_pair(flow.id, outgoingLink)];
@@ -278,7 +278,7 @@ GraphManager::AddMaximumFlowObjective ()
 
     // Get the flow's destination node.
     lemon::SmartDigraph::Node destinationNode = m_graph.nodeFromId (flow.destination);
-    
+
     // Loop through all the destination node's incoming links.
     for (lemon::SmartDigraph::InArcIt incomingLink (m_graph, destinationNode);
         incomingLink != lemon::INVALID; ++incomingLink)
