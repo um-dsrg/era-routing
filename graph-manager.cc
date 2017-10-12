@@ -89,11 +89,11 @@ GraphManager::FindOptimalSolution(std::string& solverConfig)
         if (!m_optimalSolutionFound) throw std::runtime_error ("Maximal solution not found");
 
         UpdateFlowDataRates (); // Update the flow data rates based on the Maximal flow solution.
-        m_lpSolver.clear (); // Resetting the LP Solver.
       }
 
     if (solverConfig == "mc" || solverConfig == "mfmc")
       {
+        m_lpSolver.clear (); // Resetting the LP Solver.
         // Find the minimum network cost to route the flows given from the maximum flow solutions.
         FindMinimumCostSolution ();
         if (!m_optimalSolutionFound) throw std::runtime_error ("Minimal cost solution not found");
