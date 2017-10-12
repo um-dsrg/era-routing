@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[])
 {
-  if (argc != 3)
+  if (argc < 3 || argc > 4)
     {
       std::cerr << "Incorrect number of command-line arguments were passed." << std::endl;
       return EXIT_FAILURE;
@@ -15,8 +15,15 @@ int main(int argc, char *argv[])
 
   try
     {
+      /**
+        * mfmc = Max Flow Minimum Cost
+        * mf = Max Flow
+        * mc = Minimum Cost
+        */
+      std::string solverConfiguration ("mfmc");
       const std::string lgfPath (argv[1]);
       const std::string xmlLogPath (argv[2]);
+      if (argc == 4) solverConfiguration = argv[3]; // TODO: Test this out
 
       FlowManager flowManager;
       flowManager.LoadFlowsFromFile(lgfPath);
@@ -24,7 +31,7 @@ int main(int argc, char *argv[])
       GraphManager graphManager (flowManager.GetFlows());
       graphManager.ParseGraph(lgfPath);
       graphManager.VerifyFlows();
-      graphManager.FindOptimalSolution();
+      graphManager.FindOptimalSolution(solverConfiguration);
 
       // XML Logging
       tinyxml2::XMLDocument xmlLogFile;

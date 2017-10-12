@@ -78,23 +78,26 @@ GraphManager::VerifyFlows()
 }
 
 void
-GraphManager::FindOptimalSolution()
+GraphManager::FindOptimalSolution(std::string& solverConfig)
 {
   try
   {
-    // Find the maximum flows that can be passed through the network.
-    FindMaximumFlowSolution ();
-    if (!m_optimalSolutionFound)
-      throw std::runtime_error ("Maximal solution not found");
+    if (solverConfig == "mf" || solverConfig == "mfmc")
+      {
+        // Find the maximum flows that can be passed through the network.
+        FindMaximumFlowSolution ();
+        if (!m_optimalSolutionFound) throw std::runtime_error ("Maximal solution not found");
 
-    //UpdateFlowDataRates (); // Update the flow data rates based on the Maximal flow solution.
+        UpdateFlowDataRates (); // Update the flow data rates based on the Maximal flow solution.
+        m_lpSolver.clear (); // Resetting the LP Solver.
+      }
 
-    //m_lpSolver.clear (); // Resetting the LP Solver.
-
-    // Find the minimum network cost to route the flows given from the maximum flow solutions.
-    //FindMinimumCostSolution ();
-    //if (!m_optimalSolutionFound)
-      //throw std::runtime_error ("Minimal cost solution not found");
+    if (solverConfig == "mc" || solverConfig == "mfmc")
+      {
+        // Find the minimum network cost to route the flows given from the maximum flow solutions.
+        FindMinimumCostSolution ();
+        if (!m_optimalSolutionFound) throw std::runtime_error ("Minimal cost solution not found");
+      }
   }
   catch (std::runtime_error& e)
   {
@@ -323,6 +326,8 @@ GraphManager::UpdateFlowDataRates ()
 
       double flowAllocatedDataRate (0.0);
 
+      // Looping through all the outgoing links of the source node and adding
+      // the values from the solver's solution.
       for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode);
            outgoingLink != lemon::INVALID; ++outgoingLink)
         {
@@ -337,12 +342,13 @@ GraphManager::UpdateFlowDataRates ()
                    flowAllocatedDataRate << std::endl;
 #endif
 
-      // The flow data rate was modified. We take note such that we can add it in the
+      // If the flow data rate was modified. We take note such that we can add it in the
       // log file.
       if (flow.dataRate != flowAllocatedDataRate)
         {
           m_modifiedFlows.push_back (FlowDetails(flow.id, flow.dataRate,
                                                  flowAllocatedDataRate));
+          // Update the flow's data rate to that allocated by the solver
           flow.dataRate = flowAllocatedDataRate;
         }
     }

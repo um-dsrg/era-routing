@@ -27,8 +27,10 @@ public:
   void VerifyFlows ();
   /**
    *  \brief Finds the optimal solution
+   *  \param solverConfig A string that determines which solver to use. A
+   *  description of the available parameters is found in lp-solver.cc
    */
-  void FindOptimalSolution ();
+  void FindOptimalSolution (std::string& solverConfig);
 
   /**
    *  \brief Returns a bool that demonstrates whether the optimal solution was found or not
