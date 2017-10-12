@@ -78,9 +78,20 @@ private:
    *  all the data being transmitted and intermediate nodes do not hold any packets.
    *
    * \param allowReducedFlowRate When set to true the balance constraint will allow flows to receive
-   * 														 less than what they have requested.
+   * 	    less than what they have requested.
    */
   void AddBalanceConstraint (bool allowReducedFlowRate);
+  /**
+   * @brief Adds a constraint to avoid loops at source/destination.
+   *
+   * Adds a constraint such that a source node cannot be receiving any of the
+   * flow that it is transmitting, and a destination node cannot be
+   * transmitting any of the flow that it is receiving.
+   *
+   * This constraint is required because we have relaxed the amount of flow a
+   * node can receive.
+   */
+  void AddNoLoopConstraint();
   /**
    *  \brief Adds the objective of the LP problem when finding the maximum flows
    *

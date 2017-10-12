@@ -140,6 +140,10 @@ GraphManager::FindMaximumFlowSolution ()
   // data rates smaller than what they have requested.
   AddBalanceConstraint (true);
 
+  // Add a constraint to avoid any data going back to the transmitter or from
+  // the receiver.
+  AddNoLoopConstraint();
+
   // Add the maximum flow objective
   AddMaximumFlowObjective ();
 
@@ -263,6 +267,41 @@ GraphManager::AddBalanceConstraint (bool allowReducedFlowRate)
 }
 
 void
+GraphManager::AddNoLoopConstraint ()
+{
+  for (const FlowManager::Flow& flow : *m_flows) // Loop through all the flows
+    {
+      // Constraining the Source Node
+      lemon::Lp::Expr totalIncomingFlow;
+      lemon::SmartDigraph::Node srcNode = m_graph.nodeFromId(flow.source);
+
+      // Add all the incoming data rate for the current flow at its source node
+      // and make sure it equals 0
+      for (lemon::SmartDigraph::InArcIt incomingLink (m_graph, srcNode);
+           incomingLink != lemon::INVALID; ++incomingLink)
+        {
+          totalIncomingFlow += m_optimalFlowRatio[std::make_pair(flow.id, incomingLink)];
+        }
+
+      m_lpSolver.addRow(totalIncomingFlow == 0);
+
+      // Constraining the Destination Node
+      lemon::Lp::Expr totalOutgoingFlow;
+      lemon::SmartDigraph::Node dstNode = m_graph.nodeFromId(flow.destination);
+
+      // Add all the outgoing data rate for the current flow at its destination
+      // node and make sure it equals 0
+      for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, dstNode);
+           outgoingLink != lemon::INVALID; ++outgoingLink)
+        {
+          totalOutgoingFlow += m_optimalFlowRatio[std::make_pair(flow.id, outgoingLink)];
+        }
+
+      m_lpSolver.addRow(totalOutgoingFlow == 0);
+    }
+}
+
+void
 GraphManager::AddMaximumFlowObjective ()
 {
   lemon::Lp::Expr objective;
@@ -270,24 +309,13 @@ GraphManager::AddMaximumFlowObjective ()
   for (const FlowManager::Flow& flow : *m_flows)
   {
     // Get the flow's source node
-    //lemon::SmartDigraph::Node sourceNode = m_graph.nodeFromId(flow.source);
+    lemon::SmartDigraph::Node sourceNode = m_graph.nodeFromId(flow.source);
 
     // Loop through all the source node's outgoing links
-    //for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode);
-    //     outgoingLink != lemon::INVALID; ++outgoingLink)
-    //{
-    //  objective += m_optimalFlowRatio[std::make_pair(flow.id, outgoingLink)];
-    //}
-
-    // Get the flow's destination node.
-    lemon::SmartDigraph::Node destinationNode = m_graph.nodeFromId (flow.destination);
-
-    // Loop through all the destination node's incoming links.
-    for (lemon::SmartDigraph::InArcIt incomingLink (m_graph, destinationNode);
-        incomingLink != lemon::INVALID; ++incomingLink)
+    for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode);
+         outgoingLink != lemon::INVALID; ++outgoingLink)
     {
-      // Add all the incoming flows of a node.
-      objective += m_optimalFlowRatio[std::make_pair(flow.id, incomingLink)];
+      objective += m_optimalFlowRatio[std::make_pair(flow.id, outgoingLink)];
     }
   }
 
