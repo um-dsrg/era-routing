@@ -1,0 +1,4 @@
+-Werror
+-Wall
+-std=c++11
+-I/home/noel/libraries/lemon/include
