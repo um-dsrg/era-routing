@@ -15,11 +15,9 @@
             {
                 // Use 2 spaces for indentation
                 "indent": "spaces",
-                "indent-spaces": 2
-            },
-            "options_c++":
-            {
-                "style": "gnu"
+                "indent-spaces": 2,
+                "style": "gnu",
+                "pad-first-paren-out": true,
             }
         }
     },
