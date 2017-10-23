@@ -117,6 +117,22 @@ private:
    */
   void UpdateFlowDataRates ();
 
+  // Timing ///////////////////////////////////////////////////////////////////
+  struct Timing
+  {
+    // All values stored are in ms.
+    double cpuTime;
+    double realTime;
+
+    Timing () : cpuTime(0.0), realTime(0.0)
+    {}
+  };
+
+  Timing m_maxFlowTiming;
+  Timing m_minCostTiming;
+  // double m_durationMaximumFlow; /*!< Stores the time taken to find the solution with maximum flow. */
+  // double m_durationMinimumCost; /*!< Stores the time taken to find the solution with minimal cost. */
+
   // LP Solver ////////////////////////////////////////////////////////////////
   /**
    * @brief SolveLpProblem
@@ -125,11 +141,9 @@ private:
    *
    * @return The time taken in ms to solve the Lp problem.
    */
-  double SolveLpProblem ();
+  void SolveLpProblem (Timing& timing);
 
   lemon::Lp m_lpSolver;
-  double m_durationMaximumFlow; /*!< Stores the time taken to find the solution with maximum flow. */
-  double m_durationMinimumCost; /*!< Stores the time taken to find the solution with minimal cost. */
   bool m_optimalSolutionFound; /*!< True if optimal solution found. False otherwise. */
 
   // Graph Related Variables //////////////////////////////////////////////////
