@@ -128,10 +128,8 @@ private:
     {}
   };
 
-  Timing m_maxFlowTiming;
-  Timing m_minCostTiming;
-  // double m_durationMaximumFlow; /*!< Stores the time taken to find the solution with maximum flow. */
-  // double m_durationMinimumCost; /*!< Stores the time taken to find the solution with minimal cost. */
+  Timing m_maxFlowTiming; /*!< Stores the time taken to find the solution with maximum flow. */
+  Timing m_minCostTiming; /*!< Stores the time taken to find the solution with minimal cost. */
 
   // LP Solver ////////////////////////////////////////////////////////////////
   /**

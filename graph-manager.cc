@@ -7,8 +7,6 @@
 #include "xml-utilities.h"
 
 GraphManager::GraphManager (std::vector<FlowManager::Flow>* flows):
-  m_durationMaximumFlow (0.0),
-  m_durationMinimumCost (0.0),
   m_optimalSolutionFound (false),
   m_nodeType (m_graph),
   m_linkCapacity (m_graph),
@@ -152,7 +150,7 @@ GraphManager::FindMaximumFlowSolution ()
   m_lpSolver.max ();
 
   // Find a solution to the LP problem
-  SolveLpProblem(m_maxFlowTiming);
+  SolveLpProblem (m_maxFlowTiming);
 }
 
 void
@@ -175,7 +173,7 @@ GraphManager::FindMinimumCostSolution ()
   m_lpSolver.min ();
 
   // Solve the problem
-  SolveLpProblem(m_minCostTiming);
+  SolveLpProblem (m_minCostTiming);
 }
 
 void
@@ -398,13 +396,15 @@ GraphManager::SolveLpProblem (Timing& timing)
   // Real time timing (Wall clock time)
   std::chrono::duration<double, std::milli> durationInMs = endTime - startTime;
   timing.realTime = durationInMs.count();
-  
+
   if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
     {
       m_optimalSolutionFound = true;
 #ifdef DEBUG
       std::cout << "Optimal Solution FOUND.\n"
-                << "Solver took: " << duration << "ms" << std::endl;
+                << "Solver took: " << timing.realTime << "ms (Real Time)"
+                << "Solver took: " << timing.cpuTime << "ms (CPU Time)"
+                << std::endl;
 #endif
     }
   else
@@ -412,7 +412,9 @@ GraphManager::SolveLpProblem (Timing& timing)
       m_optimalSolutionFound = false;
 #ifdef DEBUG
       std::cout << "Optimal Solution NOT FOUND.\n"
-                << "Solver took: " << duration << "ms" << std::endl;
+                << "Solver took: " << timing.realTime << "ms (Real Time)"
+                << "Solver took: " << timing.cpuTime << "ms (CPU Time)"
+                << std::endl;
 #endif
     }
 }
@@ -424,16 +426,19 @@ GraphManager::LogDuration (tinyxml2::XMLDocument& xmlDoc)
   XMLNode* rootNode = XmlUtilities::GetRootNode (xmlDoc);
 
   XMLElement* durationElement = xmlDoc.NewElement ("Duration");
-  durationElement->SetAttribute ("total_duration_ms (real time)", 
-    m_durationMaximumFlow + m_durationMinimumCost);
-  durationElement->SetAttribute("total_duration_ms (", const char *value)
+  durationElement->SetAttribute ("total_real_duration_ms",
+                                 m_maxFlowTiming.realTime + m_minCostTiming.realTime);
+  durationElement->SetAttribute ("total_cpu_duration_ms",
+                                 m_maxFlowTiming.cpuTime + m_minCostTiming.cpuTime);
 
   XMLElement* maxFlowElement = xmlDoc.NewElement ("MaximumFlow");
-  maxFlowElement->SetAttribute ("duration_ms", m_durationMaximumFlow);
+  maxFlowElement->SetAttribute ("real_duration_ms", m_maxFlowTiming.realTime);
+  maxFlowElement->SetAttribute ("cpu_duration_ms", m_maxFlowTiming.cpuTime);
   durationElement->InsertEndChild (maxFlowElement);
 
   XMLElement* minCostElement = xmlDoc.NewElement ("MinimumCost");
-  minCostElement->SetAttribute ("duration_ms", m_durationMinimumCost);
+  minCostElement->SetAttribute ("real_duration_ms", m_minCostTiming.realTime);
+  minCostElement->SetAttribute ("cpu_duration_ms", m_minCostTiming.cpuTime);
   durationElement->InsertEndChild (minCostElement);
 
   rootNode->InsertFirstChild (durationElement);
