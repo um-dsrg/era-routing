@@ -141,7 +141,10 @@ GraphManager::FindMaximumFlowSolution ()
 
   // Add a constraint to avoid any data going back to the transmitter or from
   // the receiver.
-  AddNoLoopConstraint();
+  AddNoLoopConstraint ();
+
+  // Add constraint such that no flow can have 0 data rate.
+  AddNoZeroFlowConstraint ();
 
   // Add the maximum flow objective
   AddMaximumFlowObjective ();
@@ -297,6 +300,26 @@ GraphManager::AddNoLoopConstraint ()
         }
 
       m_lpSolver.addRow (totalOutgoingFlow == 0);
+    }
+}
+
+void
+GraphManager::AddNoZeroFlowConstraint()
+{
+  for (const FlowManager::Flow& flow : *m_flows) // Loop through all the flows
+    {
+      // Constraining the Source Node
+      lemon::Lp::Expr totalOutgoingFlow;
+      lemon::SmartDigraph::Node srcNode = m_graph.nodeFromId (flow.source);
+
+      // Add all the outgoing data rate and make sure that it's greater than 0.
+      for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, srcNode);
+           outgoingLink != lemon::INVALID; ++outgoingLink)
+        {
+          totalOutgoingFlow += m_optimalFlowRatio[std::make_pair (flow.id, outgoingLink)];
+        }
+
+      m_lpSolver.addRow (totalOutgoingFlow >= 0.001);
     }
 }
 
@@ -711,7 +734,7 @@ GraphManager::CreateLinkElement (tinyxml2::XMLDocument& xmlDoc, lemon::SmartDigr
 
   XMLElement* linkElement = xmlDoc.NewElement ("LinkElement");
 
-  linkElement->SetAttribute ("Id", m_graph.id (link));
+  linkElement->SetAttribute ("Id", m_graph.id (link) );
   linkElement->SetAttribute ("SourceNode", sourceNodeId);
   linkElement->SetAttribute ("SourceNodeType",
                              std::string (1, m_nodeType[sourceNode]).c_str());

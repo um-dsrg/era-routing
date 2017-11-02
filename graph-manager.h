@@ -16,7 +16,7 @@
 class GraphManager
 {
 public:
-  GraphManager(std::vector<FlowManager::Flow>* flows);
+  GraphManager (std::vector<FlowManager::Flow>* flows);
 
   /**
    *  \brief Parse the LGF file contents into a LEMON graph
@@ -78,7 +78,7 @@ private:
    *  all the data being transmitted and intermediate nodes do not hold any packets.
    *
    * \param allowReducedFlowRate When set to true the balance constraint will allow flows to receive
-   * 	    less than what they have requested.
+   *      less than what they have requested.
    */
   void AddBalanceConstraint (bool allowReducedFlowRate);
   /**
@@ -91,7 +91,17 @@ private:
    * This constraint is required because we have relaxed the amount of flow a
    * node can receive.
    */
-  void AddNoLoopConstraint();
+  void AddNoLoopConstraint ();
+  /**
+   * @brief      Adds a constraint that will make sure that all flows transmit something.
+   *
+   * This constraint will make sure that all the flows will transmit something.
+   * Without this constraint, Acknowledgment flows may have a flow of 0 while their data
+   * counterpart can still transmit. This scenario will cause issues with the ns3 simulation.
+   * Therefore, to solve this in the most simplistic way, a constraint was added that a flow
+   * has to transmit something.
+   */
+  void AddNoZeroFlowConstraint ();
   /**
    *  \brief Adds the objective of the LP problem when finding the maximum flows
    *
@@ -124,7 +134,7 @@ private:
     double cpuTime;
     double realTime;
 
-    Timing () : cpuTime(0.0), realTime(0.0)
+    Timing () : cpuTime (0.0), realTime (0.0)
     {}
   };
 
@@ -185,7 +195,7 @@ private:
   void LogFlowDataRateUpdates (tinyxml2::XMLDocument& xmlDoc);
 
   tinyxml2::XMLElement* CreateLinkElement (tinyxml2::XMLDocument& xmlDoc,
-                                           lemon::SmartDigraph::Arc& link);
+    lemon::SmartDigraph::Arc& link);
 };
 
 #endif /* GRAPH_MANAGER_H */
