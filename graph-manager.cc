@@ -319,7 +319,7 @@ GraphManager::AddNoZeroFlowConstraint()
           totalOutgoingFlow += m_optimalFlowRatio[std::make_pair (flow.id, outgoingLink)];
         }
 
-      m_lpSolver.addRow (totalOutgoingFlow >= 0.001);
+      m_lpSolver.addRow (totalOutgoingFlow >= 0.0000001);
     }
 }
 
