@@ -14,10 +14,10 @@ public:
   {
     // Default constructor that sets everything to 0.
     Flow () : id (0), source (0), destination(0), dstPortNumber(0), srcPortNumber(0), dataRate(0.0), 
-              packetSize(0), numOfPackets(0), protocol(0), startTime(0), endTime(0), tcpFlowId(0)
+              packetSize(0), numOfPackets(0), protocol(Protocol::Inv), startTime(0), endTime(0), tcpFlowId(0)
     {}
 
-    enum Protocol { Tcp = 'T', Ack = 'A', Udp = 'U' };
+    enum Protocol { Tcp = 'T', Ack = 'A', Udp = 'U', Inv='X'};
 
     uint32_t id;
     uint32_t source;
@@ -27,7 +27,7 @@ public:
     double dataRate;
     uint32_t packetSize;
     uint32_t numOfPackets;
-    char protocol;
+    Protocol protocol;
     uint32_t startTime;
     uint32_t endTime;
     // This is the flow ID of the TCP data stream. This is only used by ACK
