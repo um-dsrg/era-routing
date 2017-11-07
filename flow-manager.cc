@@ -31,7 +31,7 @@ FlowManager::LoadFlowsFromFile(const std::string& lgfPath)
       std::string line ("");
       while (std::getline(lgfFile, line))
         {
-          ParseFlow(line);
+          if (line.empty() == false) ParseFlow(line);
         }
 
       // Update the source port for TCP flows

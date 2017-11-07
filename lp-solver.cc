@@ -23,7 +23,7 @@ int main (int argc, char *argv[])
       std::string solverConfiguration ("mfmc");
       const std::string lgfPath (argv[1]);
       const std::string xmlLogPath (argv[2]);
-      if (argc == 4) solverConfiguration = argv[3]; // TODO: Test this out
+      if (argc == 4) solverConfiguration = argv[3];
 
       FlowManager flowManager;
       flowManager.LoadFlowsFromFile (lgfPath);
