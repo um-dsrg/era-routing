@@ -1,6 +1,6 @@
 TARGET_EXEC ?= lp-solver.out
 
-BUILD_DIR ?= ./build
+BUILD_DIR ?= ../build
 
 SRCS := $(wildcard *.cc)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
