@@ -9,6 +9,7 @@
 #include <lemon/lgf_writer.h>
 #include <lemon/graph_to_eps.h>
 
+#include <lemon/cplex.h>
 #include <lemon/lp.h>
 
 #include "flow-manager.h"

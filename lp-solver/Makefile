@@ -8,7 +8,7 @@ DEPS := $(OBJS:.o=.d)
 
 CXX := g++
 CXXFLAGS := -MMD -MP -std=c++11
-LDFLAGS := -L ~/libraries/lemon/lib -lemon -lglpk -ltinyxml2
+LDFLAGS := -L ~/libraries/lemon/lib -L ~/libraries/ILOG/CPLEX_Studio1271/cplex/lib/x86-64_linux/static_pic -lemon -lcplex -lglpk -ltinyxml2 -lpthread
 INCLUDES := -I ~/libraries/lemon/include
 
 release: CXXFLAGS += -O3 -Werror -Wall
