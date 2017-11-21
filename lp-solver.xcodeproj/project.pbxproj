@@ -254,7 +254,9 @@
 				OTHER_LDFLAGS = (
 					"-I/Users/noel/libraries/lemon/include",
 					"-L/Users/noel/libraries/lemon/lib",
+					"-L/Users/noel/libraries/ILOG/CPLEX_Studio1271/cplex/lib/x86-64_osx/static_pic",
 					"-lemon",
+					"-lcplex",
 					"-L/usr/local/Cellar/glpk/4.63/lib",
 					"-lglpk",
 					"-L/usr/local/Cellar/tinyxml2/5.0.1/lib",
@@ -272,7 +274,9 @@
 				OTHER_LDFLAGS = (
 					"-I/Users/noel/libraries/lemon/include",
 					"-L/Users/noel/libraries/lemon/lib",
+					"-L/Users/noel/libraries/ILOG/CPLEX_Studio1271/cplex/lib/x86-64_osx/static_pic",
 					"-lemon",
+					"-lcplex",
 					"-L/usr/local/Cellar/glpk/4.63/lib",
 					"-lglpk",
 					"-L/usr/local/Cellar/tinyxml2/5.0.1/lib",
