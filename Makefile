@@ -8,8 +8,16 @@ DEPS := $(OBJS:.o=.d)
 
 CXX := g++
 CXXFLAGS := -MMD -MP -std=c++11
-LDFLAGS := -L ~/libraries/lemon/lib -L ~/libraries/ILOG/CPLEX_Studio1271/cplex/lib/x86-64_linux/static_pic -lemon -lcplex -lglpk -ltinyxml2 -lpthread
-INCLUDES := -I ~/libraries/lemon/include
+
+INCLUDES := -I $(HOME)/libraries/lemon/include
+# Changing library directories based on OS
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+  LDFLAGS := -L $(HOME)/libraries/lemon/lib -L $(HOME)/libraries/ILOG/CPLEX_Studio1271/cplex/lib/x86-64_linux/static_pic -lemon -lcplex -lglpk -ltinyxml2 -lpthread
+endif
+ifeq ($(UNAME_S),Darwin)
+  LDFLAGS := -L $(HOME)/libraries/lemon/lib -L $(HOME)/libraries/ILOG/CPLEX_Studio1271/cplex/lib/x86-64_osx/static_pic -lemon -lcplex -lglpk -ltinyxml2 -lpthread
+endif
 
 release: CXXFLAGS += -O3 -Werror -Wall
 release: $(BUILD_DIR)/$(TARGET_EXEC)
