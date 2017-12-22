@@ -253,11 +253,11 @@
 					"-lcplex",
 					"-L/usr/local/Cellar/glpk/4.64/lib",
 					"-lglpk",
-					"-L/usr/local/Cellar/tinyxml2/5.0.1/lib",
+					"-L/usr/local/Cellar/tinyxml2/6.0.0/lib",
 					"-ltinyxml2",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SYSTEM_HEADER_SEARCH_PATHS = "/Users/noel/libraries/lemon/include /usr/local/Cellar/tinyxml2/5.0.1/include";
+				SYSTEM_HEADER_SEARCH_PATHS = "/Users/noel/libraries/lemon/include /usr/local/Cellar/tinyxml2/6.0.0/include";
 			};
 			name = Debug;
 		};
@@ -273,11 +273,11 @@
 					"-lcplex",
 					"-L/usr/local/Cellar/glpk/4.64/lib",
 					"-lglpk",
-					"-L/usr/local/Cellar/tinyxml2/5.0.1/lib",
+					"-L/usr/local/Cellar/tinyxml2/6.0.0/lib",
 					"-ltinyxml2",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SYSTEM_HEADER_SEARCH_PATHS = "/Users/noel/libraries/lemon/include /usr/local/Cellar/tinyxml2/5.0.1/include";
+				SYSTEM_HEADER_SEARCH_PATHS = "/Users/noel/libraries/lemon/include /usr/local/Cellar/tinyxml2/6.0.0/include";
 			};
 			name = Release;
 		};
