@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 script_path="$( cd "$(dirname "$0")" ; pwd -P )"
 
@@ -19,7 +19,7 @@ elif [ "$1" == release ] ; then
 elif [ "$1" == clean ] ; then
   rm -rf build
 else
-  # Default show help
+  # Default build *both* debug and release
   build_debug
   build_release
 fi
