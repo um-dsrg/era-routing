@@ -18,6 +18,10 @@ elif [ "$1" == release ] ; then
   build_release
 elif [ "$1" == clean ] ; then
   rm -rf build
+  mkdir -p build/debug
+  mkdir -p build/release
+elif [ "$1" == cleanall ] ; then
+  rm -rf build
 else # Default build both debug and release
   build_debug
   build_release
