@@ -5,11 +5,13 @@ script_path="$( cd "$(dirname "$0")" ; pwd -P )"
 function build_debug {
   cd $script_path && mkdir -p build/debug
   cd $script_path && cd build/debug && cmake -DCMAKE_BUILD_TYPE=Debug ../../ && make
+  cp ${script_path}/build/debug/compile_commands.json ${script_path}
 }
 
 function build_release {
   cd $script_path && mkdir -p build/release
   cd $script_path && cd build/release && cmake -DCMAKE_BUILD_TYPE=Release ../../ && make
+  cp ${script_path}/build/release/compile_commands.json ${script_path}
 }
 
 if [ "$1" == debug ] ; then
