@@ -171,17 +171,18 @@ private:
   // Flows ////////////////////////////////////////////////////////////////////
   std::vector<FlowManager::Flow> * m_flows;
 
-  struct FlowDetails
-  {
-    uint32_t id;
-    double requestedDataRate;
-    double receivedDataRate;
+  // TODO: Remove
+  /* struct FlowDetails */
+  /* { */
+  /*   uint32_t id; */
+  /*   double requestedDataRate; */
+  /*   double receivedDataRate; */
 
-    FlowDetails (uint32_t id, double requestedDataRate, double receivedDataRate) :
-      id (id), requestedDataRate (requestedDataRate), receivedDataRate (receivedDataRate)
-    {}
-  };
-  std::vector<FlowDetails> m_modifiedFlows;
+  /*   FlowDetails (uint32_t id, double requestedDataRate, double receivedDataRate) : */
+  /*     id (id), requestedDataRate (requestedDataRate), receivedDataRate (receivedDataRate) */
+  /*   {} */
+  /* }; */
+  /* std::vector<FlowDetails> m_modifiedFlows; */
 
   // Key (<FlowID, Link>), Value (The fraction of flow represented by FlowID that will pass on
   // the link represented by Link.)
@@ -193,7 +194,6 @@ private:
   void LogIncomingFlow (tinyxml2::XMLDocument& xmlDoc);
   void LogNetworkTopology (tinyxml2::XMLDocument& xmlDoc);
   void LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc);
-  void LogFlowDataRateUpdates (tinyxml2::XMLDocument& xmlDoc);
 
   tinyxml2::XMLElement* CreateLinkElement (tinyxml2::XMLDocument& xmlDoc,
     lemon::SmartDigraph::Arc& link);

@@ -1,1 +1,5 @@
+# Ignore the compile commands file
 compile_commands.json
+
+# Ignore swap files
+*.swp

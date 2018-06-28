@@ -13,8 +13,10 @@ public:
   struct Flow
   {
     // Default constructor that sets everything to 0.
-    Flow () : id (0), source (0), destination(0), dstPortNumber(0), srcPortNumber(0), dataRate(0.0), 
-              packetSize(0), numOfPackets(0), protocol(Protocol::Inv), startTime(0), endTime(0), tcpFlowId(0)
+    Flow () : id (0), source (0), destination(0), dstPortNumber(0),
+              srcPortNumber(0), dataRate(0.0), requestedDataRate(0.0),
+              packetSize(0), numOfPackets(0), protocol(Protocol::Inv),
+              startTime(0), endTime(0), tcpFlowId(0)
     {}
 
     enum Protocol { Tcp = 'T', Ack = 'A', Udp = 'U', Inv='X'};
@@ -24,7 +26,8 @@ public:
     uint32_t destination;
     uint32_t dstPortNumber;
     uint32_t srcPortNumber; // So for this is only used for TCP flows
-    double dataRate;
+    double dataRate; // The allocated data rate
+    double requestedDataRate; // The requested data rate
     uint32_t packetSize;
     uint32_t numOfPackets;
     Protocol protocol;
@@ -36,8 +39,8 @@ public:
 
     friend std::ostream& operator<< (std::ostream& output, Flow& flow)
     {
-      output << "Id: " << flow.id << " Source: " << flow.source << " Destination: "
-             << flow.destination << "\n"
+      output << "Id: " << flow.id << " Source: " << flow.source
+             << " Destination: " << flow.destination << "\n"
              << "Dst Port Number: " << flow.dstPortNumber;
 
       if (flow.srcPortNumber != 0)
@@ -46,7 +49,8 @@ public:
       output << " Data Rate: " << flow.dataRate << "Mbps\n"
              << "Packet Size: " << flow.packetSize << "bytes Num Of Packets: "
              << flow.numOfPackets << " Protocol: " << flow.protocol << "\n"
-             << "Start Time: " << flow.startTime << "s End Time: " << flow.endTime << "s\n";
+             << "Start Time: " << flow.startTime << "s End Time: "
+             << flow.endTime << "s\n";
 
       if (flow.protocol == Protocol::Ack)
         output << "TCP Data Flow ID: " << flow.tcpFlowId;
@@ -62,9 +66,11 @@ public:
   std::vector<Flow>* GetFlows ();
 
   /**
-   *  \brief Load the Flows from the file given and stores them in the vector flows
+   *  \brief Load the Flows from the file given and stores them in the vector 
+   *         flows
    *
-   *  Load and parse the flows in the given LGF file. The flows are stored in the vector flows.
+   *  Load and parse the flows in the given LGF file. The flows are stored in
+   *  the vector flows.
    *
    *  \param lgfPath The full path to the LGF file
    *  \return nothing
@@ -85,7 +91,8 @@ private:
   /**
    *  \brief Parse the flow into a Flow struct and stores it in the flows vector
    *
-   *  Given a line read from the file, creates a Flow structure and stores it in the flows vector
+   *  Given a line read from the file, creates a Flow structure and stores it in
+   *  the flows vector
    *
    *  \param line A line read from the LGF file
    *  \return nothing

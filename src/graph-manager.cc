@@ -85,17 +85,24 @@ GraphManager::FindOptimalSolution (std::string& solverConfig)
         {
           // Find the maximum flows that can be passed through the network.
           FindMaximumFlowSolution ();
-          if (!m_optimalSolutionFound) throw std::runtime_error ("Maximal solution not found");
+          if (!m_optimalSolutionFound) {
+            throw std::runtime_error ("Maximal solution not found");
+          }
 
-          UpdateFlowDataRates (); // Update the flow data rates based on the Maximal flow solution.
+          // Update the flow data rates based on the Maximal flow solution.
+          UpdateFlowDataRates (); 
         }
 
       if (solverConfig == "mc" || solverConfig == "mfmc")
         {
-          m_lpSolver.clear (); // Resetting the LP Solver.
-          // Find the minimum network cost to route the flows given from the maximum flow solutions.
+          m_lpSolver.clear (); // Reset the LP Solver.
+
+          // Find the minimum network cost to route the flows given from the
+          // maximum flow solutions.
           FindMinimumCostSolution ();
-          if (!m_optimalSolutionFound) throw std::runtime_error ("Minimal cost solution not found");
+          if (!m_optimalSolutionFound) {
+            throw std::runtime_error ("Minimal cost solution not found");
+          }
         }
     }
   catch (std::runtime_error& e)
@@ -122,7 +129,6 @@ GraphManager::AddLogsInXmlFile (tinyxml2::XMLDocument& xmlDoc)
       LogIncomingFlow (xmlDoc);
       LogNetworkTopology (xmlDoc);
       LogNodeConfiguration (xmlDoc);
-      LogFlowDataRateUpdates (xmlDoc);
     }
 }
 
@@ -135,16 +141,13 @@ GraphManager::FindMaximumFlowSolution ()
   // Add Capacity Constraint
   AddCapacityConstraint ();
 
-  // The balance constraint when finding the maximal solution will allow flows to receive
-  // data rates smaller than what they have requested.
+  // The balance constraint when finding the maximal solution will allow flows 
+  // to receive data rates smaller than what they have requested.
   AddBalanceConstraint (true);
 
   // Add a constraint to avoid any data going back to the transmitter or from
   // the receiver.
   AddNoLoopConstraint ();
-
-  // Add constraint such that no flow can have 0 data rate.
-  AddNoZeroFlowConstraint ();
 
   // Add the maximum flow objective
   AddMaximumFlowObjective ();
@@ -165,8 +168,8 @@ GraphManager::FindMinimumCostSolution ()
   // Add Capacity Constraint
   AddCapacityConstraint();
 
-  // The balance constraint when finding the minmal cost solution will not allow flows to
-  // receive data rates smaller than what they have requested.
+  // The balance constraint when finding the minmal cost solution will not
+  // allow flows to receive data rates smaller than what they have requested.
   AddBalanceConstraint (false);
 
   // Add the objective
@@ -182,21 +185,31 @@ GraphManager::FindMinimumCostSolution ()
 void
 GraphManager::AddFlows ()
 {
-  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
+  // Loop through all the flows
+  for (const FlowManager::Flow& flow : *m_flows)
     {
-      for (lemon::SmartDigraph::ArcIt link (m_graph); link != lemon::INVALID; ++link)
+      // Only route TCP or UDP data flows
+      if (flow.protocol == FlowManager::Flow::Protocol::Tcp ||
+          flow.protocol == FlowManager::Flow::Protocol::Udp)
         {
-          // Add an LP variable that will store the fraction of the flow(represented by flow.id)
-          // that will pass on the Link represented by link.
-          lemon::Lp::Col fractionOfFlow = m_lpSolver.addCol();
+          for (lemon::SmartDigraph::ArcIt link (m_graph);
+               link != lemon::INVALID;
+               ++link)
+            {
+              // Add an LP variable that will store the fraction of the
+              // flow(represented by flow.id) that will pass on the Link 
+              // represented by link.
+              lemon::Lp::Col fractionOfFlow = m_lpSolver.addCol();
 
-          // Store the fraction flow variable in the map so we can access it once an optimal
-          // solution is found
-          m_optimalFlowRatio[std::make_pair (flow.id, link)] = fractionOfFlow;
+              // Store the fraction flow variable in the map so we can access it
+              // once an optimal solution is found
+              m_optimalFlowRatio[std::make_pair (flow.id, link)] =
+                fractionOfFlow;
 
-          // Add constraint that a flow must be greater than or equal to 0. I.e. no -ve values are
-          // allowed.
-          m_lpSolver.addRow (fractionOfFlow >= 0);
+              // Add constraint that a flow must be greater than or equal to 0.
+              // I.e. no negative values are allowed.
+              m_lpSolver.addRow (fractionOfFlow >= 0);
+            }
         }
     }
 }
@@ -204,16 +217,19 @@ GraphManager::AddFlows ()
 void
 GraphManager::AddCapacityConstraint ()
 {
-  // Loop through all the available links on the graph and add the capacity constraint.
+  // Loop through all the available links on the graph and add the capacity
+  // constraint.
   for (lemon::SmartDigraph::ArcIt link (m_graph); link != lemon::INVALID; ++link)
     {
       lemon::Lp::Expr linkTotalCapacity;
 
-      // Adding all the flow fractions that are passing on the link referred to by link.
-      for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
-        {
-          linkTotalCapacity += m_optimalFlowRatio[std::make_pair (flow.id, link)];
-        }
+      // Adding all the flow fractions that are passing on the link referred to
+      // by link.
+
+      // Loop through all the flows.
+      for (const FlowManager::Flow& flow : *m_flows) {
+        linkTotalCapacity += m_optimalFlowRatio[std::make_pair (flow.id, link)];
+      }
 
       // Adding the constraint in the LP problem
       m_lpSolver.addRow (linkTotalCapacity <= m_linkCapacity[link]);
@@ -371,36 +387,30 @@ GraphManager::UpdateFlowDataRates ()
 {
   for (FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
     {
+      double allocatedDataRate (0.0);
+
       // Get the source node.
       lemon::SmartDigraph::Node sourceNode = m_graph.nodeFromId (flow.source);
 
-      double flowAllocatedDataRate (0.0);
-
       // Looping through all the outgoing links of the source node and adding
       // the values from the solver's solution.
-      for (lemon::SmartDigraph::OutArcIt outgoingLink (m_graph, sourceNode);
-           outgoingLink != lemon::INVALID; ++outgoingLink)
+      for (lemon::SmartDigraph::OutArcIt outgoingL (m_graph, sourceNode);
+           outgoingL != lemon::INVALID;
+           ++outgoingL)
         {
-          flowAllocatedDataRate +=
-            m_lpSolver.primal (m_optimalFlowRatio[std::make_pair (flow.id, outgoingLink)]);
+          allocatedDataRate +=
+            m_lpSolver.primal (m_optimalFlowRatio[std::make_pair (flow.id,
+                                                                  outgoingL)]);
         }
+
+      flow.dataRate = allocatedDataRate;
 
 #ifdef DEBUG
       std::cout << "Flow ID: " << flow.id << " Requested flow rate: " <<
-                flow.dataRate << std::endl;
+                flow.requestedDataRate << std::endl;
       std::cout << "Flow ID: " << flow.id << " Received flow rate: " <<
-                flowAllocatedDataRate << std::endl;
+                flow.dataRate << std::endl;
 #endif
-
-      // If the flow data rate was modified. We take note such that we can add it in the
-      // log file.
-      if (flow.dataRate != flowAllocatedDataRate)
-        {
-          m_modifiedFlows.push_back (FlowDetails (flow.id, flow.dataRate,
-                                                  flowAllocatedDataRate));
-          // Update the flow's data rate to that allocated by the solver
-          flow.dataRate = flowAllocatedDataRate;
-        }
     }
 }
 
@@ -494,17 +504,23 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
         }
 
       flowElement->SetAttribute ("DataRate", (*flow).dataRate);
+      flowElement->SetAttribute ("RequestedDataRate",
+                                 (*flow).requestedDataRate);
       flowElement->SetAttribute ("PacketSize", (*flow).packetSize);
       flowElement->SetAttribute ("NumOfPackets", (*flow).numOfPackets);
-      flowElement->SetAttribute ("Protocol", std::string (1, (*flow).protocol).c_str());
+      flowElement->SetAttribute ("Protocol",
+                                 std::string (1, (*flow).protocol).c_str());
       flowElement->SetAttribute ("StartTime", (*flow).startTime);
       flowElement->SetAttribute ("EndTime", (*flow).endTime);
 
       // Looping through the optimal solution
-      for (lemon::SmartDigraph::ArcIt link (m_graph); link != lemon::INVALID; ++link)
+      for (lemon::SmartDigraph::ArcIt link (m_graph);
+           link != lemon::INVALID;
+           ++link)
         {
           double flowRatio =
-            m_lpSolver.primal (m_optimalFlowRatio[std::make_pair ((*flow).id, link)]);
+            m_lpSolver.primal (m_optimalFlowRatio[std::make_pair ((*flow).id,
+                                                                  link)]);
 
           if (flowRatio > 0)
             {
@@ -698,29 +714,6 @@ GraphManager::LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc)
     }
 
   rootNode->InsertEndChild (nodeConfiguration);
-}
-
-void
-GraphManager::LogFlowDataRateUpdates (tinyxml2::XMLDocument &xmlDoc)
-{
-  if ( m_modifiedFlows.size() > 0 )
-    {
-      // Logging the flows that their data rates were modified
-      using namespace tinyxml2;
-      XMLNode* rootNode = XmlUtilities::GetRootNode (xmlDoc);
-
-      XMLElement* flowDataRateModElement = xmlDoc.NewElement ("FlowDataRateModifications");
-      for (auto& modFlow : m_modifiedFlows)
-        {
-          XMLElement* flowElement = xmlDoc.NewElement ("Flow");
-          flowElement->SetAttribute ("Id", modFlow.id);
-          flowElement->SetAttribute ("RequestedDataRate", modFlow.requestedDataRate);
-          flowElement->SetAttribute ("ReceivedDataRate", modFlow.receivedDataRate);
-          flowDataRateModElement->InsertEndChild (flowElement);
-        }
-
-      rootNode->InsertEndChild (flowDataRateModElement);
-    }
 }
 
 tinyxml2::XMLElement*

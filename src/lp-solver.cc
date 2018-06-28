@@ -37,7 +37,8 @@ int main (int argc, char *argv[])
       tinyxml2::XMLDocument xmlLogFile;
       XmlUtilities::InsertRootNode (xmlLogFile, "Log");
       XmlUtilities::InsertTimeStampInRootElement (xmlLogFile);
-      // Generating the Optimal Solution + Network Topology elements in the XML log file
+      // Generating the Optimal Solution + Network Topology elements in the XML
+      // log file
       graphManager.AddLogsInXmlFile (xmlLogFile);
 
       // Save the XML file.

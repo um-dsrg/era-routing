@@ -39,7 +39,8 @@ FlowManager::LoadFlowsFromFile(const std::string& lgfPath)
     }
   catch (std::ifstream::failure e)
     {
-      std::cerr << "Loading the LGF file failed\n" << lgfPath << "\n" << e.what()  << std::endl;
+      std::cerr << "Loading the LGF file failed\n" << lgfPath << "\n"
+                << e.what() << std::endl;
       throw;
     }
 }
@@ -77,8 +78,10 @@ FlowManager::SetFileCursorToFlows(std::ifstream& file)
   file.seekg(std::ios::beg);
 
   // Move one line up to where the flow definitions begins
-  for (int i = 1; i < (lineNumber - 1); i++)
-    file.ignore(std::numeric_limits<std::streamsize>::max(),'\n'); // Extracts and ignores a line
+  for (int i = 1; i < (lineNumber - 1); i++) {
+    // Extract and ignores a line
+    file.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+  }
 }
 
 void
@@ -109,6 +112,7 @@ FlowManager::ParseFlow (std::string& line)
       // Get Data Rate
       flowSs >> parsedValue;
       flow.dataRate = std::stod (parsedValue);
+      flow.requestedDataRate = flow.dataRate;
 
       // Get Packet size
       flowSs >> parsedValue;
