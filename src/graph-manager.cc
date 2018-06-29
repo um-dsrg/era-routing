@@ -130,14 +130,14 @@ GraphManager::GenerateAckRoutes ()
       dijkstraSolver.run(srcNode, dstNode);
 
       LArc currentArc;
-      std::deque<uint32_t> paths;
+      std::vector<uint32_t> paths;
 
       for (LNode currentNode = dstNode;
            currentNode != srcNode;
            currentNode = dijkstraSolver.predNode(currentNode))
       {
         currentArc = dijkstraSolver.predArc(currentNode);
-        paths.push_front(m_graph.id(currentArc));
+        paths.push_back(m_graph.id(currentArc));
       }
 
       m_ackRoutes.insert({flow.id, paths});
@@ -155,7 +155,8 @@ void
 GraphManager::AddLogsInXmlFile (tinyxml2::XMLDocument& xmlDoc)
 {
   LogDuration (xmlDoc);
-  // Log the solution and other relevant stuff only if an optimal solution was found.
+  // Log the solution and other relevant stuff only if an optimal solution was
+  // found.
   if (m_optimalSolutionFound)
     {
       LogOptimalSolution (xmlDoc);
@@ -546,24 +547,38 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
       flowElement->SetAttribute ("StartTime", (*flow).startTime);
       flowElement->SetAttribute ("EndTime", (*flow).endTime);
 
-      // Looping through the optimal solution
-      for (lemon::SmartDigraph::ArcIt link (m_graph);
-           link != lemon::INVALID;
-           ++link)
+      if ((*flow).protocol == FlowManager::Flow::Protocol::Ack)
+      {
+        auto& ackRoute = m_ackRoutes.at((*flow).id);
+        for (const uint32_t& arcId : ackRoute)
+        {
+            XMLElement* linkElement = xmlDoc.NewElement ("Link");
+            linkElement->SetAttribute ("Id", arcId);
+            linkElement->SetAttribute ("FlowRate", (*flow).requestedDataRate);
+            flowElement->InsertFirstChild (linkElement);
+        }
+      }
+      else
+      {
+        // Looping through the optimal solution
+        for (lemon::SmartDigraph::ArcIt link (m_graph);
+            link != lemon::INVALID;
+            ++link)
         {
           double flowRatio =
             m_lpSolver.primal (m_optimalFlowRatio[std::make_pair ((*flow).id,
-                                                                  link)]);
+                  link)]);
 
           if (flowRatio > 0)
-            {
-              // Add link element
-              XMLElement* linkElement = xmlDoc.NewElement ("Link");
-              linkElement->SetAttribute ("Id", m_graph.id (link));
-              linkElement->SetAttribute ("FlowRate", flowRatio);
-              flowElement->InsertFirstChild (linkElement);
-            }
+          {
+            // Add link element
+            XMLElement* linkElement = xmlDoc.NewElement ("Link");
+            linkElement->SetAttribute ("Id", m_graph.id (link));
+            linkElement->SetAttribute ("FlowRate", flowRatio);
+            flowElement->InsertFirstChild (linkElement);
+          }
         }
+      }
       optimalSolutionElement->InsertFirstChild (flowElement);
     }
 

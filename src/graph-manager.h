@@ -2,7 +2,6 @@
 #define GRAPH_MANAGER_H
 
 #include <map>
-#include <deque>
 #include <tinyxml2.h>
 
 #include <lemon/smart_graph.h>
@@ -193,7 +192,7 @@ private:
   // ACK Flows //////////////////////////////////////////////////////////////
   // Key: FlowId
   // Value: List of Link Ids the flow defined by FlowId passes through
-  std::map<uint32_t, std::deque<uint32_t>> m_ackRoutes;
+  std::map<uint32_t, std::vector<uint32_t>> m_ackRoutes;
 
   // XML Functionality ////////////////////////////////////////////////////////
   void LogDuration (tinyxml2::XMLDocument& xmlDoc);
