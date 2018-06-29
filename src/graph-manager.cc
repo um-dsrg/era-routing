@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <ctime>
 
+#include <lemon/dijkstra.h>
+
 #include "graph-manager.h"
 #include "xml-utilities.h"
 
@@ -110,6 +112,37 @@ GraphManager::FindOptimalSolution (std::string& solverConfig)
       std::cerr << e.what () << std::endl;
       throw;
     }
+}
+
+void
+GraphManager::GenerateAckRoutes ()
+{
+  lemon::Dijkstra<LGraph, LArcDelay> dijkstraSolver(m_graph, m_linkDelay);
+
+  // Loop through all the flows
+  for (const auto& flow : *m_flows)
+  {
+    if (flow.protocol == FlowManager::Flow::Protocol::Ack)
+    {
+      LNode srcNode = m_graph.nodeFromId(flow.source);
+      LNode dstNode = m_graph.nodeFromId(flow.destination);
+
+      dijkstraSolver.run(srcNode, dstNode);
+
+      LArc currentArc;
+      std::deque<uint32_t> paths;
+
+      for (LNode currentNode = dstNode;
+           currentNode != srcNode;
+           currentNode = dijkstraSolver.predNode(currentNode))
+      {
+        currentArc = dijkstraSolver.predArc(currentNode);
+        paths.push_front(m_graph.id(currentArc));
+      }
+
+      m_ackRoutes.insert({flow.id, paths});
+    }
+  }
 }
 
 bool

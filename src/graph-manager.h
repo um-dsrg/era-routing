@@ -2,6 +2,7 @@
 #define GRAPH_MANAGER_H
 
 #include <map>
+#include <deque>
 #include <tinyxml2.h>
 
 #include <lemon/smart_graph.h>
@@ -38,6 +39,12 @@ public:
    *  \return bool
    */
   bool OptimalSolutionFound ();
+
+  /**
+   * Generate the routes for the ACK flows using the Dijkstra algorithm
+   */
+  void GenerateAckRoutes();
+
   void AddLogsInXmlFile (tinyxml2::XMLDocument& xmlDoc);
 private:
   // Linear Programming Functions /////////////////////////////////////////////
@@ -156,6 +163,11 @@ private:
   bool m_optimalSolutionFound; /*!< True if optimal solution found. False otherwise. */
 
   // Graph Related Variables //////////////////////////////////////////////////
+  typedef lemon::SmartDigraph LGraph;
+  typedef LGraph::Node LNode;
+  typedef LGraph::Arc LArc;
+  typedef LGraph::ArcMap<double> LArcDelay;
+
   lemon::SmartDigraph m_graph;
   lemon::SmartDigraph::NodeMap<char> m_nodeType;
   lemon::SmartDigraph::ArcMap<double> m_linkCapacity;
@@ -171,22 +183,17 @@ private:
   // Flows ////////////////////////////////////////////////////////////////////
   std::vector<FlowManager::Flow> * m_flows;
 
-  // TODO: Remove
-  /* struct FlowDetails */
-  /* { */
-  /*   uint32_t id; */
-  /*   double requestedDataRate; */
-  /*   double receivedDataRate; */
+  // Key: <FlowID, Link>
+  // Value: The fraction of flow represented by FlowID that will pass on the
+  //        link represented by Link.
+  std::map<std::pair<uint32_t,
+                     lemon::SmartDigraph::Arc>,
+           lemon::Lp::Col> m_optimalFlowRatio;
 
-  /*   FlowDetails (uint32_t id, double requestedDataRate, double receivedDataRate) : */
-  /*     id (id), requestedDataRate (requestedDataRate), receivedDataRate (receivedDataRate) */
-  /*   {} */
-  /* }; */
-  /* std::vector<FlowDetails> m_modifiedFlows; */
-
-  // Key (<FlowID, Link>), Value (The fraction of flow represented by FlowID that will pass on
-  // the link represented by Link.)
-  std::map<std::pair<uint32_t, lemon::SmartDigraph::Arc>, lemon::Lp::Col> m_optimalFlowRatio;
+  // ACK Flows //////////////////////////////////////////////////////////////
+  // Key: FlowId
+  // Value: List of Link Ids the flow defined by FlowId passes through
+  std::map<uint32_t, std::deque<uint32_t>> m_ackRoutes;
 
   // XML Functionality ////////////////////////////////////////////////////////
   void LogDuration (tinyxml2::XMLDocument& xmlDoc);
@@ -196,7 +203,7 @@ private:
   void LogNodeConfiguration (tinyxml2::XMLDocument& xmlDoc);
 
   tinyxml2::XMLElement* CreateLinkElement (tinyxml2::XMLDocument& xmlDoc,
-    lemon::SmartDigraph::Arc& link);
+                                           lemon::SmartDigraph::Arc& link);
 };
 
 #endif /* GRAPH_MANAGER_H */

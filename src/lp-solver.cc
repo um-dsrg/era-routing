@@ -32,6 +32,7 @@ int main (int argc, char *argv[])
       graphManager.ParseGraph (lgfPath);
       graphManager.VerifyFlows ();
       graphManager.FindOptimalSolution (solverConfiguration);
+      graphManager.GenerateAckRoutes ();
 
       // XML Logging
       tinyxml2::XMLDocument xmlLogFile;
