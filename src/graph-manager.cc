@@ -582,10 +582,11 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
       optimalSolutionElement->InsertFirstChild (flowElement);
     }
 
-  XMLComment* unitsComment = xmlDoc.NewComment ("DataRate (Mbps), PacketSize (bytes),"
-                             "Protocol (U=UDP,T=TCP), Time (Seconds)."
-                             "\nUnless Specified the port number refers "
-                             "to the destination port number");
+  XMLComment* unitsComment = 
+    xmlDoc.NewComment ("DataRate (Mbps), PacketSize (bytes),"
+                       "Protocol (U=UDP,T=TCP), Time (Seconds)."
+                       "\nUnless Specified the port number refers "
+                       "to the destination port number");
 
   optimalSolutionElement->InsertFirstChild (unitsComment);
   rootNode->InsertEndChild (optimalSolutionElement);
@@ -602,40 +603,64 @@ GraphManager::LogIncomingFlow (tinyxml2::XMLDocument& xmlDoc)
 
   // Node Id = key, FlowPair = value
   std::map<uint32_t, std::vector<FlowPair>> incomingFlow;
-  for (const FlowManager::Flow& flow : *m_flows) // Looping through all the flows.
-    {
-      for (lemon::SmartDigraph::ArcIt link (m_graph); link != lemon::INVALID; ++link)
-        {
-          uint32_t destinationId = m_graph.id (m_graph.target (link));
-          double flowValue = m_lpSolver.primal (m_optimalFlowRatio[std::make_pair (flow.id, link)]);
 
-          bool flowFound (false);
-          for (auto& flowPair : incomingFlow[destinationId])
-            {
-              if (flow.id == flowPair.Id)
-                {
-                  flowPair.flowValue += flowValue;
-                  flowFound = true;
-                }
-            }
-          if (!flowFound)
-            {
-              FlowPair currentPair;
-              currentPair.Id = flow.id;
-              currentPair.flowValue = flowValue;
-              incomingFlow[destinationId].push_back (currentPair);
-            }
-        }
-    }
-
-  // Sorting the vector
-  std::sort (incomingFlow[0].begin(), incomingFlow[0].end(), [] (const FlowPair & lhs,
-             const FlowPair & rhs)
+  // Loop through all the flows
+  for (const FlowManager::Flow& flow : *m_flows) 
   {
-    return lhs.Id < rhs.Id;
-  });
+    if (flow.protocol == FlowManager::Flow::Protocol::Ack)
+    { 
+      auto& route = m_ackRoutes.at(flow.id);
+      for (const auto& linkId : route)
+      {
+        uint32_t incomingNode =
+          m_graph.id(m_graph.target(m_graph.arcFromId(linkId)));
 
-  // Exporting the incoming flow to the XML log file.
+        FlowPair currentPair;
+        currentPair.Id = flow.id;
+        currentPair.flowValue = flow.requestedDataRate;
+
+        incomingFlow[incomingNode].push_back (currentPair);
+      }
+    }
+    else 
+    {
+      for (lemon::SmartDigraph::ArcIt link (m_graph);
+          link != lemon::INVALID;
+          ++link)
+      {
+        uint32_t destinationId = m_graph.id (m_graph.target (link));
+        double flowValue = 
+          m_lpSolver.primal (m_optimalFlowRatio[std::make_pair (flow.id,
+                link)]);
+
+        bool flowFound (false);
+        for (auto& flowPair : incomingFlow[destinationId])
+        {
+          if (flow.id == flowPair.Id)
+          {
+            flowPair.flowValue += flowValue;
+            flowFound = true;
+          }
+        }
+        if (!flowFound)
+        {
+          FlowPair currentPair;
+          currentPair.Id = flow.id;
+          currentPair.flowValue = flowValue;
+          incomingFlow[destinationId].push_back (currentPair);
+        }
+      }
+    }
+  }
+
+  // Sort the vector by Flow Id
+  std::sort (incomingFlow[0].begin(), incomingFlow[0].end(),
+             [] (const FlowPair & lhs, const FlowPair & rhs)
+             {
+               return lhs.Id < rhs.Id;
+             });
+
+  // Export the incoming flow to the XML log file.
   using namespace tinyxml2;
   XMLNode* rootNode = XmlUtilities::GetRootNode (xmlDoc);
 
@@ -649,14 +674,15 @@ GraphManager::LogIncomingFlow (tinyxml2::XMLDocument& xmlDoc)
 
       for (const auto& flowDetails : incomingElement.second)
         {
-          if (flowDetails.flowValue > 0) // Do not store elements that have a flow value of 0
-            {
+          // Do not store elements that have a flow value of 0
+          if (flowDetails.flowValue > 0)             {
               XMLElement* flowElement = xmlDoc.NewElement ("Flow");
               flowElement->SetAttribute ("Id", flowDetails.Id);
               flowElement->SetAttribute ("IncomingFlow", flowDetails.flowValue);
               nodeElement->InsertEndChild (flowElement);
             }
         }
+
       // If this element has no children do not store it in the XML file
       if (!nodeElement->NoChildren())
         incomingFlowElement->InsertEndChild (nodeElement);
