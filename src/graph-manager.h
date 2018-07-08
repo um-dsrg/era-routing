@@ -158,7 +158,7 @@ private:
    */
   void SolveLpProblem (Timing& timing);
 
-  lemon::Lp m_lpSolver;
+  lemon::GlpkLp m_lpSolver;
   bool m_optimalSolutionFound; /*!< True if optimal solution found. False otherwise. */
 
   // Graph Related Variables //////////////////////////////////////////////////
