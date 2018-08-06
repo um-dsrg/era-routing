@@ -3,3 +3,6 @@ compile_commands.json
 
 # Ignore swap files
 *.swp
+
+# Ignore build directory
+build/
