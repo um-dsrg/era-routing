@@ -6,3 +6,6 @@ compile_commands.json
 
 # Ignore build directory
 build/
+
+# MacOs
+.DS_Store
