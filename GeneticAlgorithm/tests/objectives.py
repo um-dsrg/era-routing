@@ -1,7 +1,7 @@
 """Set of tests to test the objectives."""
 import unittest
 import argparse
-from ..classes.objectives import add_arg_to_parser
+from ..classes.objectives import add_arg_to_parser, get_obj_weights
 
 
 class Objectives(unittest.TestCase):
@@ -63,6 +63,16 @@ class Objectives(unittest.TestCase):
         self.assertEqual('my_function2', args.objectives[1].func_name)
         self.assertEqual('net_cost', args.objectives[1].obj_name)
         self.assertEqual(1, args.objectives[1].max_min)
+
+    def test_obj_to_tuple(self):
+        """Test the returned tuple containing the set weights."""
+        parser = argparse.ArgumentParser()
+        parser = add_arg_to_parser(parser)
+        args = parser.parse_args(['--objectives', 'my_function, net_flow, -1',
+                                  'my_function2, net_cost, 1'])
+
+        obj_weights = get_obj_weights(args.objectives)
+        self.assertSequenceEqual((-1, 1), obj_weights)
 
 
 if __name__ == '__main__':

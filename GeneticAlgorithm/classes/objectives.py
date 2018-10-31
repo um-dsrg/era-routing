@@ -1,5 +1,6 @@
 """Module that has objectives related functionality."""
 import argparse
+from typing import List
 from collections import namedtuple
 
 
@@ -44,3 +45,12 @@ def add_arg_to_parser(parser: argparse.ArgumentParser):
     parser.add_argument('--objectives', required=True, type=objective,
                         nargs='+')
     return parser
+
+
+def get_obj_weights(objectives: List[Objective]):
+    """Returns a tuple of the max/min objective weights.
+
+    :param objectives: List of objectives.
+    :type objectives: List[Objective]
+    """
+    return tuple([objective.max_min for objective in objectives])
