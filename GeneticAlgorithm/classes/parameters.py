@@ -2,6 +2,7 @@ import argparse
 import os
 
 from lxml import etree
+import classes.objectives as Objs
 
 
 class Parameters:
@@ -61,6 +62,7 @@ class Parameters:
                                  'population for all the generations. When '
                                  'this flag is disabled the genes; will only '
                                  'be stored for the final population.')
+        parser = Objs.add_arg_to_parser(parser)
 
         parser.set_defaults(status_log=False)
         parser.set_defaults(info_log=False)
@@ -133,3 +135,4 @@ class Parameters:
             self.info_log = cmd_line_parser.info_log
 
         self.store_genes = cmd_line_parser.store_genes
+        self.objectives = cmd_line_parser.objectives

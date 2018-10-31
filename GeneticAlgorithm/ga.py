@@ -15,6 +15,7 @@ in the ga_helper::Network class.
 """
 from deap import base, creator, tools, algorithms
 
+import classes.objectives as Objs
 from classes.flow import parse_flows
 from classes.ga_operators import GaOperators
 from classes.ga_results import GaResults
@@ -119,7 +120,8 @@ def main():
                                logger.log_info)
 
     # # # Configure the GA objectives # # #
-    creator.create('MaxFlowMinCost', base.Fitness, weights=(1.0, -1.0, -1.0))
+    obj_weights = Objs.get_obj_weights(parameters.objectives)
+    creator.create('MaxFlowMinCost', base.Fitness, weights=obj_weights)
     creator.create('Chromosome', list, fitness=creator.MaxFlowMinCost)
 
     # # # Configure the GA operators # # #
