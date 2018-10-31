@@ -48,9 +48,10 @@ def add_arg_to_parser(parser: argparse.ArgumentParser):
 
 
 def get_obj_weights(objectives: List[Objective]):
-    """Returns a tuple of the max/min objective weights.
-
-    :param objectives: List of objectives.
-    :type objectives: List[Objective]
-    """
+    """Returns a tuple of the max/min objective weights."""
     return tuple([objective.max_min for objective in objectives])
+
+
+def get_obj_names(objectives: List[Objective]):
+    """Returns a list of the objective names."""
+    return [objective.obj_name for objective in objectives]

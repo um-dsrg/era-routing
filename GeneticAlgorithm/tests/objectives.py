@@ -1,7 +1,8 @@
 """Set of tests to test the objectives."""
 import unittest
 import argparse
-from ..classes.objectives import add_arg_to_parser, get_obj_weights
+from ..classes.objectives import (add_arg_to_parser, get_obj_weights,
+                                  get_obj_names)
 
 
 class Objectives(unittest.TestCase):
@@ -73,6 +74,16 @@ class Objectives(unittest.TestCase):
 
         obj_weights = get_obj_weights(args.objectives)
         self.assertSequenceEqual((-1, 1), obj_weights)
+
+    def test_obj_name(self):
+        """Test the returned list of objectives names."""
+        parser = argparse.ArgumentParser()
+        parser = add_arg_to_parser(parser)
+        args = parser.parse_args(['--objectives', 'my_function, net_flow, -1',
+                                  'my_function2, net_cost, 1'])
+
+        obj_names = get_obj_names(args.objectives)
+        self.assertSequenceEqual(['net_flow', 'net_cost'], obj_names)
 
 
 if __name__ == '__main__':
