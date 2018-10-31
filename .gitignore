@@ -144,3 +144,4 @@ venv.bak/
 .DS_Store
 tags
 tags.lock
+*.swp
