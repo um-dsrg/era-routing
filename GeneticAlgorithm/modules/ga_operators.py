@@ -15,7 +15,6 @@ from .ga_statistics import OpType, GaStatistics
 from .network import Network
 from .parameters import Parameters
 from .path import Path
-# from .objectives import get_obj_metric_calc_fn
 
 
 class GaOperators:
