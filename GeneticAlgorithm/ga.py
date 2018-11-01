@@ -112,7 +112,7 @@ def main():
     parameters = Parameters()
     ksp_xml = XmlHandler(parameters.ksp_xml_file)
     flows = parse_flows(ksp_xml.get_root())
-    network = Network(ksp_xml.get_root(), flows)
+    network = Network(ksp_xml.get_root(), flows, parameters.objectives)
     logger = Logger(parameters)
 
     ga_stats = GaStatistics(parameters.num_generations)

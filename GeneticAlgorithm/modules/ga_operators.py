@@ -94,35 +94,18 @@ class GaOperators:
         """
         metric_values = [metric_function(chromosome)
                          for metric_function in self.metric_functions]
-
         self.log_info('Chromosme: {}\nMetrics: {}'
                       .format(chromosome, metric_values))
 
-        return tuple(metric_values)
-        # # NOTE This has been converted to a function
-        # net_flow = sum(chromosome)  # Calculate the network flow
+        obj_bounds = self.network.obj_bound_values
+        normalised_values = [self._normalise_value(metric_value, obj_bound)
+                             for metric_value, obj_bound
+                             in zip(metric_values, obj_bounds)]
 
-        # # NOTE This has been converted to a function
-        # # Calculate the network cost
-        # actual_network_matrix = (np.array(chromosome)[:, np.newaxis] *
-        #                          self.network.network_matrix)
+        self.log_info('Obj bounds: {}\nNormalised Metrics: {}'
+                      .format(obj_bounds, normalised_values))
 
-        # for link_id in range(actual_network_matrix.shape[1]):
-        #     link = self.network.links[link_id]
-        #     actual_network_matrix[:, link_id] *= link.cost
-
-        # net_cost = np.sum(actual_network_matrix)
-
-        # # NOTE This has been converted to a function
-        # # Calculate number of paths used
-        # paths_used = len([gene for gene in chromosome if gene > 0])
-
-        # return (self._normalise_value(net_flow,
-        #                               self.network.network_flow_upper_bound),
-        #         self._normalise_value(net_cost,
-        #                               self.network.network_cost_upper_bound),
-        #         self._normalise_value(paths_used,
-        #                               self.network.network_paths_upper_bound))
+        return tuple(normalised_values)
 
     def mate_chromosomes(self, chromosome_1, chromosome_2):
         """Perform the multi point crossover.

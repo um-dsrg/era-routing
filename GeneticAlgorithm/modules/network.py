@@ -5,6 +5,7 @@ from typing import Dict
 import numpy as np
 from lxml import etree
 
+import modules.objectives as Objs
 from .definitions import ACCURACY_VALUE
 from .flow import Flow
 from .link import Link
@@ -30,10 +31,15 @@ class Network:
                     [0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1] # Path 3, Flow 1
     """
 
-    def __init__(self, ksp_xml_file_root, flows: Dict[int, Flow]):
+    def __init__(self, ksp_xml_file_root, flows: Dict[int, Flow],
+                 objectives):
         """Initialise the network object from the given xml file.
 
         :param ksp_xml_file_root: The root element of the KSP xml file.
+        :param flows: The flow set used.
+        :type flows: Dict[int, Flow]
+        :param objectives: The objectives for this optimisation.
+        :type objectives: List[Objs.Objective]
         """
         self.links = dict()  # type: Dict[int, Link]
         self._generate_link_details(ksp_xml_file_root)
@@ -41,28 +47,27 @@ class Network:
         self.network_matrix = self._create_network_matrix(flows)
         self._generate_network_matrix(flows)
 
-        self.network_flow_upper_bound = \
-            self._get_network_flow_upper_bound(flows)
-        self.network_cost_upper_bound = \
-            self._get_network_cost_upper_bound(flows)
-        self.network_paths_upper_bound = self._get_network_paths_upper_bound()
+        # Store the objective name and calculate the objective bounds.
+        self.obj_names = Objs.get_obj_names(objectives)
+        self.obj_bound_values = [bound_function(flows)
+                                 for bound_function
+                                 in Objs.get_obj_bound_fn(objectives, self)]
 
     def get_link_capacity(self, link_id):
         """Return the capacity for the link with id link_id"""
         return self.links[link_id].capacity
 
     def get_num_paths(self):
-        return self._get_network_paths_upper_bound()
+        """Returns the number of paths."""
+        return self.network_matrix.shape[0]
 
     def append_to_xml(self, xml_root_element):
         """Append the network bounds to the XML result file."""
         network_element = etree.SubElement(xml_root_element, 'NetworkBounds')
-        network_element.set('flow_upper_bound',
-                            str(self.network_flow_upper_bound))
-        network_element.set('cost_upper_bound',
-                            str(self.network_cost_upper_bound))
-        network_element.set('paths_upper_bound',
-                            str(self.network_paths_upper_bound))
+
+        for obj_name, obj_bound_value in zip(self.obj_names,
+                                             self.obj_bound_values):
+            network_element.set(obj_name + '_bound', str(obj_bound_value))
 
     def _create_network_matrix(self, flows: Dict[int, Flow]):
         """Create an all zero matrix with number of paths as rows and number
@@ -111,7 +116,7 @@ class Network:
             for path in sorted(flow.get_paths(),
                                key=operator.attrgetter('cost'), reverse=True):
                 min_link_capacity = min([self.links[link_id].capacity
-                                        for link_id in path.links])
+                                         for link_id in path.links])
 
                 if remaining_data_rate < min_link_capacity:
                     total_network_cost += remaining_data_rate * path.cost
@@ -125,9 +130,13 @@ class Network:
 
         return math.ceil(total_network_cost)
 
-    def _get_network_paths_upper_bound(self):
-        """Returns the total number of paths in the network"""
-        return self.network_matrix.shape[0]
+    def _get_network_paths_upper_bound(self, flows: Dict[int, Flow]):
+        """Returns the total number of paths in the network.
+
+        *Note* The parameter for flows is required such taht the bound
+        calculation functions all have the same signature.
+        """
+        return self.get_num_paths()
 
     @staticmethod
     def _get_network_flow_upper_bound(flows: dict):

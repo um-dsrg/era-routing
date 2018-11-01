@@ -17,30 +17,38 @@ class ObjectivesTestCase(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.parser.parse_args(['--objectives',
                                     'net_flow, -1, '
-                                    '_calculate_total_network_flow, None',
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound',
                                     'net_flow, a, '
-                                    '_calculate_total_network_flow, None'])
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound'])
 
         with self.assertRaises(SystemExit):
             self.parser.parse_args(['--objectives',
                                     'net_flow, -1, '
-                                    '_calculate_total_network_flow, None',
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound',
                                     'net_flow, 2, '
-                                    '_calculate_total_network_flow, None'])
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound'])
 
         with self.assertRaises(SystemExit):
             self.parser.parse_args(['--objectives',
                                     'net_flow, 0.1, '
-                                    '_calculate_total_network_flow, None',
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound',
                                     'net_flow, 1, '
-                                    '_calculate_total_network_flow, None'])
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound'])
 
         with self.assertRaises(SystemExit):
             self.parser.parse_args(['--objectives',
                                     'net_flow, -100, '
-                                    '_calculate_total_network_flow, None',
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound',
                                     'net_flow, 1, '
-                                    '_calculate_total_network_flow, None'])
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound'])
 
     def test_objectives_not_passed(self):
         """Check that if the objectives are not passed, an error is shown."""
@@ -55,9 +63,11 @@ class ObjectivesTestCase(unittest.TestCase):
         """Test a valid configuration to make sure it works."""
         args = self.parser.parse_args(['--objectives',
                                        'net_flow, -1, '
-                                       '_calculate_total_network_flow, None',
+                                       '_calculate_total_network_flow, '
+                                       '_get_network_flow_upper_bound',
                                        'net_cost, 1, '
-                                       '_calculate_total_network_flow, None'])
+                                       '_calculate_total_network_flow, '
+                                       '_get_network_flow_upper_bound'])
 
         self.assertEqual(2, len(args.objectives))
 
@@ -77,9 +87,11 @@ class ObjectivesTestCase(unittest.TestCase):
         """Test the returned tuple containing the set weights."""
         args = self.parser.parse_args(['--objectives',
                                        'net_flow, -1, '
-                                       '_calculate_total_network_flow, None',
+                                       '_calculate_total_network_flow, '
+                                       '_get_network_flow_upper_bound',
                                        'net_flow, 1, '
-                                       '_calculate_total_network_flow, None'])
+                                       '_calculate_total_network_flow, '
+                                       '_get_network_flow_upper_bound'])
 
         obj_weights = get_obj_weights(args.objectives)
         self.assertSequenceEqual((-1, 1), obj_weights)
@@ -88,9 +100,11 @@ class ObjectivesTestCase(unittest.TestCase):
         """Test the returned list of objectives names."""
         args = self.parser.parse_args(['--objectives',
                                        'net_flow, -1, '
-                                       '_calculate_total_network_flow, None',
+                                       '_calculate_total_network_flow, '
+                                       '_get_network_flow_upper_bound',
                                        'net_cost, 1, '
-                                       '_calculate_total_network_flow, None'])
+                                       '_calculate_total_network_flow,'
+                                       '_get_network_flow_upper_bound'])
 
         obj_names = get_obj_names(args.objectives)
         self.assertSequenceEqual(['net_flow', 'net_cost'], obj_names)
@@ -106,19 +120,35 @@ class ObjectivesTestCase(unittest.TestCase):
             self.parser.parse_args(['--objectives',
                                     'net_flow, -1, '
                                     '_calculate_total_network_flow, '
-                                    'None, extra'])
+                                    '_get_network_flow_upper_bound, extra'])
 
     def test_fn_obj_metric_calc(self):
         """Verify that the check to make sure the function exists works."""
         try:
             self.parser.parse_args(['--objectives', 'net_flow, 1, '
-                                    '_calculate_total_network_flow, None'])
+                                    '_calculate_total_network_flow,'
+                                    '_get_network_flow_upper_bound'])
         except:
             self.fail('Exception raised when valid function name passed')
 
         with self.assertRaises(SystemExit):
             self.parser.parse_args(['--objectives', 'net_flow, 1, '
-                                    'non_existent_function, None'])
+                                    'non_existent_function, '
+                                    '_get_network_flow_upper_bound'])
+
+    def test_fn_obj_bound_calc(self):
+        """Verify that the check to make sure the function exists works."""
+        try:
+            self.parser.parse_args(['--objectives', 'net_flow, 1, '
+                                    '_calculate_total_network_flow, '
+                                    '_get_network_flow_upper_bound'])
+        except:
+            self.fail('Exception raised when valid function name passed')
+
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(['--objectives', 'net_flow, 1, '
+                                    '_calculate_total_network_flow, '
+                                    'non_existent_function'])
 
 
 if __name__ == '__main__':

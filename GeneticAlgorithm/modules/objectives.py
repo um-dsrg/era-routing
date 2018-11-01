@@ -3,6 +3,7 @@ import argparse
 from typing import List
 from collections import namedtuple
 from .ga_operators import GaOperators
+from .network import Network
 
 
 OBJ_PROPERTIES = ['obj_name', 'obj_weight', 'fn_metric_calc', 'fn_obj_bound']
@@ -23,14 +24,14 @@ def objective(obj: str):
     split_obj = [text.strip() for text in split_obj]
 
     if len(split_obj) != len(OBJ_PROPERTIES):
-        raise argparse.ArgumentTypeError('Each objective must have {} fields'
+        raise argparse.ArgumentTypeError('Each objective must have {} fields.'
                                          .format(len(OBJ_PROPERTIES)))
 
     try:
         split_obj[1] = int(split_obj[1])
     except ValueError:
         raise argparse.ArgumentTypeError('The obj_weight needs to be an '
-                                         'integer')
+                                         'integer.')
 
     parsed_obj = Objective._make(split_obj)
 
@@ -42,8 +43,15 @@ def objective(obj: str):
         getattr(GaOperators, parsed_obj.fn_metric_calc)
     except AttributeError:
         raise argparse.ArgumentTypeError('The function {} to calculate the '
-                                         'metric does not exist'
+                                         'metric does not exist.'
                                          .format(parsed_obj.fn_metric_calc))
+
+    try:
+        getattr(Network, parsed_obj.fn_obj_bound)
+    except AttributeError:
+        raise argparse.ArgumentTypeError('The function {} to calculate the '
+                                         'metric bound does not exist.'
+                                         .format(parsed_obj.fn_obj_bound))
 
     return parsed_obj
 
@@ -74,4 +82,10 @@ def get_obj_metric_calc_fn(objectives: List[Objective],
                            ga_operators: GaOperators):
     """Returns a list of function pointers to calculate the metric value."""
     return [getattr(ga_operators, objective.fn_metric_calc)
+            for objective in objectives]
+
+
+def get_obj_bound_fn(objectives: List[Objective], network: Network):
+    """Returns a list of function pointers to calculate the metric bound."""
+    return [getattr(network, objective.fn_obj_bound)
             for objective in objectives]
