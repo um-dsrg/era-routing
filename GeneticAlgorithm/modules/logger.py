@@ -1,7 +1,7 @@
 import logging
 import logging.handlers
 
-from classes.parameters import Parameters
+from .parameters import Parameters
 
 
 class Logger:

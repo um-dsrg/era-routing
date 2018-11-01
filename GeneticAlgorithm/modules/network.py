@@ -5,9 +5,9 @@ from typing import Dict
 import numpy as np
 from lxml import etree
 
-from classes.definitions import ACCURACY_VALUE
-from classes.flow import Flow
-from classes.link import Link
+from .definitions import ACCURACY_VALUE
+from .flow import Flow
+from .link import Link
 
 
 class Network:

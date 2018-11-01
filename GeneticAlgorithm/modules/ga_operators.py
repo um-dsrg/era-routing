@@ -9,12 +9,13 @@ from typing import List, Dict
 
 import numpy as np
 
-from classes.definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
-from classes.flow import Flow
-from classes.ga_statistics import OpType, GaStatistics
-from classes.network import Network
-from classes.parameters import Parameters
-from classes.path import Path
+from .definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
+from .flow import Flow
+from .ga_statistics import OpType, GaStatistics
+from .network import Network
+from .parameters import Parameters
+from .path import Path
+# from .objectives import get_obj_metric_calc_fn
 
 
 class GaOperators:
@@ -40,6 +41,9 @@ class GaOperators:
         self.log_info = log_info               # Information log file
 
         self.mutation_fraction = parameters.mutation_fraction
+        # Get a list of functions that will be used to calculate the metric for
+        # each of the objectives.
+        self.metric_functions = get_obj_metric_calc_fn(parameters.objectives)
 
     def generate_chromosome(self):
         """Generate a single chromosome.
@@ -87,27 +91,37 @@ class GaOperators:
                  returned are normalised such that they all fit within the
                  range of (0 <= x <= 1).
         """
-        net_flow = sum(chromosome)  # Calculate the network flow
+        metric_values = [metric_function(chromosome)
+                         for metric_function in self.metric_functions]
 
-        # Calculate the network cost
-        actual_network_matrix = (np.array(chromosome)[:, np.newaxis] *
-                                 self.network.network_matrix)
+        self.log_info('Chromosme: {}\nMetrics: {}'
+                      .format(chromosome, metric_values))
 
-        for link_id in range(actual_network_matrix.shape[1]):
-            link = self.network.links[link_id]
-            actual_network_matrix[:, link_id] *= link.cost
+        return tuple(metric_values)
+        # # NOTE This has been converted to a function
+        # net_flow = sum(chromosome)  # Calculate the network flow
 
-        net_cost = np.sum(actual_network_matrix)
+        # # NOTE This has been converted to a function
+        # # Calculate the network cost
+        # actual_network_matrix = (np.array(chromosome)[:, np.newaxis] *
+        #                          self.network.network_matrix)
 
-        # Calculate number of paths used
-        paths_used = len([gene for gene in chromosome if gene > 0])
+        # for link_id in range(actual_network_matrix.shape[1]):
+        #     link = self.network.links[link_id]
+        #     actual_network_matrix[:, link_id] *= link.cost
 
-        return (self._normalise_value(net_flow,
-                                      self.network.network_flow_upper_bound),
-                self._normalise_value(net_cost,
-                                      self.network.network_cost_upper_bound),
-                self._normalise_value(paths_used,
-                                      self.network.network_paths_upper_bound))
+        # net_cost = np.sum(actual_network_matrix)
+
+        # # NOTE This has been converted to a function
+        # # Calculate number of paths used
+        # paths_used = len([gene for gene in chromosome if gene > 0])
+
+        # return (self._normalise_value(net_flow,
+        #                               self.network.network_flow_upper_bound),
+        #         self._normalise_value(net_cost,
+        #                               self.network.network_cost_upper_bound),
+        #         self._normalise_value(paths_used,
+        #                               self.network.network_paths_upper_bound))
 
     def mate_chromosomes(self, chromosome_1, chromosome_2):
         """Perform the multi point crossover.
@@ -164,7 +178,8 @@ class GaOperators:
             else:  # Maximise the flow
                 chromosome = self._max_flow_mutation(flow, chromosome)
 
-        return self._validate_chromosome(chromosome),  # Always return a tuple
+        # NOTE Always return a tuple
+        return self._validate_chromosome(chromosome),
 
     def _get_flows_to_mutate(self) -> List[Flow]:
         """Return the flows to be mutated based on the mutation fraction."""
@@ -402,6 +417,27 @@ class GaOperators:
             self.ga_stats.log_link_repair(self.current_operation)
 
         return chromosome
+
+    @staticmethod
+    def _calculate_total_network_flow(chromosome):
+        """Calculates the total network flow."""
+        return sum(chromosome)
+
+    @staticmethod
+    def _calculate_total_paths_used(chromosome):
+        """Calculates the total number of paths used."""
+        return len([gene for gene in chromosome if gene > 0])
+
+    def _calculate_total_network_cost(self, chromosome):
+        """Calculates the total network cost."""
+        actual_network_matrix = (np.array(chromosome)[:, np.newaxis] *
+                                 self.network.network_matrix)
+
+        for link_id in range(actual_network_matrix.shape[1]):
+            link = self.network.links[link_id]
+            actual_network_matrix[:, link_id] *= link.cost
+
+        return np.sum(actual_network_matrix)
 
     @staticmethod
     def _normalise_value(value, max_value):

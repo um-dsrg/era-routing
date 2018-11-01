@@ -15,16 +15,16 @@ in the ga_helper::Network class.
 """
 from deap import base, creator, tools, algorithms
 
-import classes.objectives as Objs
-from classes.flow import parse_flows
-from classes.ga_operators import GaOperators
-from classes.ga_results import GaResults
-from classes.ga_statistics import GaStatistics
-from classes.logger import Logger
-from classes.network import Network
-from classes.parameters import Parameters
-from classes.timings import GaTimings
-from classes.xml_handler import XmlHandler
+import modules.objectives as Objs
+from modules.flow import parse_flows
+from modules.ga_operators import GaOperators
+from modules.ga_results import GaResults
+from modules.ga_statistics import GaStatistics
+from modules.logger import Logger
+from modules.network import Network
+from modules.parameters import Parameters
+from modules.timings import GaTimings
+from modules.xml_handler import XmlHandler
 
 
 def run_nsga2_ga(parameters: Parameters, logger: Logger,

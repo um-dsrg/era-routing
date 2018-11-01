@@ -1,6 +1,6 @@
 from lxml import etree
 
-from classes.parameters import Parameters
+from .parameters import Parameters
 
 
 class GaResults:

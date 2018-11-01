@@ -1,6 +1,6 @@
 from typing import Dict
 
-from classes.path import Path
+from .path import Path
 
 
 class Flow:
