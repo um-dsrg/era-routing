@@ -70,7 +70,8 @@ def get_obj_names(objectives: List[Objective]):
     return [objective.obj_name for objective in objectives]
 
 
-def get_obj_metric_calc_fn(objectives: List[Objective]):
+def get_obj_metric_calc_fn(objectives: List[Objective],
+                           ga_operators: GaOperators):
     """Returns a list of function pointers to calculate the metric value."""
-    return [getattr(GaOperators, objective.fn_metric_calc)
+    return [getattr(ga_operators, objective.fn_metric_calc)
             for objective in objectives]

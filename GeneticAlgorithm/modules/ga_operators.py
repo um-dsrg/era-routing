@@ -9,6 +9,7 @@ from typing import List, Dict
 
 import numpy as np
 
+import modules.objectives as Objs
 from .definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
 from .flow import Flow
 from .ga_statistics import OpType, GaStatistics
@@ -42,7 +43,8 @@ class GaOperators:
         self.mutation_fraction = parameters.mutation_fraction
         # Get a list of functions that will be used to calculate the metric for
         # each of the objectives.
-        self.metric_functions = get_obj_metric_calc_fn(parameters.objectives)
+        self.metric_functions = \
+            Objs.get_obj_metric_calc_fn(parameters.objectives, self)
 
     def generate_chromosome(self):
         """Generate a single chromosome.
