@@ -1,5 +1,6 @@
 from lxml import etree
 
+import modules.objectives as Objs
 from .parameters import Parameters
 
 
@@ -24,6 +25,7 @@ class GaResults:
         self.num_generations = parameters.num_generations
         self.population_by_generation = dict()
         self.xml_element = None
+        self.obj_names = Objs.get_obj_names(parameters.objectives)
 
     def add_population(self, n_generation: int, population):
         """Add the population to the result set.
@@ -54,12 +56,9 @@ class GaResults:
 
             for chromosome in population:
                 chromo_element = etree.SubElement(gen_element, 'Chromosome')
-                chromo_element.set('net_flow',
-                                   str(chromosome.fitness.values[0]))
-                chromo_element.set('net_cost',
-                                   str(chromosome.fitness.values[1]))
-                chromo_element.set('paths_used',
-                                   str(chromosome.fitness.values[2]))
+                for obj_name, obj_value in zip(self.obj_names,
+                                               chromosome.fitness.values):
+                    chromo_element.set(obj_name, str(obj_value))
 
                 # Store the genes only in the last population OR if the
                 # store_all_genes flag is set
