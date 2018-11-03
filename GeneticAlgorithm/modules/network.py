@@ -138,6 +138,19 @@ class Network:
         """
         return self.get_num_paths()
 
+    def _get_flow_splits_upper_bound(self, flows: Dict[int, Flow]):
+        """Returns the upper bound for the number of flows that are split.
+
+        The upper bound for the flow splits metric is equal to the number of
+        flows + 1. The addition of 1 is required due to the fractional
+        component.
+
+        :param flows: The flows in the given solution.
+        :type flows: Dict[int, Flow]
+        :return: The upper bound for the number of flows with splits metric.
+        """
+        return len(flows) + 1
+
     @staticmethod
     def _get_network_flow_upper_bound(flows: dict):
         """Return the total data rate requested."""

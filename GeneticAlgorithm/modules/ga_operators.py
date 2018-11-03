@@ -423,6 +423,52 @@ class GaOperators:
 
         return np.sum(actual_network_matrix)
 
+    def _calculate_flow_splits_metric(self, chromosome):
+        """Calculates the flow splits metric
+
+        The flow splits metric is split into two sections; the integer
+        component and the fractional component. The integer component is
+        equal to the number of flows that have a split. The fractional
+        component is equal to the total number of flow splits. The fractional
+        component is normalised to take a range between 0 and 1. If the
+        fractional component is equal to 1 it is set equal to 0.999 so as not
+        to increment the value of the integer metric.
+
+        :param chromosome: The chromosome to be evaluated.
+        :return: The flow splits metric.
+        """
+        max_flow_splits = 0  # The maximum number of flow splits possible
+        total_flow_splits = 0  # The total number of flow splits
+        num_flows_with_split = 0  # The toal number of flows that have a split
+
+        for flow in self.flows.values():
+            used_paths = flow.get_path_ids()
+            max_flow_splits += len(used_paths) - 1
+            data_on_paths = [chromosome[path_id] for path_id in used_paths
+                             if chromosome[path_id] > 0]
+
+            num_used_paths = len(data_on_paths)
+
+            if num_used_paths > 1:
+                num_flows_with_split += 1
+
+            if num_used_paths > 0:
+                # Number of flows splits is always one less than the number of
+                # paths
+                total_flow_splits += (num_used_paths - 1)
+
+        fractional_component = total_flow_splits / max_flow_splits
+        assert fractional_component <= 1, \
+            'The fractional component should not be greater than 1'
+
+        # This check is required so as not to increment the variables that
+        # represents the total number of flows that have a split.
+        if fractional_component == 1:
+            fractional_component = 0.999
+
+        metric_value = num_flows_with_split + fractional_component
+        return metric_value
+
     @staticmethod
     def _normalise_value(value, max_value):
         """Normalise the value to have a range between 0 and 1.
