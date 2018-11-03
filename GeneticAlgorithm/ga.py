@@ -139,6 +139,7 @@ def main():
     result_xml = XmlHandler(parameters.result_file, 'GeneticAlgorithm')
     parameters.append_to_xml(result_xml.get_root())
     network.append_to_xml(result_xml.get_root())
+    Objs.append_to_xml(result_xml.get_root(), parameters.objectives)
 
     # # # Run the NSGA-II Algorithm # # #
     ga_results = GaResults(parameters)

@@ -2,6 +2,8 @@
 import argparse
 from typing import List
 from collections import namedtuple
+from lxml import etree
+
 from .ga_operators import GaOperators
 from .network import Network
 
@@ -67,6 +69,16 @@ def add_arg_to_parser(parser: argparse.ArgumentParser):
                         nargs='+')
     return parser
 
+def append_to_xml(xml_root_element, objectives: List[Objective]):
+    """Append the Objectives details to the XML result file."""
+    objs_element = etree.SubElement(xml_root_element, 'Objectives')
+
+    for objective in objectives:
+        obj_element = etree.SubElement(objs_element, 'Objective')
+        obj_element.set('name', str(objective.obj_name))
+        obj_element.set('weight', str(objective.obj_weight))
+        obj_element.set('fn_metric_calc', str(objective.fn_metric_calc))
+        obj_element.set('fn_obj_bound', str(objective.fn_obj_bound))
 
 def get_obj_weights(objectives: List[Objective]):
     """Returns a tuple of the max/min objective weights."""
