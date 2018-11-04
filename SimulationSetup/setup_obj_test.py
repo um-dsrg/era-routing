@@ -3,7 +3,6 @@
 Creates the necessary directory structure and files to run the testing of the
 new objectives setup.
 """
-import argparse
 import os
 import subprocess
 from pathlib import Path
@@ -110,7 +109,7 @@ def main():
     # path will be interpreted by the shell not by the python interpreter.
 
     home_dir = str(Path.home())
-    sp_objs_dir = 'GDrive/Scratchpad/genetic_algorithm/new_objectives'
+    sp_objs_dir = 'GDrive/Scratchpad/genetic_algorithm/new_objectives/flow_splits_only'
     base_directory = str(Path.home()) + '/' + sp_objs_dir
     network_load = ['high', 'medium', 'low']
     k_values = ['5']
