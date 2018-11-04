@@ -42,7 +42,11 @@ def create_flow_set(out_lgf_path, num_flow, net_load):
 
 
 def create_ksp_jobscript(k_value, net_load, num_flows, base_path, shell_graph_path, shell_base_path):
-    """Creates the KSP command and jobscript from the given parameters."""
+    """Creates the KSP command and jobscript from the given parameters.
+
+    :return: The KSP result file path in shell format. This will be used when creating the genetic
+             algorithm jobscript.
+    """
     job_queue = 'short'
     job_name = 'ksp_{}l_f_{}_k_{}'.format(net_load[0], num_flows, k_value)
     job_logs_dir = '${HOME}/logs/'  # Nyquist home directory
@@ -50,7 +54,7 @@ def create_ksp_jobscript(k_value, net_load, num_flows, base_path, shell_graph_pa
     job_email = 'noel.farrugia.09@um.edu.mt'
     ksp_job = JobScript(job_queue, job_name, job_logs_dir, job_not_flags, job_email)
 
-    ksp_result_file = shell_base_path + '/result_ksp_' + k_value + '.xml'
+    ksp_result_file = shell_base_path + '/result_ksp_k_' + k_value + '.xml'
 
     command = ('${{HOME}}/Development/KShortestPath/build/release/ksp \\\n'
                '    --k {} \\\n'
@@ -64,9 +68,44 @@ def create_ksp_jobscript(k_value, net_load, num_flows, base_path, shell_graph_pa
     print('Saving Ksp job in {}'.format(ksp_job_path))
     ksp_job.save_job_script(ksp_job_path)
 
+    return ksp_result_file
+
+
+def create_ga_jobscript(k_value, net_load, num_flows, ksp_result_file, base_path, shell_base_path):
+    """Creates the GA command and jobscript from the given parameters."""
+    job_queue = 'medium'
+    job_name = 'ga_{}l_f_{}_k_{}'.format(net_load[0], num_flows, k_value)
+    job_logs_dir = '${HOME}/logs/'  # Nyquist home directory
+    job_not_flags = 'a'
+    job_email = 'noel.farrugia.09@um.edu.mt'
+    ga_job = JobScript(job_queue, job_name, job_logs_dir, job_not_flags, job_email)
+
+    ga_result_file = shell_base_path + '/result_ga_k_' + k_value + '.xml'
+
+    command = ('python3 ${{HOME}}/Development/Development/GeneticAlgorithm/ga.py \\\n'
+               '    --ksp_xml_file {} \\\n'
+               '    --result_file {} \\\n'
+               '    --num_generations 400 \\\n'
+               '    --pop_size 800 \\\n'
+               '    --prob_crossover 0.9 \\\n'
+               '    --prob_mutation 0.2 \\\n'
+               '    --mutation_fraction 0.1 \\\n'
+               '    --objectives \\\n'
+               '    "net_flow, 1, _calculate_total_network_flow, _get_network_flow_upper_bound " \\\n'
+               '    "net_cost, -1, _calculate_total_network_cost, _get_network_cost_upper_bound " \\\n'
+               '    "tot_flow_splits, -1, _calculate_flow_splits_metric, _get_flow_splits_upper_bound"'
+               .format(ksp_result_file, ga_result_file))
+
+    print(repr(command))
+    ga_job.insert_command(command)
+
+    ga_job_path = base_path + '/run_ga.pbs'
+    print('Saving GA job in {}'.format(ga_job_path))
+    ga_job.save_job_script(ga_job_path)
+
 
 def main():
-    # *Note* Shell_<name> variables represent directories that are meant to be used by
+    # *Note* shell_<name> variables represent directories that are meant to be used by
     # the shell. This are used when writing paths to the jobscript command where the
     # path will be interpreted by the shell not by the python interpreter.
 
@@ -89,12 +128,7 @@ def main():
             shell_curr_dir = shell_base_dir + '/load_' + net_load + '/flows_' + str(num_flow)
 
             print('Creating directory {}'.format(curr_dir))
-
-            try:
-                os.makedirs(curr_dir)
-            except OSError:
-                print('Error when creating the directory {}'.format(curr_dir))
-                raise
+            os.makedirs(curr_dir)
 
             graph_path = curr_dir + '/graph.lgf'
             shell_graph_path = shell_curr_dir + '/graph.lgf'
@@ -104,9 +138,10 @@ def main():
 
             # Create the KSP jobscripts
             for k_value in k_values:
-                create_ksp_jobscript(k_value, net_load, num_flow, curr_dir, shell_graph_path, shell_curr_dir)
-
-            # TODO Need to create the ga jobscripts
+                ksp_res_file = create_ksp_jobscript(k_value, net_load, num_flow, curr_dir,
+                                                    shell_graph_path, shell_curr_dir)
+                create_ga_jobscript(k_value, net_load, num_flow, ksp_res_file, curr_dir,
+                                    shell_curr_dir)
 
 
 if __name__ == '__main__':
