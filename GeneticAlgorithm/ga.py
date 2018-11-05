@@ -16,7 +16,7 @@ in the ga_helper::Network class.
 from deap import base, creator, tools, algorithms
 
 import modules.objectives as Objs
-from modules.flow import parse_flows
+from modules.flow import Flow
 from modules.ga_operators import GaOperators
 from modules.ga_results import GaResults
 from modules.ga_statistics import GaStatistics
@@ -111,7 +111,7 @@ def main():
     """Main function that sets up and runs the Genetic Algorithm."""
     parameters = Parameters()
     ksp_xml = XmlHandler(parameters.ksp_xml_file)
-    flows = parse_flows(ksp_xml.get_root())
+    flows = Flow.parse_flows(ksp_xml.get_root())
     network = Network(ksp_xml.get_root(), flows, parameters.objectives)
     logger = Logger(parameters)
 

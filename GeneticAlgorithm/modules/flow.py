@@ -90,24 +90,24 @@ class Flow:
         return ('Flow Id: {} Requested Data Rate: {} Number of Paths: {}'
                 .format(self.id, self.requested_rate, len(self.paths)))
 
+    @staticmethod
+    def parse_flows(ksp_xml_file_root):
+        """Parse and build a flow object for each flow found in the KSP xml file.
 
-def parse_flows(ksp_xml_file_root):
-    """Parse and build a flow object for each flow found in the KSP xml file.
+        :param ksp_xml_file_root: The root element of the KSP xml file.
+        :return: Dictionary with Flow Id as Key and Flow object as value.
+        """
+        flows = dict()  # type: Dict[int, Flow]
 
-    :param ksp_xml_file_root: The root element of the KSP xml file.
-    :return: Dictionary with Flow Id as Key and Flow object as value.
-    """
-    flows = dict()  # type: Dict[int, Flow]
+        for flow_element in ksp_xml_file_root.findall('FlowDetails/Flow'):
+            if flow_element.get('Protocol') == 'A':  # Skip ACK flows
+                continue
 
-    for flow_element in ksp_xml_file_root.findall('FlowDetails/Flow'):
-        if flow_element.get('Protocol') == 'A':  # Skip ACK flows
-            continue
+            flow = Flow(flow_element)
 
-        flow = Flow(flow_element)
+            if flow.id in flows:
+                raise AssertionError('Flow id {} is duplicate'.format(flow.id))
 
-        if flow.id in flows:
-            raise AssertionError('Flow id {} is duplicate'.format(flow.id))
+            flows[flow.id] = flow
 
-        flows[flow.id] = flow
-
-    return flows
+        return flows
