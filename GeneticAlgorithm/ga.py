@@ -13,9 +13,9 @@ matrix is read from an XML path that contain the k shortest paths from each
 source to destination. More information about the network matrix can be found
 in the ga_helper::Network class.
 """
-from deap import base, creator, tools, algorithms
+from deap import algorithms, base, creator, tools
 
-import modules.objectives as Objs
+from modules.objectives import Objectives
 from modules.flow import Flow
 from modules.ga_operators import GaOperators
 from modules.ga_results import GaResults
@@ -27,9 +27,8 @@ from modules.timings import GaTimings
 from modules.xml_handler import XmlHandler
 
 
-def run_nsga2_ga(parameters: Parameters, logger: Logger,
-                 ga_stats: GaStatistics, ga_results: GaResults,
-                 result_xml: XmlHandler, toolbox):
+def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
+    # type: (Parameters, Logger, GaStatistics, GaResults, XmlHandler, Any)
     """Run the NSGA-II algorithm.
 
     Run the NSGA-II algorithm for the specified number of generations and store
@@ -110,6 +109,9 @@ def run_nsga2_ga(parameters: Parameters, logger: Logger,
 def main():
     """Main function that sets up and runs the Genetic Algorithm."""
     parameters = Parameters()
+    objectives = Objectives(parameters.objectives)
+    return
+
     ksp_xml = XmlHandler(parameters.ksp_xml_file)
     flows = Flow.parse_flows(ksp_xml.get_root())
     network = Network(ksp_xml.get_root(), flows, parameters.objectives)

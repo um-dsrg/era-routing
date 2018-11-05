@@ -42,6 +42,13 @@ class Parameters:
                                  'will be mutated. This variable dictates the '
                                  'number of genes that will be modified by a '
                                  'single mutation operator.')
+        parser.add_argument('--objectives', required=True, nargs='*', type=str,
+                            help='List of objectives the Genetic Algorithm will '
+                                 'work on. The objectives need to be given in '
+                                 'this order: '
+                                 'name, weight (maximise=1 / minimise=-1), '
+                                 'metric calculation funciton, '
+                                 'bound calculation function')
         parser.add_argument('--log_directory', type=str, required=False,
                             help='The path where to store the log files.')
         parser.add_argument('--status_log', action='store_true',
@@ -62,7 +69,6 @@ class Parameters:
                                  'population for all the generations. When '
                                  'this flag is disabled the genes; will only '
                                  'be stored for the final population.')
-        parser = Objs.add_arg_to_parser(parser)
 
         parser.set_defaults(status_log=False)
         parser.set_defaults(info_log=False)
