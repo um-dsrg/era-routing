@@ -15,7 +15,6 @@ from .flow import Flow
 from .ga_statistics import OpType, GaStatistics
 from .network import Network
 from .parameters import Parameters
-from .path import Path
 
 
 class GaOperators:
@@ -239,8 +238,8 @@ class GaOperators:
         """
         return self._max_flow_min_cost(flow, flow.get_paths(), chromosome)
 
-    def _max_flow_min_cost(self, flow: Flow, paths_to_use: List[Path],
-                           chromosome):
+    def _max_flow_min_cost(self, flow, paths_to_use, chromosome):
+        # type: (Flow, List[Path], Any)
         """Assign the flow path usage to maximise flow at minimum cost using
         the given paths.
 

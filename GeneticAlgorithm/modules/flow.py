@@ -1,7 +1,25 @@
-from typing import Dict
+class _Path:
+    """Class representing a Path.
 
-from .path import Path
+    Attributes
+        id:    The path id.
+        cost:  The paths's cost.
+        links: List of links the path uses.
+    """
 
+    def __init__(self, path_element):
+        self.id = int(path_element.get('Id'))
+        self.cost = float(path_element.get('Cost'))
+        self.links = [int(link_element.get('Id')) for link_element
+                      in path_element.findall('Link')]
+
+    def __repr__(self):
+        return 'Path(' + self.__str__() + ')'
+
+    def __str__(self):
+        return ('Path ID: {} Path Cost: {} Links used: {}'.format(self.id,
+                                                                  self.cost,
+                                                                  self.links))
 
 class Flow:
     """Class representing a flow.
@@ -12,7 +30,7 @@ class Flow:
     """
 
     def __init__(self, flow_element):
-        self.paths = dict()  # type: Dict[int, Path]
+        self.paths = dict()  # type: Dict[int, _Path]
         self._generate_flow_from_element(flow_element)
 
     def get_paths(self):
@@ -57,7 +75,7 @@ class Flow:
 
         # Create paths
         for path_element in flow_element.findall('Paths/Path'):
-            path = Path(path_element)
+            path = _Path(path_element)
 
             if path.id in self.paths:
                 raise AssertionError('Path {} is duplicate in flow {}'
@@ -79,7 +97,7 @@ def parse_flows(ksp_xml_file_root):
     :param ksp_xml_file_root: The root element of the KSP xml file.
     :return: Dictionary with Flow Id as Key and Flow object as value.
     """
-    flows = dict()
+    flows = dict()  # type: Dict[int, Flow]
 
     for flow_element in ksp_xml_file_root.findall('FlowDetails/Flow'):
         if flow_element.get('Protocol') == 'A':  # Skip ACK flows
