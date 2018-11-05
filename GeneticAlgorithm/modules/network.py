@@ -5,10 +5,9 @@ from typing import Dict
 import numpy as np
 from lxml import etree
 
-import modules.objectives as Objs
-from .definitions import ACCURACY_VALUE
-from .flow import Flow
-from .link import Link
+from modules.definitions import ACCURACY_VALUE
+from modules.flow import Flow
+from modules.link import Link
 
 
 class Network:
@@ -31,15 +30,13 @@ class Network:
                     [0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1] # Path 3, Flow 1
     """
 
-    def __init__(self, ksp_xml_file_root, flows: Dict[int, Flow],
-                 objectives):
+    def __init__(self, ksp_xml_file_root, flows, objectives):
+        # type: (Any, Dict[int, Flow], Objectives)
         """Initialise the network object from the given xml file.
 
         :param ksp_xml_file_root: The root element of the KSP xml file.
         :param flows: The flow set used.
-        :type flows: Dict[int, Flow]
         :param objectives: The objectives for this optimisation.
-        :type objectives: List[Objs.Objective]
         """
         self.links = dict()  # type: Dict[int, Link]
         self._generate_link_details(ksp_xml_file_root)
@@ -47,11 +44,16 @@ class Network:
         self.network_matrix = self._create_network_matrix(flows)
         self._generate_network_matrix(flows)
 
-        # Store the objective name and calculate the objective bounds.
-        self.obj_names = Objs.get_obj_names(objectives)
+        # Store the name of the objectives and calculate their upper
+        # bounds
+        self.obj_names = objectives.get_obj_names()
+
+        obj_bound_fns = [getattr(self, bound_function_name)
+                         for bound_function_name
+                         in objectives.get_obj_bound_fns()]
         self.obj_bound_values = [bound_function(flows)
                                  for bound_function
-                                 in Objs.get_obj_bound_fn(objectives, self)]
+                                 in obj_bound_fns]
 
     def get_link_capacity(self, link_id):
         """Return the capacity for the link with id link_id"""

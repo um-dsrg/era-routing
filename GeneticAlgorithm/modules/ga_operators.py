@@ -5,21 +5,17 @@ mutation.
 import math
 import operator
 import random
-from typing import List, Dict
 
 import numpy as np
 
-import modules.objectives as Objs
-from .definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
-from .flow import Flow
-from .ga_statistics import OpType, GaStatistics
-from .network import Network
-from .parameters import Parameters
+from modules.definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
+from modules.ga_statistics import OpType
 
 
 class GaOperators:
-    def __init__(self, flows: Dict[int, Flow], network: Network,
-                 parameters: Parameters, ga_stats: GaStatistics, log_info):
+    def __init__(self, flows, network, parameters, objectives, ga_stats,
+                 log_info):
+        # type: (Dict[int, Flow], Network, Parameters, GaStatistics, Any)
         """Initialise the Genetic Algorithm Operators object
 
         :param flows:      Dictionary of the flows parsed from the KSP xml
@@ -28,6 +24,8 @@ class GaOperators:
                            information about the network and its properties.
         :param parameters: The parameters object that contains all the
                            necessary genetic algorithm parameters.
+        :param objectives: The objectives object. Used to extract the metric
+                           calculation functions.
         :param ga_stats:   An instance of the GaStatistics class used to store
                            Genetic algorithm related statistics.
         :param log_info:   Pointer to a function that will insert a log entry
@@ -42,8 +40,9 @@ class GaOperators:
         self.mutation_fraction = parameters.mutation_fraction
         # Get a list of functions that will be used to calculate the metric for
         # each of the objectives.
-        self.metric_functions = \
-            Objs.get_obj_metric_calc_fn(parameters.objectives, self)
+        self.metric_functions = [getattr(self, metric_function_name)
+                                 for metric_function_name
+                                 in objectives.get_metric_calc_fns()]
 
     def generate_chromosome(self):
         """Generate a single chromosome.
@@ -164,14 +163,16 @@ class GaOperators:
         # NOTE Always return a tuple
         return self._validate_chromosome(chromosome),
 
-    def _get_flows_to_mutate(self) -> List[Flow]:
+    def _get_flows_to_mutate(self):
+        # type: () -> List[Flow]
         """Return the flows to be mutated based on the mutation fraction."""
         num_flows = len(self.flows)
         num_flows_to_mutate = math.ceil(self.mutation_fraction * num_flows)
 
         return random.sample(list(self.flows.values()), num_flows_to_mutate)
 
-    def _min_path_mutation(self, flow: Flow, chromosome):
+    def _min_path_mutation(self, flow, chromosome):
+        # type: (Flow, Any)
         """Mutate the flow path usage to minimise the number of paths used.
 
         The number of paths to choose diminishes linearly as the number of
@@ -201,7 +202,8 @@ class GaOperators:
 
         return self._max_flow_min_cost(flow, paths_to_mutate, chromosome)
 
-    def _min_cost_mutation(self, flow: Flow, chromosome):
+    def _min_cost_mutation(self, flow, chromosome):
+        # type: (Flow, Any)
         """Mutate the flow path usage to minimise the cost.
 
         :param flow:       The flow that will be mutated.
@@ -228,7 +230,8 @@ class GaOperators:
         else:  # Return the chromosome as is if no paths are to be used
             return chromosome
 
-    def _max_flow_mutation(self, flow: Flow, chromosome):
+    def _max_flow_mutation(self, flow, chromosome):
+        # type: (Flow, Any)
         """Mutate the flow path usage to maximise the allocated data rate.
 
         :param flow:       The flow that will be mutated.

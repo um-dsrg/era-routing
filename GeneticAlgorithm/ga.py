@@ -110,20 +110,18 @@ def main():
     """Main function that sets up and runs the Genetic Algorithm."""
     parameters = Parameters()
     objectives = Objectives(parameters.objectives)
-    return
-
     ksp_xml = XmlHandler(parameters.ksp_xml_file)
     flows = Flow.parse_flows(ksp_xml.get_root())
-    network = Network(ksp_xml.get_root(), flows, parameters.objectives)
+    network = Network(ksp_xml.get_root(), flows, objectives)
     logger = Logger(parameters)
 
     ga_stats = GaStatistics(parameters.num_generations)
-    ga_operators = GaOperators(flows, network, parameters, ga_stats,
-                               logger.log_info)
+    ga_operators = GaOperators(flows, network, parameters, objectives,
+                               ga_stats, logger.log_info)
 
     # # # Configure the GA objectives # # #
-    obj_weights = Objs.get_obj_weights(parameters.objectives)
-    creator.create('MaxFlowMinCost', base.Fitness, weights=obj_weights)
+    creator.create('MaxFlowMinCost', base.Fitness,
+                   weights=objectives.get_obj_weights())
     creator.create('Chromosome', list, fitness=creator.MaxFlowMinCost)
 
     # # # Configure the GA operators # # #
@@ -141,10 +139,10 @@ def main():
     result_xml = XmlHandler(parameters.result_file, 'GeneticAlgorithm')
     parameters.append_to_xml(result_xml.get_root())
     network.append_to_xml(result_xml.get_root())
-    Objs.append_to_xml(result_xml.get_root(), parameters.objectives)
+    objectives.append_to_xml(result_xml.get_root())
 
     # # # Run the NSGA-II Algorithm # # #
-    ga_results = GaResults(parameters)
+    ga_results = GaResults(parameters, objectives)
     run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml,
                  toolbox)
 

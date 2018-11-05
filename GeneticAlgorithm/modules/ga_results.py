@@ -1,8 +1,5 @@
 from lxml import etree
 
-import modules.objectives as Objs
-from .parameters import Parameters
-
 
 class GaResults:
     """Class that stores the Genetic Algorithm's results.
@@ -14,18 +11,20 @@ class GaResults:
                               and the population (list of chromosomes) as the
                               Value.
     """
-    def __init__(self, parameters: Parameters):
+    def __init__(self, parameters, objectives):
+        # type: (Parameters, Objectives)
         """Initialise a GaResults object to allow storing the results per
         generation.
 
         :param parameters: The Parameters object used to access the genetic
                            algorithm configuration parameters.
+        :param objectives: Instance of the Ojbectives class.
         """
         self.store_all_genes = parameters.store_genes
         self.num_generations = parameters.num_generations
         self.population_by_generation = dict()
         self.xml_element = None
-        self.obj_names = Objs.get_obj_names(parameters.objectives)
+        self.obj_names = objectives.get_obj_names()
 
     def add_population(self, n_generation: int, population):
         """Add the population to the result set.
