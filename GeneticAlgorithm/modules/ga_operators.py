@@ -459,14 +459,14 @@ class GaOperators:
                 # paths
                 total_flow_splits += (num_used_paths - 1)
 
-        fractional_component = total_flow_splits / max_flow_splits
-        assert fractional_component <= 1, \
+        # The max_flow_splits value is incremented by 1 when calculating the
+        # fractional component to avoid the instance where the total_flow_splits
+        # is equal to the max_flow_splits which would make the fractional_component
+        # equal to 1 thus incrementing the integral part of the metric which is
+        # incorrect.
+        fractional_component = total_flow_splits / (max_flow_splits + 1)
+        assert fractional_component < 1, \
             'The fractional component should not be greater than 1'
-
-        # This check is required so as not to increment the variables that
-        # represents the total number of flows that have a split.
-        if fractional_component == 1:
-            fractional_component = 0.999
 
         metric_value = num_flows_with_split + fractional_component
         return metric_value
