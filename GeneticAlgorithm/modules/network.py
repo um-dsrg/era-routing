@@ -153,6 +153,11 @@ class Network:
         """
         return len(flows) + 1
 
+    def _get_delay_distribution_upper_bound(self, flows):
+        # type: (Dict[int, Flow])
+        """Returns the upper bound for the delay distribution metric"""
+        return len(flows)
+
     @staticmethod
     def _get_network_flow_upper_bound(flows: dict):
         """Return the total data rate requested."""
