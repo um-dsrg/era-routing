@@ -91,7 +91,7 @@ def create_ga_jobscript(k_value, net_load, num_flows, ksp_result_file, base_path
                '    --mutation_fraction 0.1 \\\n'
                '    --objectives \\\n'
                '    "net_flow, 1, _calculate_total_network_flow, _get_network_flow_upper_bound " \\\n'
-               '    "net_cost, -1, _calculate_total_network_cost, _get_network_cost_upper_bound " \\\n'
+               '    "delay_met, 1, _calculate_delay_distribution_metric, _get_delay_distribution_upper_bound " \\\n'
                '    "tot_flow_splits, -1, _calculate_flow_splits_metric, _get_flow_splits_upper_bound"'
                .format(ksp_result_file, ga_result_file))
 
@@ -109,7 +109,7 @@ def main():
     # path will be interpreted by the shell not by the python interpreter.
 
     home_dir = str(Path.home())
-    sp_objs_dir = 'GDrive/Scratchpad/genetic_algorithm/new_objectives/flow_splits_only'
+    sp_objs_dir = 'GDrive/Scratchpad/genetic_algorithm/new_objectives'
     base_directory = str(Path.home()) + '/' + sp_objs_dir
     network_load = ['high', 'medium', 'low']
     k_values = ['5']
