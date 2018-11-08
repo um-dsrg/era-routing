@@ -500,24 +500,23 @@ class GaOperators:
         metric_value = 0
 
         for flow in self.flows.values():  # Loop through all the flows
-            print(flow)
             # Path Delay value: Data Rate passing through that path
             path_delay_data = {flow.get_path_cost(path_id): chromosome[path_id]
                                for path_id in flow.get_path_ids()
                                if chromosome[path_id] > 0}
-            print(path_delay_data)
-            lowest_delay_path = min(path_cost_data.keys())
-            print(lowest_delay_path)
+
+            if not path_delay_data:  # path_delay_data is empty
+                continue
+
+            lowest_delay_path = min(path_delay_data.keys())
 
             # Calculate the delay distribution metric for the current flow
             flow_metric_value = 0
             for path_delay, data_rate in path_delay_data.items():
                 path_multiplier = 1 / ((path_delay - lowest_delay_path) + 1)
                 flow_metric_value += (path_multiplier * data_rate)
-                print('Path multiplier: {}'.format(path_multiplier))
-                print('Flow metric value: {}'.format(flow_metric_value))
 
-            # Normalising the flow metric value by the allocated data rate
+            # Normalise the flow metric value by the allocated data rate
             flow_metric_value /= sum(path_delay_data.values())
             assert flow_metric_value <= 1, 'The flow delay distribution metric can never exceed 1'
             metric_value += flow_metric_value
