@@ -49,6 +49,10 @@ class Flow:
         """Return a list of path costs the flow uses."""
         return [path.cost for path in self.paths.values()]
 
+    def get_path_cost(self, path_id):
+        """Return the cost for the path with the given id."""
+        return self.paths[path_id].cost
+
     def _generate_flow_from_element(self, flow_element):
         """Parse the XML <Flow> element and build the Flow object.
 

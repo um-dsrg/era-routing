@@ -5,6 +5,7 @@ mutation.
 import math
 import operator
 import random
+from collections import OrderedDict
 
 import numpy as np
 
@@ -469,6 +470,58 @@ class GaOperators:
             'The fractional component should not be greater than 1'
 
         metric_value = num_flows_with_split + fractional_component
+        return metric_value
+
+    def _calculate_delay_distribution_metric(self, chromosome):
+        """Calculates the delay distribution metric for a given chromosome.
+
+        The delay distribution metric is a measure of how the data rate is
+        distributed among the given set of paths. The more data rate on the
+        lower delay paths, the better. The maximum value the metric can obtain
+        for a single flow is 1. A value of 1 means that the flow is being
+        transmitted solely on the path with the lowest delay value available.
+        The metric is calculated as follows on a per flow basis: Get the paths
+        and the data rate allocated on that path and generate a multiplier for
+        each path that has some data rate transmitted on it. The multiplier for
+        a particular path is generated using the following formula:
+
+            1 / (difference from smallest delay value) + 1
+
+        The data rate transmitted on the given path is multiplied with the path
+        multiplier. This is repeated for all paths and the results summed. Finally,
+        the result is divided by the total allocated data rate such that the metric
+        value for each flow can only have a range of 0 - 1. This is required so as
+        not to let the metric be affected by the data rate currently being
+        transmitted.
+
+        :param chromosome: The chromosome to be evaluated
+        :return: The delay distribution metric.
+        """
+        metric_value = 0
+
+        for flow in self.flows.values():  # Loop through all the flows
+            print(flow)
+            # Path Delay value: Data Rate passing through that path
+            path_delay_data = {flow.get_path_cost(path_id): chromosome[path_id]
+                               for path_id in flow.get_path_ids()
+                               if chromosome[path_id] > 0}
+            print(path_delay_data)
+            lowest_delay_path = min(path_cost_data.keys())
+            print(lowest_delay_path)
+
+            # Calculate the delay distribution metric for the current flow
+            flow_metric_value = 0
+            for path_delay, data_rate in path_delay_data.items():
+                path_multiplier = 1 / ((path_delay - lowest_delay_path) + 1)
+                flow_metric_value += (path_multiplier * data_rate)
+                print('Path multiplier: {}'.format(path_multiplier))
+                print('Flow metric value: {}'.format(flow_metric_value))
+
+            # Normalising the flow metric value by the allocated data rate
+            flow_metric_value /= sum(path_delay_data.values())
+            assert flow_metric_value <= 1, 'The flow delay distribution metric can never exceed 1'
+            metric_value += flow_metric_value
+
         return metric_value
 
     @staticmethod
