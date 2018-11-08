@@ -1,0 +1,82 @@
+<Log>
+    <Parameters>
+        <LgfFile>/Users/noel/GDrive/Scratchpad/genetic_algorithm/butterfly_tcp/butterfly.lgf</LgfFile>
+        <k>2</k>
+    </Parameters>
+    <LinkDetails NumberOfLinks="22">
+        <Link Id="0" Cost="1" Capacity="10"/>
+        <Link Id="1" Cost="1" Capacity="10"/>
+        <Link Id="2" Cost="1" Capacity="5"/>
+        <Link Id="3" Cost="1" Capacity="5"/>
+        <Link Id="4" Cost="1" Capacity="10"/>
+        <Link Id="5" Cost="1" Capacity="5"/>
+        <Link Id="6" Cost="1" Capacity="5"/>
+        <Link Id="7" Cost="1" Capacity="5"/>
+        <Link Id="8" Cost="1" Capacity="5"/>
+        <Link Id="9" Cost="1" Capacity="10"/>
+        <Link Id="10" Cost="1" Capacity="10"/>
+        <Link Id="11" Cost="1" Capacity="10"/>
+        <Link Id="12" Cost="1" Capacity="10"/>
+        <Link Id="13" Cost="1" Capacity="5"/>
+        <Link Id="14" Cost="1" Capacity="5"/>
+        <Link Id="15" Cost="1" Capacity="10"/>
+        <Link Id="16" Cost="1" Capacity="5"/>
+        <Link Id="17" Cost="1" Capacity="5"/>
+        <Link Id="18" Cost="1" Capacity="5"/>
+        <Link Id="19" Cost="1" Capacity="5"/>
+        <Link Id="20" Cost="1" Capacity="10"/>
+        <Link Id="21" Cost="1" Capacity="10"/>
+    </LinkDetails>
+    <FlowDetails TotalNumFlows="4" TotalNumPaths="6">
+        <Flow Id="1" SourceNode="0" DestinationNode="8" DataRate="10" PacketSize="590" NumOfPackets="10" Protocol="T" StartTime="0" EndTime="700" SrcPortNumber="1401" DstPortNumber="1400">
+            <Paths NumPaths="2">
+                <Path Id="0" Cost="3">
+                    <Link Id="0"/>
+                    <Link Id="2"/>
+                    <Link Id="9"/>
+                </Path>
+                <Path Id="1" Cost="5">
+                    <Link Id="0"/>
+                    <Link Id="3"/>
+                    <Link Id="4"/>
+                    <Link Id="5"/>
+                    <Link Id="9"/>
+                </Path>
+            </Paths>
+        </Flow>
+        <Flow Id="3" SourceNode="1" DestinationNode="9" DataRate="10" PacketSize="590" NumOfPackets="10" Protocol="T" StartTime="0" EndTime="700" SrcPortNumber="1403" DstPortNumber="1402">
+            <Paths NumPaths="2">
+                <Path Id="2" Cost="3">
+                    <Link Id="1"/>
+                    <Link Id="7"/>
+                    <Link Id="10"/>
+                </Path>
+                <Path Id="3" Cost="5">
+                    <Link Id="1"/>
+                    <Link Id="6"/>
+                    <Link Id="4"/>
+                    <Link Id="8"/>
+                    <Link Id="10"/>
+                </Path>
+            </Paths>
+        </Flow>
+        <Flow Id="2" SourceNode="8" DestinationNode="0" DataRate="10" PacketSize="590" NumOfPackets="10" Protocol="A" StartTime="0" EndTime="700" PortNumber="1401" TcpFlowId="1">
+            <Paths NumPaths="1">
+                <Path Id="4" Cost="3">
+                    <Link Id="20"/>
+                    <Link Id="13"/>
+                    <Link Id="11"/>
+                </Path>
+            </Paths>
+        </Flow>
+        <Flow Id="4" SourceNode="9" DestinationNode="1" DataRate="10" PacketSize="590" NumOfPackets="10" Protocol="A" StartTime="0" EndTime="700" PortNumber="1403" TcpFlowId="3">
+            <Paths NumPaths="1">
+                <Path Id="5" Cost="3">
+                    <Link Id="21"/>
+                    <Link Id="18"/>
+                    <Link Id="12"/>
+                </Path>
+            </Paths>
+        </Flow>
+    </FlowDetails>
+</Log>

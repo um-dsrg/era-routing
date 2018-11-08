@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-python3 -m unittest discover -s tests
+echo "Running metric calculation tests..."
+python3 -m unittest --verbose tests.test_metric_calculation
