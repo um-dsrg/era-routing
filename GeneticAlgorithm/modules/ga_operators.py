@@ -433,9 +433,7 @@ class GaOperators:
         component and the fractional component. The integer component is
         equal to the number of flows that have a split. The fractional
         component is equal to the total number of flow splits. The fractional
-        component is normalised to take a range between 0 and 1. If the
-        fractional component is equal to 1 it is set equal to 0.999 so as not
-        to increment the value of the integer metric.
+        component is normalised to take a range between 0 and 1.
 
         :param chromosome: The chromosome to be evaluated.
         :return: The flow splits metric.
