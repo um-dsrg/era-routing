@@ -40,6 +40,28 @@ def create_flow_set(out_lgf_path, num_flow, net_load):
         raise RuntimeError('The following command returned with errors\n{}'.format(command))
 
 
+def create_lp_jobscript(net_load, num_flows, base_path, shell_graph_path, shell_base_path):
+    """Creates the LP jobscript from the given parameters"""
+    job_queue = 'short'
+    job_name = 'lp_{}l_f_{}'.format(net_load[0], num_flows)
+    job_logs_dir = '${HOME}/logs/'  # Nyquist home directory
+    job_not_flags = 'a'
+    job_email = 'noel.farrugia.09@um.edu.mt'
+    lp_job = JobScript(job_queue, job_name, job_logs_dir, job_not_flags, job_email)
+
+    lp_result_file = shell_base_path + '/result_lp.xml'
+    command = ('${{HOME}}/Development/LpSolver/build/release/lp-solver \\\n'
+               '    --lgfPath {} \\\n'
+               '    --xmlLogPath {} \\\n'
+               '    --solverConfig mfmc'.format(shell_graph_path, lp_result_file))
+    print(repr(command))
+    lp_job.insert_command(command)
+
+    lp_job_path = base_path + '/run_lp.pbs'
+    print('Saving Lp job in {}'.format(lp_job_path))
+    lp_job.save_job_script(lp_job_path)
+
+
 def create_ksp_jobscript(k_value, net_load, num_flows, base_path, shell_graph_path, shell_base_path):
     """Creates the KSP command and jobscript from the given parameters.
 
@@ -105,7 +127,7 @@ def create_ga_jobscript(k_value, net_load, num_flows, ksp_result_file, base_path
 
 def main():
     # *Note* shell_<name> variables represent directories that are meant to be used by
-    # the shell. This are used when writing paths to the jobscript command where the
+    # the shell. These are used when writing paths to the jobscript command where the
     # path will be interpreted by the shell not by the python interpreter.
 
     home_dir = str(Path.home())
@@ -134,6 +156,9 @@ def main():
 
             # Create the graphs with the desired flow distribution
             create_flow_set(graph_path, num_flow, net_load)
+
+            # Create Lp Solver job script
+            create_lp_jobscript(net_load, num_flow, curr_dir, shell_graph_path, shell_curr_dir)
 
             # Create the KSP jobscripts
             for k_value in k_values:
