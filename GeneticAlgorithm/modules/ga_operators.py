@@ -506,7 +506,7 @@ class GaOperators:
             if not path_delay_data:  # path_delay_data is empty
                 continue
 
-            lowest_delay_path = min(path_delay_data.keys())
+            lowest_delay_path = min([flow.get_path_cost(path_id) for path_id in flow.get_path_ids()])
 
             # Calculate the delay distribution metric for the current flow
             flow_metric_value = 0

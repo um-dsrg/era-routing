@@ -55,8 +55,13 @@ class MetricCalcTestSuite(unittest.TestCase):
 
     def test_delay_distribution_metric(self):
         """Check delay distribution metric"""
+        # No data transmission
         chromosome = [0, 0, 0, 0]
         self.assertEqual(self.ga_ops._calculate_delay_distribution_metric(chromosome), 0)
+
+        # Data transmitted on the worse path
+        chromosome = [0, 10, 0, 5]
+        self.assertAlmostEqual(self.ga_ops._calculate_delay_distribution_metric(chromosome), 0.67, places=2)
 
         # All data rate transmitted on the path with lowest delay value
         chromosome = [5, 0, 1, 0]
