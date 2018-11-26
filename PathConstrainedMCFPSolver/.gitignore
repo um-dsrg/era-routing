@@ -1,0 +1,10 @@
+# Ignore build directory
+build/
+
+# Eclipse project files
+.cproject
+.project
+.settings/
+
+# MacOs
+.DS_Store
