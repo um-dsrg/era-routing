@@ -7,7 +7,7 @@
 
 int main (int argc, const char *argv[])
 {
-  std::string kspXmlPath {"/home/noel/Documents/GDrive/Scratchpad/genetic_algorithm/butterfly_tcp/butterfly_ksp.xml"};
+  std::string kspXmlPath {"/home/noel/Documents/GDrive/Scratchpad/pc_mcfp/butterfly_udp/butterfly_ksp.xml"};
   tinyxml2::XMLDocument kspXmlFile;
   tinyxml2::XMLError eResult = kspXmlFile.LoadFile(kspXmlPath.c_str());
 
@@ -28,20 +28,6 @@ int main (int argc, const char *argv[])
   Links links{rootNode};
   std::map<id_t, Flow> flows {PopulateFlowsFromXml(rootNode)};
 
-  // Add the paths that each link is being used by
-  for (auto& flowTuple : flows)
-    {
-      for (auto& pathTuple: flowTuple.second.GetPaths())
-        {
-          Path& path{pathTuple.second};
-
-          for (auto& linkId : path.GetLinks()) // Loop through all the links
-            {
-              links.AddPathToLink(linkId, path.GetAssignedDataRateVariable());
-            }
-        }
-    }
-
   lemon::GlpkLp lpSolver;
 
   // Assign an LP variable for each path
@@ -54,6 +40,20 @@ int main (int argc, const char *argv[])
 
           // Constraint that the data rate assigned on each path is positive
           lpSolver.addRow(dataRateOnPath >= 0);
+        }
+    }
+
+  // Add the paths that each link is being used by
+  for (auto& flowTuple : flows)
+    {
+      for (auto& pathTuple: flowTuple.second.GetPaths())
+        {
+          Path& path{pathTuple.second};
+
+          for (auto& linkId : path.GetLinks()) // Loop through all the links
+            {
+              links.AddPathToLink(linkId, path.GetAssignedDataRateVariable());
+            }
         }
     }
 
