@@ -20,6 +20,7 @@ public:
   Path(tinyxml2::XMLElement* pathElement);
 
   lemon::Lp::Col GetAssignedDataRateVariable() { return m_assignedDataRate; }
+  const std::vector<id_t>& GetLinks() const { return m_links; }
   void SetAssignedDataRateVariable(lemon::Lp::Col dataRateVariable) { m_assignedDataRate = dataRateVariable; }
 
 private:

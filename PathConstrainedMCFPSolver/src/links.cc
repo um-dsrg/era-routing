@@ -54,6 +54,30 @@ Links::GetLinkCapacity (id_t linkId)
     }
 }
 
+std::vector<lemon::Lp::Col>&
+Links::GetPaths (id_t linkId)
+{
+  try{
+      return m_links.at(linkId).pathVariables;
+  } catch (std::out_of_range &e) {
+      std::cerr << "Link with ID: " << linkId << " NOT found" << std::endl;
+      std::cerr << "Error message: " << e.what() << std::endl;
+      throw;
+  }
+}
+
+void
+Links::AddPathToLink (id_t linkId, lemon::Lp::Col pathVariable)
+{
+  try {
+      m_links.at(linkId).pathVariables.push_back(pathVariable);
+  } catch (std::out_of_range &e) {
+      std::cerr << "Link with ID: " << linkId << " NOT found" << std::endl;
+      std::cerr << "Error message: " << e.what() << std::endl;
+      throw;
+  }
+}
+
 void
 Links::PopulateLinksFromXml (tinyxml2::XMLNode* rootNode)
 {
