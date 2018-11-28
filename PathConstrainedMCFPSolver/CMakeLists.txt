@@ -12,6 +12,7 @@ link_directories($ENV{HOME}/libraries/lemon/lib)
 
 add_executable(pc_mcfp_solver
                src/main.cc
+               src/path.cc
                src/links.cc
                src/flows.cc)
 

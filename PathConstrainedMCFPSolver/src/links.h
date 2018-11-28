@@ -15,27 +15,27 @@
 
 #include "definitions.h"
 
-class Links
-{
-public:
-  struct Link
-  {
-    double cost;
-    double capacity;
-    std::vector<lemon::Lp::Col> pathVariables;
-  };
-  std::map<id_t, Link> m_links;
-
-  Links(tinyxml2::XMLNode* rootNode);
-
-  double GetLinkCost(id_t linkId);
-  double GetLinkCapacity(id_t linkId);
-  std::vector<lemon::Lp::Col>& GetPaths (id_t linkId);
-
-  void AddPathToLink(id_t linkId, lemon::Lp::Col pathVariable);
-
-private:
-  void PopulateLinksFromXml(tinyxml2::XMLNode* rootNode);
-};
+//class Links
+//{
+//public:
+//  struct Link
+//  {
+//    double cost;
+//    double capacity;
+//    std::vector<lemon::Lp::Col> pathVariables;
+//  };
+//  std::map<id_t, Link> m_links;
+//
+//  Links(tinyxml2::XMLNode* rootNode);
+//
+//  double GetLinkCost(id_t linkId);
+//  double GetLinkCapacity(id_t linkId);
+//  std::vector<lemon::Lp::Col>& GetPaths (id_t linkId);
+//
+//  void AddPathToLink(id_t linkId, lemon::Lp::Col pathVariable);
+//
+//private:
+//  void PopulateLinksFromXml(tinyxml2::XMLNode* rootNode);
+//};
 
 #endif /* SRC_LINKS_H_ */
