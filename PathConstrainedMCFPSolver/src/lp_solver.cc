@@ -5,9 +5,12 @@
  *      Author: noel
  */
 
+#include <chrono>
+
 #include "lp_solver.h"
 
-LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows) : m_links (links), m_paths(paths), m_flows(flows)
+LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows) :
+  m_links (links), m_paths(paths), m_flows(flows), m_maxFlowDurationMs(0), m_minCostDurationMs (0)
 {}
 
 bool
@@ -16,8 +19,7 @@ LpSolver::solve ()
   bool maxFlow = solveMaxFlowProblem(); // Solve MaxFlow Problem
   if (maxFlow == false) return false;
 
-  // Update the flow data rates
-  for (std::unique_ptr<Flow>& flow: m_flows)
+  for (std::unique_ptr<Flow>& flow: m_flows) // Update the flow data rates
     flow->calculateAllocatedDataRate(m_lpSolver);
 
   m_lpSolver.clear(); // Reset the LP solver
@@ -28,11 +30,11 @@ LpSolver::solve ()
 void
 LpSolver::assignLpVariablePerPath ()
 {
-  // TODO Move in documentation stubble:
   for (std::unique_ptr<Path>& path: m_paths)
     {
       lemon::Lp::Col dataRateOnPath = m_lpSolver.addCol();
       path->setDataRateLpVar(dataRateOnPath);
+
       m_lpSolver.addRow(dataRateOnPath >= 0); // Ensure non-negative data rate assignment
     }
 }
@@ -40,7 +42,6 @@ LpSolver::assignLpVariablePerPath ()
 void
 LpSolver::setFlowDataRateConstraint (bool allowReducedFlowRate)
 {
-  // TODO Move in documentation stubble: Set the flow data rate constraint such that no flow is over provisioned
   for (std::unique_ptr<Flow>& flow: m_flows)
     {
       lemon::Lp::Expr flowDataRateExpression;
@@ -58,7 +59,6 @@ LpSolver::setFlowDataRateConstraint (bool allowReducedFlowRate)
 void
 LpSolver::setLinkCapacityConstraint ()
 {
-  // TODO Move in documentation stubble: Link capacity constraint
   for (auto& linkTuple : m_links)
     {
       std::unique_ptr<Link>& link {linkTuple.second};
@@ -76,8 +76,6 @@ LpSolver::setLinkCapacityConstraint ()
 void
 LpSolver::setMaxFlowObjective ()
 {
-  // TODO Move in documentation stubble:
-  // Set the solver to find the solution with the maximum value
   lemon::Lp::Expr maxFlowObjective;
 
   for (std::unique_ptr<Path>& path: m_paths)
@@ -85,7 +83,7 @@ LpSolver::setMaxFlowObjective ()
       maxFlowObjective += path->getDataRateLpVar();
     }
 
-  m_lpSolver.max();
+  m_lpSolver.max(); // Set solver the find the solution with the largest value
   m_lpSolver.obj(maxFlowObjective);
 }
 
@@ -97,8 +95,26 @@ LpSolver::setMinCostObjective ()
   for (std::unique_ptr<Path>& path: m_paths)
     minCostObjective += (path->getDataRateLpVar() * path->getCost());
 
-  m_lpSolver.min();
+  m_lpSolver.min(); // Set solver the find the solution with the smallest value
   m_lpSolver.obj(minCostObjective);
+}
+
+bool
+LpSolver::solveLpProblem (Problem problem)
+{
+  std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+  m_lpSolver.solve();
+  std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+  if (problem == Problem::MaxFlow)
+    m_maxFlowDurationMs = std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count();
+  else if (problem == Problem::MinCost)
+    m_minCostDurationMs = std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count();
+
+  if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
+    return true;
+  else
+    return false;
 }
 
 bool
@@ -109,13 +125,7 @@ LpSolver::solveMaxFlowProblem ()
   setLinkCapacityConstraint();
   setMaxFlowObjective();
 
-  // TODO Create function to call the solver and store the timing.
-  m_lpSolver.solve();
-
-  if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
-    return true;
-  else
-    return false;
+  return solveLpProblem(Problem::MaxFlow);
 }
 
 bool
@@ -126,11 +136,5 @@ LpSolver::solveMinCostProblem ()
   setLinkCapacityConstraint();
   setMinCostObjective();
 
-  // TODO Create function to call the solver and store the timing.
-  m_lpSolver.solve();
-
-  if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
-    return true;
-  else
-    return false;
+  return solveLpProblem(Problem::MinCost);
 }

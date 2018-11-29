@@ -21,6 +21,8 @@ public:
   bool solve ();
 
 private:
+  enum class Problem { MaxFlow, MinCost };
+
   void assignLpVariablePerPath ();
   void setFlowDataRateConstraint (bool allowReducedFlowRate);
   void setLinkCapacityConstraint ();
@@ -28,12 +30,16 @@ private:
   void setMaxFlowObjective ();
   void setMinCostObjective ();
 
+  bool solveLpProblem (Problem problem);
   bool solveMaxFlowProblem ();
   bool solveMinCostProblem ();
 
   linkContainer_t& m_links;
   pathContainer_t& m_paths;
   flowContainer_t& m_flows;
+
+  double m_maxFlowDurationMs;
+  double m_minCostDurationMs;
 
   lemon::GlpkLp m_lpSolver;
 };
