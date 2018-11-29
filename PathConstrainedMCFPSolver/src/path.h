@@ -1,5 +1,5 @@
 /*
- * Path.h
+ * path.h
  *
  *  Created on: Nov 28, 2018
  *      Author: noel
@@ -8,10 +8,14 @@
 #ifndef SRC_PATH_H_
 #define SRC_PATH_H_
 
-#include <tinyxml2.h>
+#include <vector>
 #include <lemon/lp.h>
+#include <tinyxml2.h>
 
 #include "definitions.h"
+#include "link.h"
+
+class Link;
 
 class Path
 {
@@ -22,17 +26,17 @@ public:
    */
   Path (tinyxml2::XMLElement* pathElement);
 
-  /* Setters */
-  void SetDataRateLpVar (lemon::Lp::Col lpVar) { m_assignedDataRate = lpVar; }
+  void setDataRateLpVar (lemon::Lp::Col lpVar) { m_assignedDataRate = lpVar; }
+  void addLink (Link* link) { m_links.push_back(link); }
 
-  /* Getters */
-  id_t GetId () { return m_id; }
-  double GetCost () { return m_cost; }
-  lemon::Lp::Col GetDataRateLpVar () { return m_assignedDataRate; }
+  id_t getId () { return m_id; }
+  double getCost () { return m_cost; }
+  lemon::Lp::Col getDataRateLpVar () { return m_assignedDataRate; }
 
 private:
   id_t m_id;
   double m_cost;
+  std::vector<Link*> m_links;
   lemon::Lp::Col m_assignedDataRate;
 };
 

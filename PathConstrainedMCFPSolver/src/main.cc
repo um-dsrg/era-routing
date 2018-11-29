@@ -2,8 +2,9 @@
 #include <tinyxml2.h>
 #include <lemon/lp.h>
 
-#include "links.h"
-#include "flows.h"
+#include "definitions.h"
+#include "ksp_parser.h"
+#include "lp_solver.h"
 
 int main (int argc, const char *argv[])
 {
@@ -24,101 +25,28 @@ int main (int argc, const char *argv[])
       return EXIT_FAILURE;
     }
 
-  // Build the links
-  Links links{rootNode};
-  std::map<id_t, Flow> flows {PopulateFlowsFromXml(rootNode)};
+  linkContainer_t links;
+  pathContainer_t paths;
+  flowContainer_t flows;
 
-  lemon::GlpkLp lpSolver;
+  // Build the necessary data structures from the KSP result file
+  parseKspData(rootNode, links, paths, flows);
 
-  // Assign an LP variable for each path
-  for (auto& flowTuple : flows)
-    {
-      for (auto& pathTuple: flowTuple.second.GetPaths())
-        {
-          lemon::Lp::Col dataRateOnPath = lpSolver.addCol();
-          pathTuple.second.SetAssignedDataRateVariable(dataRateOnPath);
-
-          // Constraint that the data rate assigned on each path is positive
-          lpSolver.addRow(dataRateOnPath >= 0);
-        }
-    }
-
-  // Add the paths that each link is being used by
-  for (auto& flowTuple : flows)
-    {
-      for (auto& pathTuple: flowTuple.second.GetPaths())
-        {
-          Path& path{pathTuple.second};
-
-          for (auto& linkId : path.GetLinks()) // Loop through all the links
-            {
-              links.AddPathToLink(linkId, path.GetAssignedDataRateVariable());
-            }
-        }
-    }
-
-  // Set the flow data rate constraint such that no flow is over provisioned
-  for (auto& flowTuple : flows)
-    {
-      Flow& flow {flowTuple.second};
-      lemon::Lp::Expr flowDataRateExpression;
-
-      for (auto& pathTuple: flow.GetPaths())
-        flowDataRateExpression += pathTuple.second.GetAssignedDataRateVariable();
-
-      lpSolver.addRow(flowDataRateExpression <= flow.GetDataRate());
-    }
-
-  // Link capacity constraint
-  for (auto& linkTuple: links.m_links)
-    {
-      lemon::Lp::Expr linkCapacityExpression;
-      for (auto& pathVariable: linkTuple.second.pathVariables)
-        {
-          linkCapacityExpression += pathVariable;
-        }
-      lpSolver.addRow(linkCapacityExpression <= linkTuple.second.capacity);
-    }
-
-  // Set the solver to find the solution with the maximum value
-  lpSolver.max();
-
-  // Set the objective
-  lemon::Lp::Expr objective;
-
-  // Loop through all the flows, all the paths and sum all the variables together.
-  for (auto& flowTuple : flows) // Loop through all the flows
-    {
-      for (auto& pathTuple: flowTuple.second.GetPaths())
-        {
-          objective += pathTuple.second.GetAssignedDataRateVariable();
-        }
-    }
-
-  lpSolver.obj(objective);
-
-  // Solve the problem
+  LpSolver lpSolver (links, paths, flows);
   lpSolver.solve();
-
-  // Output the solution to the problem
-  if (lpSolver.primalType() != lemon::Lp::OPTIMAL)
-    {
-      std::cout << "Solution *NOT* found" << std::endl;
-      return EXIT_FAILURE;
-    }
 
   std::cout << "Solution results" << std::endl;
   std::cout << "----------------" << std::endl;
 
-  for (auto& flowTuple : flows) // Loop through all the flows
+  for (std::unique_ptr<Flow>& flow: flows)
     {
-      std::cout << "Flow Id: " << flowTuple.first << std::endl;
+      std::cout << "Flow Id: " << flow->getId() << std::endl;
 
-      for (auto& pathTuple: flowTuple.second.GetPaths())
+      for (Path* path : flow->getPaths())
         {
-          id_t pathId {pathTuple.first};
-          double dataRate {lpSolver.primal(pathTuple.second.GetAssignedDataRateVariable())};
-          std::cout << "  Path Id: " << pathId << " Data Rate: " << dataRate << std::endl;
+          std::cout << "  Path Id: " << path->getId()
+                    << " Data Rate: " << lpSolver.getLpColValue(path->getDataRateLpVar())
+                    << std::endl;
         }
     }
 

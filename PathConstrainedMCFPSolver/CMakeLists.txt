@@ -11,10 +11,12 @@ include_directories("${Boost_INCLUDE_DIR}" "$ENV{HOME}/libraries/lemon/include")
 link_directories($ENV{HOME}/libraries/lemon/lib)
 
 add_executable(pc_mcfp_solver
-               src/main.cc
+               src/link.cc
                src/path.cc
-               src/links.cc
-               src/flows.cc)
+               src/flow.cc
+               src/ksp_parser.cc
+               src/lp_solver.cc
+               src/main.cc)
 
 target_link_libraries(pc_mcfp_solver emon glpk tinyxml2 pthread
 		      ${Boost_LIBRARIES})

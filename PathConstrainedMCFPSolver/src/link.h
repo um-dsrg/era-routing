@@ -8,12 +8,12 @@
 #ifndef SRC_LINK_H_
 #define SRC_LINK_H_
 
-#include <map>
-#include <vector>
 #include <tinyxml2.h>
 
 #include "definitions.h"
-#include "flow_details.h"
+#include "path.h"
+
+class Path;
 
 class Link
 {
@@ -24,12 +24,11 @@ public:
    */
   Link (tinyxml2::XMLElement* linkElement);
 
-  /* Getters */
+  void addPath(Path* path) { m_paths.push_back(path); }
+
   double getCost () const { return m_cost; }
   double getCapacity () const { return m_capacity; }
-  const std::vector<Path*>& getPaths () const { return m_paths; }
-
-  void addPath (Path* path) { m_paths.push_back(path); }
+  std::vector<Path*>& getPaths () { return m_paths; }
 
 private:
   id_t m_id;
@@ -37,7 +36,5 @@ private:
   double m_capacity;
   std::vector<Path*> m_paths;
 };
-
-void populateLinks (tinyxml2::XMLNode* rootNode, linkContainer_t& links);
 
 #endif /* SRC_LINK_H_ */
