@@ -16,6 +16,7 @@ add_executable(pc_mcfp_solver
                src/flow.cc
                src/ksp_parser.cc
                src/lp_solver.cc
+               src/xml_handler.cc
                src/main.cc)
 
 target_link_libraries(pc_mcfp_solver emon glpk tinyxml2 pthread
