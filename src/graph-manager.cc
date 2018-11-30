@@ -453,7 +453,7 @@ GraphManager::SolveLpProblem (Timing& timing)
 {
   auto startTime = std::chrono::high_resolution_clock::now(); // Starting wallclock
   std::clock_t cpuStart = std::clock(); // Starting the CPU clock
-  m_lpSolver.solve();
+  m_lpSolver.solvePrimalExact();
   std::clock_t cpuEnd = std::clock(); // Stopping the CPU clock
   auto endTime = std::chrono::high_resolution_clock::now(); // Stopping wallclock
 
