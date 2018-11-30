@@ -26,6 +26,7 @@ public:
 
   void addPath(Path* path) { m_paths.push_back(path); }
 
+  id_t getId () const { return m_id; }
   double getCost () const { return m_cost; }
   double getCapacity () const { return m_capacity; }
   std::vector<Path*>& getPaths () { return m_paths; }

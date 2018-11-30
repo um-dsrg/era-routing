@@ -54,8 +54,9 @@ parseKspData (tinyxml2::XMLNode* rootNode, linkContainer_t& links, pathContainer
                 {
                   id_t linkId {0};
                   linkElement->QueryAttribute("Id", &linkId);
-                  links.at(linkId)->addPath(path.get());
-
+                  std::unique_ptr<Link>& link = links.at(linkId);
+                  link->addPath(path.get());
+                  path->addLink(link.get());
                   linkElement = linkElement->NextSiblingElement("Link");
                 }
 

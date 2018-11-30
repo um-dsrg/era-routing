@@ -31,7 +31,9 @@ public:
 
   id_t getId () { return m_id; }
   double getCost () { return m_cost; }
+  std::vector<Link*>& getLinks () { return m_links; }
   lemon::Lp::Col getDataRateLpVar () { return m_assignedDataRate; }
+
 
 private:
   id_t m_id;
