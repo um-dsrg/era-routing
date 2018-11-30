@@ -103,7 +103,7 @@ bool
 LpSolver::solveLpProblem (Problem problem)
 {
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-  m_lpSolver.solve();
+  m_lpSolver.solvePrimalExact();
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
   if (problem == Problem::MaxFlow)
