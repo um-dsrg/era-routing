@@ -18,7 +18,7 @@ parseLinks (tinyxml2::XMLNode* rootNode, linkContainer_t& links)
     {
       id_t linkId;
       linkElement->QueryAttribute("Id", &linkId);
-      auto ret = links.insert(std::make_pair(linkId, std::unique_ptr<Link> (new Link(linkElement))));
+      auto ret = links.insert(std::make_pair(linkId, std::unique_ptr<Link> (std::make_unique<Link>(linkElement))));
 
       if (ret.second == false)
         {
@@ -42,12 +42,12 @@ parseKspData (tinyxml2::XMLNode* rootNode, linkContainer_t& links, pathContainer
       std::string flowProtocol {flowElement->Attribute("Protocol")};
       if (flowProtocol == "T" || flowProtocol == "U") // Only parse TCP/UDP flows
         {
-          std::unique_ptr<Flow> flow (new Flow(flowElement));
+          std::unique_ptr<Flow> flow = std::make_unique<Flow>(flowElement);
           XMLElement* pathElement = flowElement->FirstChildElement("Paths")->FirstChildElement("Path");
 
           while (pathElement != nullptr) // Parse paths
             {
-              std::unique_ptr<Path> path (new Path(pathElement));
+              std::unique_ptr<Path> path = std::make_unique<Path>(pathElement);
               XMLElement* linkElement = pathElement->FirstChildElement("Link");
 
               while (linkElement != nullptr) // Parse links
