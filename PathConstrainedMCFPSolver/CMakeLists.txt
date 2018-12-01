@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(path-constrained-mcfp-solver)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall")
 
 # Verify that the BOOST library is installed
