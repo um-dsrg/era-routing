@@ -5,13 +5,16 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{5815cc12-2979-4a77-8c82-81fdde8d6025}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>generate_random_flow_set.py</StartupFile>
+    <StartupFile>setup_obj_test.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId />
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <CommandLineArguments>--base_dir "D:/GDrive/Scratchpad/cec_19/moga" --shell_sp_dir "${HOME}/Documents/GDrive/Scratchpad/cec_19/moga" --network_load "medium" --k_values 5 --flowset_generator_path "D:/repos/Development/SimulationSetup/generate_random_flow_set.py" --input_lgf_path "D:/repos/Development/SimulationSetup/base_geant.lgf"</CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -21,10 +24,13 @@
   <ItemGroup>
     <Compile Include="generate_random_flow_set.py" />
     <Compile Include="modules\job_script.py" />
+    <Compile Include="modules\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="setup_obj_test.py" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="modules" />
+    <Folder Include="modules\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>
