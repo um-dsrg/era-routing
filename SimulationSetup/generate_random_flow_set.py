@@ -38,7 +38,7 @@ class Node:
         @nodes section
 
         Keyword Arguments:
-        lgf_line -- A line from the LGF file used to initialise this node
+            lgf_line -- A line from the LGF file used to initialise this node
         """
         self.outgoing_capacity = 0.0
         self.incoming_capacity = 0.0
@@ -69,8 +69,11 @@ class Node:
 
 class Flow:
     """Class representing a flow"""
-    # Video resolution probabilities. Set by cmd line arguments
-    vid_res_prob = None
+    network_load = ''  # The network load to generate
+
+    # NOTE These counters are only used in the medium network load
+    high_load_counter = -1   # Represents the number of high load network traffic to generate
+    low_load_counter = -1    # Represents the number of low load network traffic to generate
 
     # Default Values
     flow_id = 0         # Flow Id counter
@@ -81,18 +84,18 @@ class Flow:
     def __init__(self, src_node, dst_node, protocol, tcp_flow=None):
         """
         Note: At first the source and destination nodes will refer to switch
-        nodes and will later be updated to terminal link ids.
+        nodes and will later be updated to refer to the terminal link ids.
 
         Keyword Arguments:
-        src_node -- The flow's source node
-        dst_node -- The flow's destination node
-        protocol -- The flow's protocol. TCP/UDP/ACK
-        tcp_flow -- When protocol is ACK, tcp_flow is the TCP flow
+            src_node    -- The flow's source node
+            dst_node    -- The flow's destination node
+            protocol    -- The flow's protocol. TCP/UDP/ACK
+            tcp_flow_id -- When protocol is ACK, tcp_flow_id refers to the respective Id of the TCP flow
         """
-        self.flow_id = self.__get_flow_id()
+        self.flow_id = self._get_flow_id()
         self.src_node = src_node
         self.dst_node = dst_node
-        self.port_number = self.__get_port_number()
+        self.port_number = self._get_port_number()
         self.packet_size = Flow.packet_size
         self.num_packets = Flow.num_packets
         self.protocol = protocol
@@ -103,7 +106,7 @@ class Flow:
             self.tcp_flow_id = tcp_flow.flow_id
             self.data_rate = 0.1
         else:  # TCP/UDP Flow
-            self.data_rate = self.generate_random_data_rate()
+            self.data_rate = self._generate_random_data_rate()
             self.tcp_flow_id = '-'
 
     def __str__(self):
@@ -115,36 +118,49 @@ class Flow:
         return convert_tabs_to_spaces(flow_str)
 
     @staticmethod
-    def __get_port_number():
+    def set_network_load(network_load: str, num_flows: int):
+        Flow.network_load = network_load.lower()
+
+        if Flow.network_load == 'medium':
+            assert num_flows % 2 == 0, \
+                'When using the medium load the number of flows needs to be exactly divisible by 2'
+            Flow.high_load_counter = Flow.low_load_counter = (num_flows / 2)
+
+    @staticmethod
+    def _get_port_number():
         """Returns the port number"""
         Flow.port_number += 1
         return Flow.port_number
 
     @staticmethod
-    def __get_flow_id():
+    def _get_flow_id():
         """Returns the current flow id"""
         Flow.flow_id += 1
         return Flow.flow_id
 
     @staticmethod
-    def generate_random_data_rate():
-        """
-        Randomly generates the flow's data rate using the set distributions
-        """
-        available_vid_res = ['sd', 'hd', 'uhd']
-        vid_res = np.random.choice(available_vid_res, 1, p=Flow.vid_res_prob)
-
-        if vid_res == 'sd':
-            mean = 3.0
-            std_deviation = 0.1
-        elif vid_res == 'hd':
-            mean = 5.0
-            std_deviation = 0.25
-        elif vid_res == 'uhd':
-            mean = 25.0
-            std_deviation = 2.5
+    def _get_data_rate_properties(network_load: str):
+        if network_load == 'low':
+            return (5.0, 0.25)
+        elif network_load == 'high':
+            return (25.0, 2.5)
         else:
-            raise RuntimeError('The selected video type does not exist')
+            raise RuntimeError('The selected network load does not exist.\nNetwork load {}'.format(Flow.network_load))
+
+    @staticmethod
+    def _generate_random_data_rate():
+        """Randomly generates the flow's data rate using the set distributions"""
+        if Flow.network_load.lower() == 'medium':
+            if Flow.high_load_counter > 0:
+                mean, std_deviation = Flow._get_data_rate_properties('high')
+                Flow.high_load_counter -= 1
+            elif Flow.low_load_counter > 0:
+                mean, std_deviation = Flow._get_data_rate_properties('low')
+                Flow.low_load_counter -= 1
+            else:
+                raise RuntimeError('The number of flows does not tally with the low/high load counters.')
+        else:
+            mean, std_deviation = Flow._get_data_rate_properties(Flow.network_load)
 
         return np.random.normal(mean, std_deviation, 1)[0]
 
@@ -156,14 +172,14 @@ def parse_link_from_line_and_scale(lgf_line, nodes, scaling_factor):
     passed as parameter.
 
     Keyword Arguments:
-    lgf_line       -- A line from the LGF file that describes a link
-    nodes          -- The dictionary storing information about the nodes
-    scaling_factor -- The value to multiply the link capacity with. Used to
-                      scale the network
+        lgf_line       -- A line from the LGF file that describes a link
+        nodes          -- The dictionary storing information about the nodes
+        scaling_factor -- The value to multiply the link capacity with. Used to
+                          scale the network
 
     Returns:
-    A tuple containing the link id, and an LGF string representation of the
-    scaled version of the link
+        A tuple containing the link id, and an LGF string representation of the
+        scaled version of the link
     """
     line_split = lgf_line.split()
     src_node = int(line_split[0])
@@ -182,18 +198,17 @@ def parse_link_from_line_and_scale(lgf_line, nodes, scaling_factor):
 
 
 def parse_lgf_file(base_lgf_file, scaling_factor):
-    """
-    Parse the LGF file to build the nodes information
+    """Parse the LGF file to build the nodes information
 
     Keyword Arguments:
-    base_lgf_file  --
-    scaling_factor --
+        base_lgf_file  --
+        scaling_factor --
 
     Returns:
-    A tuple of:
-      - Dictionary containing the information of each node
-      - A list of strings that represent the LGF file with scaled links
-      - The largest link id value met during parsing
+        A tuple of:
+          - Dictionary containing the information of each node
+          - A list of strings that represent the LGF file with scaled links
+          - The largest link id value met during parsing
     """
     nodes = dict()  # Key -> node_id Value -> Node object
     max_link_id = 0  # The largest value of the link id met
@@ -267,18 +282,17 @@ def generate_random_flow_set(nodes, flow_protocol, num_flows_to_generate):
 
 
 def add_terminals_to_lgf_file(flows, updated_lgf_file):
-    """
-    Adds the required terminals to the LGF file.
+    """Adds the required terminals to the LGF file.
 
     Keyword Arguments:
-    flows            -- A dictionary with the Flow Id as key and the
-                        respective Flow object as value
-    updated_lgf_file -- List of strings representing the LGF file
+        flows            -- A dictionary with the Flow Id as key and the
+                            respective Flow object as value
+        updated_lgf_file -- List of strings representing the LGF file
 
     Returns:
-    A dictionary mapping the terminal node connected to a particular switch
-    Key: Switch ID
-    Value: Terminal ID
+        A dictionary mapping the terminal node connected to a particular switch
+            Key: Switch ID
+            Value: Terminal ID
     """
     # Add the terminals to the LGF file
     nodes_used_by_flows = set()  # Store the nodes/switches used by the flows
@@ -308,17 +322,16 @@ def add_terminals_to_lgf_file(flows, updated_lgf_file):
 
 def add_links_to_lgf_file(switch_to_terminal, max_link_id, terminal_switch_dr,
                           updated_lgf_file):
-    """
-    Add the links required to the LGF file
+    """Add the links required to the LGF file
 
     Keyword Arguments:
-    switch_to_terminal -- A dictionary mapping the terminal node connected to
-                          a particular switch
-    max_link_id        -- The largest link id. Used to assign an ID to the
-                          links that has not been used yet.
-    terminal_switch_dr -- The data rate of the links joining the terminals
-                          with the switches
-    updated_lgf_file   -- List of strings representing the LGF file
+        switch_to_terminal -- A dictionary mapping the terminal node connected to
+                              a particular switch
+        max_link_id        -- The largest link id. Used to assign an ID to the
+                              links that has not been used yet.
+        terminal_switch_dr -- The data rate of the links joining the terminals
+                              with the switches
+        updated_lgf_file   -- List of strings representing the LGF file
     """
     link_ins_loc = updated_lgf_file.index('@flows\n')
     updated_lgf_file.insert(link_ins_loc, '# User Generated links\n')
@@ -347,11 +360,11 @@ def add_flows_to_lgf_file(flows, switch_to_terminal, updated_lgf_file):
     nodes to use terminal node ids instead of switch ids.
 
     Keyword Arguments:
-    flows              -- A dictionary with the Flow Id as key and the
-                          respective Flow object as value
-    switch_to_terminal -- A dictionary mapping the terminal node connected to
-                          a particular switch
-    updated_lgf_file   -- List of strings representing the LGF file
+        flows              -- A dictionary with the Flow Id as key and the
+                              respective Flow object as value
+        switch_to_terminal -- A dictionary mapping the terminal node connected to
+                              a particular switch
+        updated_lgf_file   -- List of strings representing the LGF file
     """
     updated_lgf_file.append('# Flow ID / Source Node / Destination Node / '
                             'Port Number / DataRate Incl. Headers (Mbps) / '
@@ -376,11 +389,11 @@ def add_flows_to_lgf_file(flows, switch_to_terminal, updated_lgf_file):
 
 
 def save_lgf_file(updated_lgf_file, file_path):
-    """
-    Save the updated LGF file
+    """Save the updated LGF file
+
     Keyword Arguments:
-    updated_lgf_file -- List of strings representing the LGF file
-    file_path        -- The path where to save the new file
+        updated_lgf_file -- List of strings representing the LGF file
+        file_path        -- The path where to save the new file
     """
     with open(file_path, 'w') as new_file:
         new_file.writelines(updated_lgf_file)
@@ -389,10 +402,10 @@ def save_lgf_file(updated_lgf_file, file_path):
 def main():
     """The main function"""
     parser = argparse.ArgumentParser()
-    parser.add_argument('--base_lgf_file', type=str, required=True,
-                        help='The full path to the base LGF file')
-    parser.add_argument('--save_lgf_file', type=str, required=True,
-                        help='The full path to the new generated LGF file')
+    parser.add_argument('--input_lgf_path', type=str, required=True,
+                        help='The full path to the empty LGF file')
+    parser.add_argument('--output_lgf_path', type=str, required=True,
+                        help='The full path where to output the new generated LGF file')
     parser.add_argument('--num_flows', type=int, required=True,
                         help='The number of flows to generate')
     parser.add_argument('--scaling_factor', type=float, required=True,
@@ -403,36 +416,27 @@ def main():
                         default=10000,
                         help='The terminal <-> switch link data rate. Default '
                              'value of 10,000')
-    parser.add_argument('--vid_res_prob', nargs='*', type=float,
-                        required=False, default=[1.0, 0.5, 0.5],
-                        help='The probabilities of selecting a video '
-                             'resolution. The current available resolutions '
-                             'are: SD, HD, UHD. Default probabilities are: '
-                             'SD: 0 HD: 50% UHD: 50%')
-
+    parser.add_argument('--network_load', type=str, required=True, default='',
+                        help='The network load to generate. Three options are available: Low, Medium, High. '
+                             'Low load:    Data Rate of 5Mbps  | s.d of 0.25'
+                             'High load:   Data Rate of 25Mbps | s.d of 2.5'
+                             'Medium load: Exact 50/50 distribution of Low and High load flows.')
     args = parser.parse_args()
 
-    base_lgf_file = args.base_lgf_file
-    lgf_file_path = args.save_lgf_file
-    scaling_factor = args.scaling_factor
-    num_flows = args.num_flows
-    flow_protocol = args.flow_protocol
-    terminal_to_switch_dr = args.terminal_to_switch_dr
-    Flow.vid_res_prob = args.vid_res_prob  # Set the video resolution
+    Flow.set_network_load(args.network_load, args.num_flows)
 
-    nodes, updated_lgf_file, max_link_id = parse_lgf_file(base_lgf_file,
-                                                          scaling_factor)
+    nodes, updated_lgf_file, max_link_id = parse_lgf_file(args.input_lgf_path, args.scaling_factor)
 
-    flows = generate_random_flow_set(nodes, flow_protocol, num_flows)
+    flows = generate_random_flow_set(nodes, args.flow_protocol, args.num_flows)
 
     switch_to_terminal = add_terminals_to_lgf_file(flows, updated_lgf_file)
 
     add_links_to_lgf_file(switch_to_terminal, max_link_id,
-                          terminal_to_switch_dr, updated_lgf_file)
+                          args.terminal_to_switch_dr, updated_lgf_file)
 
     add_flows_to_lgf_file(flows, switch_to_terminal, updated_lgf_file)
 
-    save_lgf_file(updated_lgf_file, lgf_file_path)
+    save_lgf_file(updated_lgf_file, args.output_lgf_path)
 
 
 if __name__ == '__main__':
