@@ -5,14 +5,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ce154184-8e48-48c0-b4ff-140b0d6f7406}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>ga.py</StartupFile>
+    <StartupFile>misc\ns3_converter.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId />
-    <CommandLineArguments>--ksp_xml_file D:/GDrive/Scratchpad/genetic_algorithm/test_objectives/result_ksp_k_5.xml --result_file D:/GDrive/Scratchpad/genetic_algorithm/test_objectives/result_ga_k_5.xml --num_generations 400 --pop_size 800 --prob_crossover 0.9 --prob_mutation 0.2 --mutation_fraction 0.1 --objectives "net_flow, 1, _calculate_total_network_flow, _get_network_flow_upper_bound " "delay_met, 1, _calculate_delay_distribution_metric, _get_delay_distribution_upper_bound " "tot_flow_splits, -1, _calculate_flow_splits_metric, _get_flow_splits_upper_bound"</CommandLineArguments>
+    <CommandLineArguments>--ksp_xml_file D:\GDrive\Scratchpad\cec_19\moga\load_high\flows_150\result_ksp_k_5.xml --ga_result_file D:\GDrive\Scratchpad\cec_19\moga\load_high\flows_150\result_ga_k_5.xml --ksp_ns3_log_file D:\GDrive\Scratchpad\cec_19\moga\load_high\flows_150\converted.xml --output D:\GDrive\Scratchpad\cec_19\moga\load_high\flows_150\ns3_log.xml</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -22,6 +22,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ga.py" />
+    <Compile Include="misc\ns3_converter.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="modules\definitions.py" />
     <Compile Include="modules\flow.py" />
     <Compile Include="modules\ga_operators.py" />
@@ -43,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="modules" />
+    <Folder Include="misc\" />
     <Folder Include="tests" />
   </ItemGroup>
   <ItemGroup>
