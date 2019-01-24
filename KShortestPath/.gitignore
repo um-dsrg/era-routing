@@ -1,0 +1,9 @@
+# Build directory
+build/
+
+# Sublime specific
+*.sublime-workspace
+
+# MacOS
+.DS_Store
+
