@@ -17,6 +17,7 @@ public:
   /* Node related items*/
   node_t GetNode (identifier_t nodeId) const; /*{ return m_nodeIdToNode.at(nodeId); }*/
   identifier_t GetNodeId (node_t node) const { return m_nodeLabel[node]; }
+  char GetNodeType(node_t node) const { return m_nodeType[node]; }
   nodeIt_t GetNodeIt () const { return nodeIt_t (m_graph); }
   /* Link related items*/
   link_t GetLink (identifier_t linkId) const;
@@ -36,6 +37,9 @@ public:
     return m_graph.target (link);
   }
   linkIt_t GetLinkIt () const { return linkIt_t (m_graph); }
+  graph_t& GetGraph() { return m_graph; }
+  uint32_t get_num_switches ();
+  uint32_t get_num_terminals ();
 
   /* Functions */
   void LoadGraphFromFile(const std::string& lgfPath);

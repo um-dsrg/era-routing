@@ -38,6 +38,34 @@ LemonGraph::GetLink (identifier_t linkId) const
     }
 }
 
+uint32_t LemonGraph::get_num_switches()
+{
+    uint32_t num_switches {0};
+
+    for (auto const& node_entry: m_nodeIdToNode) {
+        auto& node = node_entry.second;
+        auto node_type = m_nodeType[node];
+        if (node_type == 'S')
+            num_switches++;
+    }
+
+    return num_switches;
+}
+
+uint32_t LemonGraph::get_num_terminals()
+{
+    uint32_t num_terminals {0};
+
+    for (auto const& node_entry: m_nodeIdToNode) {
+        auto& node = node_entry.second;
+        auto node_type = m_nodeType[node];
+        if (node_type == 'T')
+            num_terminals++;
+    }
+
+    return num_terminals;
+}
+
 /**
  * @brief Loads the LGF graph into the m_lGraph instance
  * @param lgfPath The path to the LGF file

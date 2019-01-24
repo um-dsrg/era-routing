@@ -14,9 +14,9 @@ public:
 
   void AddParameterList (const std::string& lgfPath, const uint32_t& k);
   void AddLinkDetails (const LemonGraph& lemonGraph);
-  void AddFlows (const Flow::flowContainer_t& flows,
-                 const LemonGraph& lemonGraph);
+  void AddFlows (const Flow::flowContainer_t& flows, const LemonGraph& lemonGraph);
   void SaveXmlFile (const std::string& xmlFileLoc);
+  void add_network_topology(LemonGraph& lemon_graph);
 
 private:
   tinyxml2::XMLElement* CreateFlowElement (const Flow& flow);

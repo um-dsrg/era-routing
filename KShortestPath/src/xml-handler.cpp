@@ -120,6 +120,110 @@ XmlHandler::SaveXmlFile(const std::string &xmlFileLoc)
   if (m_xmlDoc.SaveFile(xmlFileLoc.c_str()) != tinyxml2::XML_SUCCESS)
     throw std::runtime_error("Could not save XML File");
 }
+
+XMLElement* create_link_element(tinyxml2::XMLDocument& xml_document,
+                                lemon::SmartDigraph::Arc& link,
+                                LemonGraph& lemon_graph)
+{
+    DefLemonGraph::graph_t& graph = lemon_graph.GetGraph();
+    lemon::SmartDigraph::Node sourceNode = graph.source(link);
+    lemon::SmartDigraph::Node destinationNode = graph.target(link);
+    int sourceNodeId = lemon_graph.GetNodeId(sourceNode);
+    int destinationNodeId = lemon_graph.GetNodeId(destinationNode);
+
+    XMLElement* linkElement = xml_document.NewElement("LinkElement");
+
+    linkElement->SetAttribute("Id", graph.id(link));
+    linkElement->SetAttribute("SourceNode", sourceNodeId);
+    linkElement->SetAttribute("SourceNodeType",
+                              std::string(1, lemon_graph.GetNodeType(sourceNode)).c_str());
+    linkElement->SetAttribute("DestinationNode", destinationNodeId);
+    linkElement->SetAttribute("DestinationNodeType",
+                              std::string(1, lemon_graph.GetNodeType(destinationNode)).c_str());
+    linkElement->SetAttribute("Capacity", lemon_graph.GetLinkCapacity(link));
+
+    return linkElement;
+}
+
+void XmlHandler::add_network_topology(LemonGraph &lemon_graph)
+{
+    XMLElement* net_top_element = m_xmlDoc.NewElement("NetworkToplogy");
+    auto num_terminals = lemon_graph.get_num_terminals();
+    auto num_switches = lemon_graph.get_num_switches();
+
+    net_top_element->SetAttribute("NumberOfTerminals", num_terminals);
+    net_top_element->SetAttribute("NumberOfSwitches", num_switches);
+    net_top_element->SetAttribute("NumberOfLinks", lemon::countArcs(lemon_graph.GetGraph()));
+
+    std::set<int> visitedLinks;
+
+    // We need to loop through all the links and add their details.
+    for (auto link = lemon_graph.GetLinkIt(); link != lemon::INVALID; ++ link)
+    {
+        int linkId( lemon_graph.GetLinkId(link) );
+        int oppositeLinkId{0};
+
+        // This link is already stored in the XML file. Skip it.
+        if (visitedLinks.find(linkId) != visitedLinks.end()) continue;
+
+        lemon::SmartDigraph::Arc oppositeLink;
+
+        double currentLinkDelay{ lemon_graph.GetLinkCost(link) };
+        bool pairFound(false);
+
+        // Check if link with opposite source and destination exists.
+        for (lemon::ConArcIt<lemon::SmartDigraph> oppositeLinkIt(lemon_graph.GetGraph(), lemon_graph.GetGraph().target(link), lemon_graph.GetGraph().source(link));
+            oppositeLinkIt != lemon::INVALID; ++oppositeLinkIt)
+        {
+            oppositeLinkId = lemon_graph.GetLinkId(oppositeLinkIt);
+            // This link is already stored in the XML file. Skip it.
+            if (visitedLinks.find(oppositeLinkId) != visitedLinks.end()) continue;
+
+            //lemon::SmartDigraph::ArcMap<double> m_linkDelay;
+            if (currentLinkDelay == lemon_graph.GetLinkCost(oppositeLinkIt))
+            {
+                pairFound = true;
+                oppositeLink = oppositeLinkIt;
+                break;
+            }
+        }
+
+        if (!pairFound) // If no pair was found issue a warning.
+        {
+            std::cerr << "Warning: Link " << linkId << " has no opposite link." << std::endl;
+            visitedLinks.insert(linkId);
+
+            XMLElement* linkElement = m_xmlDoc.NewElement("Link");
+            linkElement->SetAttribute("Delay", lemon_graph.GetLinkCost(link));
+            linkElement->InsertFirstChild(create_link_element(m_xmlDoc, link, lemon_graph));
+
+            net_top_element->InsertFirstChild(linkElement);
+        }
+        else // A pair is found.
+        {
+            // Verify that the links have the same cost
+            link_t link = lemon_graph.GetLink(linkId);
+            link_t opposite_link = lemon_graph.GetLink(oppositeLinkId);
+            assert(lemon_graph.GetLinkCost(link) == lemon_graph.GetLinkCost(opposite_link));
+
+            visitedLinks.insert(linkId);
+            visitedLinks.insert(oppositeLinkId);
+
+            XMLElement* linkElement = m_xmlDoc.NewElement("Link");
+            linkElement->SetAttribute("Delay", lemon_graph.GetLinkCost(link));
+            linkElement->InsertFirstChild(create_link_element(m_xmlDoc, link, lemon_graph));
+            linkElement->InsertFirstChild(create_link_element(m_xmlDoc, oppositeLink, lemon_graph));
+
+            net_top_element->InsertFirstChild(linkElement);
+        }
+    }
+
+    // Add a comment in the XML file that will describe the units being used.
+    XMLComment* comment = m_xmlDoc.NewComment("Delay (ms), Capacity (Mbps), Node Type (T=Terminal, S=Switch)");
+    net_top_element->InsertFirstChild(comment);
+    m_rootNode->InsertEndChild(net_top_element);
+}
+
 /**
  * @brief Creates a Flow element from a flow object
  * @param flow A flow object

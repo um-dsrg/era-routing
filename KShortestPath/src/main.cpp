@@ -52,6 +52,7 @@ int main(int argc, const char * argv[])
       kspFile.AddParameterList (lgfPath, k);
       kspFile.AddLinkDetails (lemonGraph);
       kspFile.AddFlows (flows, lemonGraph);
+      kspFile.add_network_topology(lemonGraph);
       kspFile.SaveXmlFile (kspXmlPath);
     }
   catch (std::exception& e)
