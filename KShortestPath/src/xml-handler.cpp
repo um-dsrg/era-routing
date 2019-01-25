@@ -147,7 +147,7 @@ XMLElement* create_link_element(tinyxml2::XMLDocument& xml_document,
 
 void XmlHandler::add_network_topology(LemonGraph &lemon_graph)
 {
-    XMLElement* net_top_element = m_xmlDoc.NewElement("NetworkToplogy");
+    XMLElement* net_top_element = m_xmlDoc.NewElement("NetworkTopology");
     auto num_terminals = lemon_graph.get_num_terminals();
     auto num_switches = lemon_graph.get_num_switches();
 
