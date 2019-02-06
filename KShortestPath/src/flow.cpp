@@ -63,16 +63,21 @@ Flow::Parse(const std::string &line)
       char parsedProtocol;
       flowSs >> parsedProtocol;
 
-      if (parsedProtocol == 'T') protocol = Protocol::Tcp;
-      else if (parsedProtocol == 'U') protocol = Protocol::Udp;
-      else if (parsedProtocol == 'A') protocol = Protocol::Ack;
-      else throw std::invalid_argument ("Unknown protocol type");
+      if (parsedProtocol == 'T') {
+        protocol = Protocol::Tcp;
+      } else if (parsedProtocol == 'U') {
+        protocol = Protocol::Udp;
+      } else if (parsedProtocol == 'A') {
+        protocol = Protocol::Ack;
+      } else {
+        throw std::invalid_argument ("Unknown protocol type");
+      }
 
       flowSs >> startTime >> endTime;
 
-      // Retrieve the TCP Flow Id ONLY if it is an ACK flow
-      if (protocol == Protocol::Ack)
+      if (protocol == Protocol::Ack) { // Retrieve the TCP Flow Id ONLY if it is an ACK flow
         flowSs >> tcpFlowId;
+      }
     }
   catch (std::invalid_argument& e)
     {
@@ -88,47 +93,36 @@ Flow::Parse(const std::string &line)
 }
 
 void SetFileCursorToFlowsSection (std::ifstream& file);
-void UpdateTcpFlowsWithSrcPort (Flow::flowContainer_t& flows);
 
 Flow::flowContainer_t
 ParseFlows (const std::string& lgfPath)
 {
   std::ifstream lgfFile;
-  // Enable exceptions if error occurs during file read
-  lgfFile.exceptions(std::ifstream::badbit);
+  lgfFile.exceptions(std::ifstream::badbit); // Enable exceptions if error occurs during file read
 
   Flow::flowContainer_t flows;
 
-  try
-    {
-      LOG_MSG("Loading flows from " + lgfPath);
-      lgfFile.open(lgfPath, std::ifstream::in); // Open file as Read Only
+  try {
+    LOG_MSG("Loading flows from " + lgfPath);
+    lgfFile.open(lgfPath, std::ifstream::in); // Open file as Read Only
 
-      // Set the file cursor to the flows section
-      SetFileCursorToFlowsSection(lgfFile);
+    SetFileCursorToFlowsSection(lgfFile); // Set the file cursor to the flows section
 
-      std::string line;
-      while (std::getline(lgfFile, line))
-        {
-          if (!line.empty())
-            {
-              Flow flow(line);
-              auto ret = flows.emplace (std::make_pair (flow.GetFlowId (),
-                                                        flow));
-              if (!ret.second)
-                  std::cerr << "ERROR: Trying to insert a duplicate flow. "
-                               "Flow Id: " << flow.GetFlowId ();
-            }
+    std::string line;
+    while (std::getline(lgfFile, line)) {
+        if (!line.empty()) {
+          Flow flow(line);
+          auto ret = flows.emplace (std::make_pair (flow.GetFlowId (), flow));
+          if (!ret.second) {
+            std::cerr << "ERROR: Trying to insert a duplicate flow. Flow Id: " << flow.GetFlowId ();
+          }
         }
     }
-  catch (std::ifstream::failure& e)
-    {
-      std::cerr << "Loading the LGF file failed\n" << lgfPath << "\n"
-                << e.what()  << std::endl;
-      throw;
-    }
-
-  UpdateTcpFlowsWithSrcPort (flows);
+  } catch (std::ifstream::failure& e) {
+    std::cerr << "Loading the LGF file failed\n" << lgfPath << "\n"
+              << e.what()  << std::endl;
+    throw;
+  }
 
   return flows;
 }
@@ -175,36 +169,5 @@ SetFileCursorToFlowsSection(std::ifstream& file)
     {
       // Extract and ignore a line
       file.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
-    }
-}
-
-/**
- * @brief Update the source port of the TCP data flows
- *
- * Update the source port of the TCP data flows to be equal to its respective
- * ACK flow's destination port.
- *
- * @param flows
- */
-void UpdateTcpFlowsWithSrcPort (Flow::flowContainer_t& flows)
-{
-  for (auto& flowEntry : flows)
-    {
-      Flow& flow = flowEntry.second;
-
-      if (flow.GetProtocol () == Protocol::Ack)
-        {
-          identifier_t tcpDataFlowId = flow.GetTcpFlowId();
-          try
-            {
-              Flow& tcpDataFlow = flows.at(tcpDataFlowId);
-              tcpDataFlow.SetSrcPort (flow.GetDstPort ());
-            }
-          catch (std::out_of_range& e)
-            {
-              std::cerr << "Flow ID: " << tcpDataFlowId << " not found";
-              throw;
-            }
-        }
     }
 }
