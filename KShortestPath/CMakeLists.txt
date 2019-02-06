@@ -6,7 +6,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DMY_DEBUG")
 
 if(APPLE)  # MacOS specific instructions
-  set(BOOST_ROOT /usr/local/opt/boost)
   link_directories("/usr/local/lib")
   include_directories("/usr/local/include")
 endif()
