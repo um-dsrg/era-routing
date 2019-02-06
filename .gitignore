@@ -145,3 +145,6 @@ venv.bak/
 tags
 tags.lock
 *.swp
+
+# # # Xcode projects # # #
+*.xcodeproj/
