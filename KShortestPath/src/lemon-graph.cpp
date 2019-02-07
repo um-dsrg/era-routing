@@ -2,11 +2,12 @@
 
 #include "lemon-graph.hpp"
 
-LemonGraph::LemonGraph () : m_nodeLabel(m_graph), m_nodeType(m_graph),
-                            m_nodeCoordinates(m_graph),
-                            m_linkLabel(m_graph), m_linkCost(m_graph),
-                            m_linkCapacity(m_graph)
-{}
+LemonGraph::LemonGraph (const std::string& lgfPath) :
+    m_nodeLabel(m_graph), m_nodeType(m_graph), m_nodeCoordinates(m_graph),
+    m_linkLabel(m_graph), m_linkCost(m_graph), m_linkCapacity(m_graph)
+{
+    LoadGraphFromFile(lgfPath);
+}
 
 LemonGraph::node_t LemonGraph::GetNode (id_t nodeId) const {
     try {

@@ -23,7 +23,7 @@ public:
     using linkCostMap_t = graph_t::ArcMap<linkCost_t>;
     using linkCapacityMap_t = graph_t::ArcMap<linkCapacity_t>;
     
-    LemonGraph();
+    explicit LemonGraph(const std::string& lgfPath);
 
     /* Node getters */
     node_t GetNode(id_t nodeId) const;
@@ -40,9 +40,9 @@ public:
     node_t GetSourceNode(link_t link) const;
     node_t GetDestinationNode(link_t link) const;
     
+private:
     void LoadGraphFromFile(const std::string& lgfPath);
     
-private:
     graph_t m_graph;
     
     /* Node Maps */
