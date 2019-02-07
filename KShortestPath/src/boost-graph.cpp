@@ -1,3 +1,5 @@
+#include <list>
+#include <math.h>
 #include <boost/numeric/conversion/cast.hpp>
 
 #include "yen_ksp.hpp"
@@ -68,108 +70,79 @@ void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
     }
 }
 
-//
-//bool numbersAreClose(linkCapacity_t value1, linkCapacity_t value2,
-//                     linkCapacity_t accuracy=1e-9)
-//{
-//  return (std::fabs (value1 - value2) < accuracy);
-//}
-//
-///**
-// * @brief Add the kth shortest paths for each data flow including paths with
-// * same cost as path k
-// *
-// * Add the kth shortest paths for each data flow including paths with same
-// * cost as path k. Data flows refer to either TCP or UDP flows. Acknowledgement
-// * flows are routed over the single shortest path (i.e. k = 1).
-// *
-// * @param flows List of flows that will be updated with the paths
-// * @param k The number of paths to include for each flow
-// */
-//void
-//BoostGraph::AddKShortestPaths(Flow::flowContainer_t& flows, uint32_t k)
-//{
-//  for (auto& flowPair: flows)
-//    {
-//      Flow &flow = flowPair.second;
-//
-//      DefBoostGraph::node_t srcNode =
-//        GetNode (m_lemonGraph.GetNode (flow.GetSourceId ()));
-//      DefBoostGraph::node_t dstNode =
-//          GetNode (m_lemonGraph.GetNode (flow.GetDestinationId ()));
-//
-//      std::list<std::pair<linkCost_t,
-//                          std::list<DefBoostGraph::link_t>>> kShortestPaths;
-//
-//      if (flow.GetProtocol () == Protocol::Ack)  // Route Ack flows
-//        {
-//          kShortestPaths = boost::yen_ksp (m_graph, srcNode, dstNode, 1);
-//
-//          if (kShortestPaths.empty ())
-//            throw std::runtime_error ("ACK flow route not found");
-//        }
-//      else // Route data flows
-//        {
-//          uint64_t numPathsToInclude {0};
-//          uint32_t increasedK{k};
-//          std::list<DefBoostGraph::link_t> prevLastPathLinks;
-//
-//          while (true)
-//            {
-//              increasedK =
-//                boost::numeric_cast<uint32_t> (std::lround (increasedK * 1.5));
-//
-//              kShortestPaths = boost::yen_ksp (m_graph, srcNode, dstNode,
-//                                               increasedK);
-//
-//              if (kShortestPaths.size () < k)
-//                { // Number of paths found less than requested
-//                  numPathsToInclude = kShortestPaths.size ();
-//                  break;
-//                }
-//
-//              auto& lastPath = kShortestPaths.back ();
-//
-//              if (lastPath.second == prevLastPathLinks) // No new paths for flow
-//                {
-//                  numPathsToInclude = kShortestPaths.size();
-//                  break;
-//                }
-//              else
-//                {
-//                  auto kthPath = kShortestPaths.begin ();
-//                  std::advance (kthPath, k - 1);
-//                  linkCost_t kthPathCost{kthPath->first};
-//
-//                  numPathsToInclude = k;
-//
-//                  for (auto& currentPath = ++kthPath; // Start from path k+1
-//                       currentPath != kShortestPaths.end ();
-//                       ++currentPath)
-//                    {
-//                      if (numbersAreClose (kthPathCost, currentPath->first))
-//                        numPathsToInclude++;
-//                    }
-//
-//                  if (numPathsToInclude < kShortestPaths.size())
-//                    break;
-//                  else if (numPathsToInclude > kShortestPaths.size())
-//                    {
-//                      std::stringstream ss;
-//                      ss << "Error when finding paths for flow: "
-//                         << flow.GetFlowId ();
-//                      throw std::runtime_error(ss.str ());
-//                    }
-//                }
-//              prevLastPathLinks = std::move(kShortestPaths.back().second);
-//            }
-//
-//          auto firstPathToRemove = kShortestPaths.begin();
-//          std::advance (firstPathToRemove, numPathsToInclude);
-//          kShortestPaths.erase(firstPathToRemove, kShortestPaths.end ());
-//        }
-//
-//      for (auto& path: kShortestPaths) // Add all the paths to the flow
-//          flow.AddPath(Path(path, m_blLinkMap));
-//    }
-//}
+bool numbersAreClose(double value1, double value2, double accuracy=1e-9) {
+    return (std::fabs (value1 - value2) < accuracy);
+}
+
+/**
+ * @brief Add the kth shortest paths for each data flow including paths with
+ * same cost as path k
+ *
+ * Add the kth shortest paths for each data flow including paths with same
+ * cost as path k. Data flows refer to either TCP or UDP flows. Acknowledgement
+ * flows are routed over the single shortest path (i.e. k = 1).
+ *
+ * @param flows List of flows that will be updated with the paths
+ * @param k The number of paths to include for each flow
+ */
+void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, uint32_t k) {
+    for (auto& flowPair : flows) {
+        auto& flow {flowPair.second};
+        
+        auto& srcNode {m_nodeMap.at(flow.sourceId)};
+        auto& dstNode {m_nodeMap.at(flow.destinationId)};
+        
+        auto kShortestPaths = pathContainer_t{boost::yen_ksp(m_graph, srcNode, dstNode,
+                                                             /* Link weight attribute */boost::get(&LinkDetails::cost, m_graph),
+                                                             boost::get(boost::vertex_index_t(), m_graph), k)};
+        
+        if (kShortestPaths.empty()) {
+            throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
+        } else if (kShortestPaths.size() == k) { // Need to find more paths to ensure we are including all equal cost paths
+            auto kthPathCost {kShortestPaths.back().first};
+            auto allEqualCostPathsFound = bool{false};
+            auto extendedK = uint32_t{k};
+            
+            while (allEqualCostPathsFound == false) {
+                extendedK = boost::numeric_cast<uint32_t>(std::ceil(extendedK * 1.5));
+                kShortestPaths = boost::yen_ksp(m_graph, srcNode, dstNode,
+                                                boost::get(&LinkDetails::cost, m_graph),
+                                                boost::get(boost::vertex_index_t(), m_graph), extendedK);
+                
+                if (numbersAreClose(kShortestPaths.back().first, kthPathCost)) {
+                    continue; // The last path cost is equal to the K shortest path. Need to increase K even further.
+                } else {
+                    allEqualCostPathsFound = true;
+                    // Remove all paths that have a cost larger than the kthPathCost
+                    kShortestPaths.remove_if([kthPathCost](const std::pair<linkCost_t, std::list<BoostGraph::link_t>>& path) -> bool {
+                        if (path.first < kthPathCost || numbersAreClose(path.first, kthPathCost)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    });
+                }
+            }
+        }
+        
+        AddDataPaths(flow, kShortestPaths);
+    }
+}
+
+void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& paths) {
+    for (const auto& path: paths) {
+        Path dataPath(/* assign a path id to this path */true);
+        dataPath.cost = path.first;
+        
+        for (const auto& link : path.second) {
+            dataPath.AddLink(boost::get(&LinkDetails::id, m_graph, link));
+        }
+        flow.AddDataPath(dataPath);
+    }
+}
+
+void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
+    for (auto& flowPair : flows) {
+        auto& flow {flowPair.second};
+    }
+}
