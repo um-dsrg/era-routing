@@ -23,8 +23,6 @@ add_executable(ksp
                src/custom_dijkstra_call.hpp
                src/yen_ksp.hpp
                src/definitions.hpp
-               src/path.hpp
-               src/path.cpp
                src/flow.hpp
                src/flow.cpp
                src/lemon-graph.hpp
