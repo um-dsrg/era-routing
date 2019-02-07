@@ -8,28 +8,6 @@
  Path implementation
  */
 
-//Path::Path(std::pair<linkCost_t, std::list<DefBoostGraph::link_t>> path,
-//           const std::map<DefBoostGraph::link_t,
-//                          DefLemonGraph::link_t>& m_blLinkMap) :
-//    pathCost (path.first)
-//{
-//  for (auto& link : path.second) // Populate list of links the path uses
-//    links.emplace_back (m_blLinkMap.at (link));
-//}
-
-///**
-// * @brief Overloads the Path::operator = to check if to Path objects are equal
-// */
-//Path&
-//Path::operator= ( const Path& rhs )
-//{
-//  if (&rhs == this) return *this; // Check for self-assignment
-//
-//  pathCost = rhs.pathCost;
-//  links = rhs.links;
-//  return *this;
-//}
-
 id_t Path::globalPathId = 0;
 
 Path::Path(bool setPathId) {
@@ -40,6 +18,10 @@ Path::Path(bool setPathId) {
 
 void Path::AddLink(id_t linkId) {
     m_links.emplace_back(linkId);
+}
+
+const std::list<id_t>& Path::GetLinks() const {
+    return m_links;
 }
 
 /**
@@ -60,18 +42,6 @@ std::ostream& operator<< (std::ostream& output, const Path& path) {
     
     return output;
 }
-//std::string Path::str (const LemonGraph &lemonGraph)
-//{
-//  std::stringstream ss;
-//
-//  ss << "Path Cost: " << pathCost << "\n"
-//     << "Path: ";
-//
-//  for (auto& link : links)
-//    ss << lemonGraph.GetLinkId (link) << " ";
-//
-//  return ss.str();
-//}
 
 /**
  Flow implementation
@@ -96,26 +66,6 @@ void Flow::AddDataPath (const Path& path) {
 void Flow::AddAckPath(const Path &path) {
     m_ackPaths.emplace_back(path);
 }
-
-//Flow&
-//Flow::operator=(const Flow &rhs)
-//{
-//  if (&rhs == this) return *this; // Check for self-assignment
-//
-//  id = rhs.id;
-//  sourceId = rhs.sourceId;
-//  destinationId = rhs.destinationId;
-//  dstPort = rhs.dstPort;
-//  dataRate = rhs.dataRate;
-//  packetSize = rhs.packetSize;
-//  numOfPackets = rhs.numOfPackets;
-//  protocol = rhs.protocol;
-//  startTime = rhs.startTime;
-//  endTime = rhs.endTime;
-//  tcpFlowId = rhs.tcpFlowId;
-//
-//  return *this;
-//}
 
 bool Flow::operator<(const Flow &other) const {
     return id < other.id;
@@ -232,8 +182,8 @@ Flow::flowContainer_t ParseFlows (const std::string& lgfPath) {
     try {
         std::ifstream lgfFile;
         lgfFile.exceptions(std::ifstream::badbit); // Enable exceptions if error occurs during file read
-        lgfFile.open(lgfPath, std::ifstream::in); // Open file as Read Only
-        SetFileCursorToFlowsSection(lgfFile); // Set the file cursor to the flows section
+        lgfFile.open(lgfPath, std::ifstream::in);  // Open file as Read Only
+        SetFileCursorToFlowsSection(lgfFile);      // Set the file cursor to the flows section
         
         LOG_MSG("File read successfully. Loading flows from " + lgfPath);
         
@@ -243,6 +193,8 @@ Flow::flowContainer_t ParseFlows (const std::string& lgfPath) {
                 Flow flow(line);
                 
                 if (flow.protocol == Protocol::Ack) { // Ignore Acknowledgement flows
+                    std::cout << "Warning: Acknowledgement flows in the LGF will be ignored and will "
+                                 "be setup automatically" << std::endl;
                     continue;
                 }
                 

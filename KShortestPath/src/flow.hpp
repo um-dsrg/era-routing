@@ -17,17 +17,12 @@ struct Path {
     linkCost_t cost {0};
     
     Path(bool setPathId);
-    
     void AddLink (id_t linkId);
+    const std::list<id_t>& GetLinks() const;
     bool operator< (const Path& other) const;
     
     friend std::ostream& operator<< (std::ostream& output, const Path& path);
-//    std::string str(const LemonGraph& lemonGraph);
-//    Path(std::pair<linkCost_t, std::list<DefBoostGraph::link_t>> path,
-//         const std::map<DefBoostGraph::link_t,
-//         DefLemonGraph::link_t>& m_blLinkMap);
 
-//    Path& operator= (const Path& rhs);
 private:
     std::list<id_t> m_links; /**< List of link ids the path goes through. */
 };
@@ -37,9 +32,9 @@ struct Flow {
     using dataRate_t = double;
     using port_t = uint16_t;
     
-    id_t id{0};                     // Flow Id
-    id_t sourceId{0};               // Source Node Id
-    id_t destinationId{0};          // Destination Node Id
+    id_t id{0};                             // Flow Id
+    id_t sourceId{0};                       // Source Node Id
+    id_t destinationId{0};                  // Destination Node Id
     dataRate_t dataRate{0.0};               // The flow's data rate including headers
     uint64_t packetSize{0};                 // The flow's packet size including headers
     uint64_t numOfPackets{0};               // Number of packets the flow is to transmit
@@ -57,8 +52,7 @@ struct Flow {
     const std::list<Path>& GetAckPaths() const;
     void AddDataPath(const Path& path);
     void AddAckPath(const Path& path);
-    
-//    Flow& operator= ( const Flow& rhs );
+
     bool operator< (const Flow& other) const;
     friend std::ostream& operator<< (std::ostream& output, const Flow& flow);
 
