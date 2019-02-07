@@ -9,6 +9,7 @@ namespace po = boost::program_options;
 
 int main(int argc, const char * argv[]) {
     uint32_t k {0};
+    bool verbose {false};
     std::string lgfPath;
     std::string kspXmlPath;
     
@@ -20,6 +21,8 @@ int main(int argc, const char * argv[]) {
                        "The path to the LGF graph file")
                       ("k", po::value<uint32_t>(&k)->required(),
                        "Number of shortest paths to calculate")
+                      ("verbose", po::value<bool>(&verbose),
+                       "Enable verbose output")
                       ("kspXmlPath", po::value<std::string>(&kspXmlPath)->required(),
                        "The path where to store the output of the KSP algorithm in XML format."
                        "This file is used by the Genetic Algorithm to build the network and "
@@ -35,22 +38,22 @@ int main(int argc, const char * argv[]) {
         
         po::notify(vm); // Check if all parameters required were passed
         
-        LemonGraph lemonGraph;
-        lemonGraph.LoadGraphFromFile (lgfPath);
-        
+        LemonGraph lemonGraph (lgfPath);
         BoostGraph boostGraph (lemonGraph);
-        boostGraph.GenerateBoostGraphFromLemonGraph (lemonGraph);
         
-        Flow::flowContainer_t flows = ParseFlows (lgfPath);
+        Flow::flowContainer_t flows {ParseFlows(lgfPath)};
+        boostGraph.FindKShortestPaths(flows, k);
+
+        if (verbose) {
+            PrintFlows(flows);
+        }
         
-        boostGraph.AddKShortestPaths (flows, k);
-        
-        XmlHandler kspFile;
-        kspFile.AddParameterList (lgfPath, k);
-        kspFile.AddLinkDetails (lemonGraph);
-        kspFile.AddFlows (flows, lemonGraph);
-        kspFile.add_network_topology(lemonGraph);
-        kspFile.SaveXmlFile (kspXmlPath);
+//        XmlHandler kspFile;
+//        kspFile.AddParameterList (lgfPath, k);
+//        kspFile.AddLinkDetails (lemonGraph);
+//        kspFile.AddFlows (flows, lemonGraph);
+//        kspFile.add_network_topology(lemonGraph);
+//        kspFile.SaveXmlFile (kspXmlPath);
     } catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return -1;
