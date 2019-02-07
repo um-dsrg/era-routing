@@ -58,10 +58,16 @@ void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
             throw std::runtime_error("Link could not be added in Boost graph. Link Id: "
                                      + std::to_string(linkId) + "\n");
         }
-        
+
+        auto ret = m_linkMap.emplace(linkId, boostLink);
+        if (!ret.second) {
+            throw std::runtime_error("Failed to insert link " + std::to_string(linkId) + " in the link map");
+        }
+
+#ifdef MY_DEBUG /* Debug only Logging */
         auto srcNode {boost::source(boostLink, m_graph)};
         auto dstNode {boost::target(boostLink, m_graph)};
-        
+#endif
         LOG_MSG("Added link " << boost::get(&LinkDetails::id, m_graph, boostLink) <<
                 " Cost " << boost::get(&LinkDetails::cost, m_graph, boostLink) <<
                 " Capacity " << boost::get(&LinkDetails::capacity, m_graph, boostLink) <<
@@ -131,7 +137,7 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, uint32_t k) {
 
 void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& paths) {
     for (const auto& path: paths) {
-        Path dataPath(/* assign a path id to this path */true);
+        Path dataPath(/* assign a path id to this path */ true);
         dataPath.cost = path.first;
         
         for (const auto& link : path.second) {
@@ -144,5 +150,31 @@ void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& pat
 void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
     for (auto& flowPair : flows) {
         auto& flow {flowPair.second};
+
+        for (const auto& path : flow.GetDataPaths()) {
+            Path ackPath(/* do not assign a path id to this path */ false);
+
+            for (const auto& link : path.GetLinks()) {
+                std::cout << "We are working on link " << link << std::endl;
+                auto& dataLink = m_linkMap.at(link);
+
+                auto dataSrcNode = boost::source(dataLink, m_graph);
+                auto dataDstNode = boost::target(dataLink, m_graph);
+
+                bool ackLinkFound {false};
+                BoostGraph::link_t ackLink;
+
+                // The source and destination nodes are reversed to find the opposite link
+                std::tie(ackLink, ackLinkFound) = boost::edge(dataDstNode, dataSrcNode, m_graph);
+
+                if (!ackLinkFound) {
+                    throw std::runtime_error("The opposite link for link " + std::to_string(link) +
+                                             " has not been found");
+                }
+                ackPath.AddLink(boost::get(&LinkDetails::id, m_graph, ackLink));
+            }
+
+            flow.AddAckPath(ackPath);
+        }
     }
 }

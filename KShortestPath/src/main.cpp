@@ -43,6 +43,7 @@ int main(int argc, const char * argv[]) {
         
         Flow::flowContainer_t flows {ParseFlows(lgfPath)};
         boostGraph.FindKShortestPaths(flows, k);
+        boostGraph.AddAckPaths(flows);
 
         if (verbose) {
             PrintFlows(flows);
