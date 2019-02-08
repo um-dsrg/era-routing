@@ -80,13 +80,13 @@ void LemonGraph::LoadGraphFromFile(const std::string& lgfPath) {
         
         LOG_MSG("Building node id -> node map...");
         for (nodeIt_t node = GetNodeIt(); node != lemon::INVALID; ++node) {
-            identifier_t nodeId = m_nodeLabel[node];
+            auto nodeId = id_t{m_nodeLabel[node]};
             m_nodeIdToNode.emplace(nodeId, node);
         }
         
         LOG_MSG("Building link id -> link map...");
         for (linkIt_t link = GetLinkIt(); link != lemon::INVALID; ++link) {
-            identifier_t linkId = m_linkLabel[link];
+            auto linkId = id_t{m_linkLabel[link]};
             m_linkIdToLink.emplace(linkId, link);
         }
     } catch (const lemon::Exception& e) {
