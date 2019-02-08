@@ -21,7 +21,7 @@ struct LinkDetails {
 
 class BoostGraph {
 public:
-    using graph_t = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
+    using graph_t = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS,
                                           NodeDetails, LinkDetails>;
     using node_t = graph_t::vertex_descriptor;
     using link_t = graph_t::edge_descriptor;
@@ -29,10 +29,18 @@ public:
 
     explicit BoostGraph(const LemonGraph& lemonGraph);
 
+    link_t GetLink(id_t linkId) const;
     id_t GetLinkId(const link_t& link) const;
     linkCost_t GetLinkCost(const link_t& link) const;
     linkCapacity_t GetLinkCapacity(const link_t& link) const;
+    id_t GetOppositeLink(id_t linkId) const;
     std::pair<graph_t::edge_iterator, graph_t::edge_iterator> GetLinkIterators() const;
+
+    id_t GetNodeId(const node_t& node) const;
+    char GetNodeType(const node_t node) const;
+    node_t GetSourceNode(const link_t& link) const;
+    node_t GetDestinationNode(const link_t& link) const;
+
 
     void FindKShortestPaths(Flow::flowContainer_t& flows, uint32_t k);
     void AddAckPaths(Flow::flowContainer_t& flows);

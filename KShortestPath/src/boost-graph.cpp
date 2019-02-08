@@ -76,6 +76,15 @@ void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
     }
 }
 
+BoostGraph::link_t BoostGraph::GetLink(id_t linkId) const {
+    try {
+        return m_linkMap.at(linkId);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "The link " << linkId << " was not found" << std::endl;
+        throw;
+    }
+}
+
 id_t BoostGraph::GetLinkId(const BoostGraph::link_t& link) const {
     return boost::get(&LinkDetails::id, m_graph, link);
 }
@@ -88,11 +97,56 @@ linkCapacity_t BoostGraph::GetLinkCapacity(const BoostGraph::link_t& link) const
     return boost::get(&LinkDetails::capacity, m_graph, link);
 }
 
+id_t BoostGraph::GetOppositeLink(id_t linkId) const {
+    auto link = GetLink(linkId);
+    auto linkCost {GetLinkCost(link)};
+
+    auto srcNode {boost::source(link, m_graph)};
+    auto dstNode {boost::target(link, m_graph)};
+    auto dstNodeId {GetNodeId(dstNode)};
+
+    auto oppositeLinkId = id_t{linkId};
+    auto incomingLinksIterators {boost::in_edges(srcNode, m_graph)};
+
+    for (auto incomingLinkIt = incomingLinksIterators.first;
+         incomingLinkIt != incomingLinksIterators.second;
+         ++incomingLinkIt) {
+        auto incomingLinkSrcNodeId = GetNodeId(boost::source(*incomingLinkIt, m_graph));
+        auto incomingLinkCost = GetLinkCost(*incomingLinkIt);
+
+        if ((incomingLinkSrcNodeId == dstNodeId) && (linkCost == incomingLinkCost)) {
+            oppositeLinkId = incomingLinkSrcNodeId;
+            break;
+        }
+    }
+
+    if (linkId == oppositeLinkId) {
+        std::cout << "Warning: Link " << linkId << " has no opposite link" << std::endl;
+    }
+
+    return oppositeLinkId;
+}
+
 std::pair<BoostGraph::graph_t::edge_iterator,
           BoostGraph::graph_t::edge_iterator> BoostGraph::GetLinkIterators() const {
     return boost::edges(m_graph);
 }
 
+id_t BoostGraph::GetNodeId(const BoostGraph::node_t& node) const {
+    return boost::get(&NodeDetails::id, m_graph, node);
+}
+
+char BoostGraph::GetNodeType(const node_t node) const {
+    return boost::get(&NodeDetails::type, m_graph, node);
+}
+
+BoostGraph::node_t BoostGraph::GetSourceNode(const link_t& link) const {
+    return boost::source(link, m_graph);
+}
+
+BoostGraph::node_t BoostGraph::GetDestinationNode(const link_t& link) const {
+    return boost::target(link, m_graph);
+}
 
 bool numbersAreClose(double value1, double value2, double accuracy=1e-9) {
     return (std::fabs (value1 - value2) < accuracy);
