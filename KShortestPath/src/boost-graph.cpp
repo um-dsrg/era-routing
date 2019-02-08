@@ -76,6 +76,24 @@ void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
     }
 }
 
+id_t BoostGraph::GetLinkId(const BoostGraph::link_t& link) const {
+    return boost::get(&LinkDetails::id, m_graph, link);
+}
+
+linkCost_t BoostGraph::GetLinkCost(const BoostGraph::link_t& link) const {
+    return boost::get(&LinkDetails::cost, m_graph, link);
+}
+
+linkCapacity_t BoostGraph::GetLinkCapacity(const BoostGraph::link_t& link) const {
+    return boost::get(&LinkDetails::capacity, m_graph, link);
+}
+
+std::pair<BoostGraph::graph_t::edge_iterator,
+          BoostGraph::graph_t::edge_iterator> BoostGraph::GetLinkIterators() const {
+    return boost::edges(m_graph);
+}
+
+
 bool numbersAreClose(double value1, double value2, double accuracy=1e-9) {
     return (std::fabs (value1 - value2) < accuracy);
 }
