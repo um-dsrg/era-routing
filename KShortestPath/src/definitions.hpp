@@ -4,7 +4,6 @@
 #include <cstdint>
 
 using id_t = uint32_t;
-using identifier_t = uint64_t; // FIXME: Replace this with id_t
 using linkCost_t = double;
 using linkCapacity_t = double;
 
