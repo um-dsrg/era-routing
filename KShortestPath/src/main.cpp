@@ -49,9 +49,11 @@ int main(int argc, const char * argv[]) {
             PrintFlows(flows);
         }
         
-//        XmlHandler kspFile;
-//        kspFile.AddParameterList (lgfPath, k);
-//        kspFile.AddLinkDetails (lemonGraph);
+        XmlHandler kspResFile;
+        kspResFile.AddParameterList(lgfPath, k);
+        kspResFile.AddLinkDetails(boostGraph);
+        kspResFile.SaveFile(kspXmlPath);
+
 //        kspFile.AddFlows (flows, lemonGraph);
 //        kspFile.add_network_topology(lemonGraph);
 //        kspFile.SaveXmlFile (kspXmlPath);
