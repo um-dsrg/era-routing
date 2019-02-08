@@ -1,3 +1,5 @@
+#include <boost/numeric/conversion/cast.hpp>
+
 #include "xml-handler.hpp"
 
 using namespace tinyxml2;
@@ -57,57 +59,88 @@ void XmlHandler::AddLinkDetails(const BoostGraph &graph) {
 
     m_rootNode->InsertEndChild(linkDetElement);
 }
-///**
-// * @brief Add flows to the XML file
-// * @param flows List of flows
-// * @param lemonGraph Instance of the LemonGraph class
-// */
-//void
-//XmlHandler::AddFlows (const Flow::flowContainer_t &flows,
-//                      const LemonGraph& lemonGraph)
-//{
-//  using boost::numeric_cast;
-//  XMLElement* flowDetailsElement = m_xmlDoc.NewElement("FlowDetails");
-//  flowDetailsElement->SetAttribute ("TotalNumFlows",
-//                                    numeric_cast<uint32_t> (flows.size()));
-//
-//  uint32_t pathNumber = 0;
-//
-//  // Save data flows BEFORE acknowledgement flows. This is required by the
-//  // Genetic Algorithm to simplify the network matrix operations.
-//  for (const auto& flowPair : flows)
-//    {
-//      const Flow& flow = flowPair.second;
-//      if (flow.GetProtocol () == Protocol::Ack) continue; // Skip ACK flows
-//
-//      XMLElement* flowElement {CreateFlowElement (flow)};
-//      XMLElement* pathsElement {CreatePathsElement (pathNumber,
-//                                                    flow.GetPaths (),
-//                                                    lemonGraph)};
-//      flowElement->InsertEndChild (pathsElement);
-//      flowDetailsElement->InsertEndChild (flowElement);
-//    }
-//
-//  for (const auto& flowPair : flows)
-//    {
-//      const Flow& flow = flowPair.second;
-//      if (flow.GetProtocol () != Protocol::Ack) continue; // Save ACK flows ONLY
-//
-//      XMLElement* flowElement {CreateFlowElement (flow)};
-//      XMLElement* pathsElement {CreatePathsElement (pathNumber,
-//                                                    flow.GetPaths (),
-//                                                    lemonGraph)};
-//      flowElement->InsertEndChild (pathsElement);
-//      flowDetailsElement->InsertEndChild (flowElement);
-//    }
-//
-//  flowDetailsElement->SetAttribute ("TotalNumPaths", pathNumber);
-//  m_rootNode->InsertEndChild (flowDetailsElement);
-//}
-///**
-// * @brief Saves the XML file in memory to a file
-// * @param xmlFileLoc The full path where to save the xml file
-// */
+
+
+void XmlHandler::AddFlows (const Flow::flowContainer_t& flows) {
+    XMLElement* flowDetElement = m_xmlDoc.NewElement("FlowDetails");
+
+    flowDetElement->SetAttribute("TotalNumFlows",
+                                 boost::numeric_cast<uint32_t> (flows.size()));
+
+    for (const auto& flowPair : flows) {
+        XMLElement* flowElement {CreateFlowElement(flowPair.second)};
+        flowDetElement->InsertEndChild(flowElement);
+    }
+
+    m_rootNode->InsertEndChild(flowDetElement);
+}
+
+XMLElement* XmlHandler::CreateFlowElement (const Flow &flow) {
+    using boost::numeric_cast;
+    XMLElement* flowElement = m_xmlDoc.NewElement("Flow");
+
+    flowElement->SetAttribute("Id", flow.id);
+    flowElement->SetAttribute("SourceNode", flow.sourceId);
+    flowElement->SetAttribute("DestinationNode", flow.destinationId);
+    flowElement->SetAttribute("DataRate", flow.dataRate);
+    flowElement->SetAttribute("PacketSize",
+                              boost::numeric_cast<uint32_t>(flow.packetSize));
+    flowElement->SetAttribute("NumOfPakcets",
+                              boost::numeric_cast<uint32_t>(flow.numOfPackets));
+    flowElement->SetAttribute("Protocol", static_cast<char>(flow.protocol));
+    flowElement->SetAttribute("StartTime",
+                              boost::numeric_cast<uint32_t>(flow.startTime));
+    flowElement->SetAttribute("EndTime",
+                              boost::numeric_cast<uint32_t>(flow.endTime));
+
+    flowElement->InsertEndChild(CreateDataPathsElement(flow.GetDataPaths()));
+    flowElement->InsertEndChild(CreateAckPathsElement(flow.GetAckPaths()));
+
+    return flowElement;
+}
+
+XMLElement* XmlHandler::CreateDataPathsElement(const std::list<Path>& dataPaths) {
+    XMLElement* pathsElement = m_xmlDoc.NewElement("Paths");
+    pathsElement->SetAttribute("NumPaths", boost::numeric_cast<uint32_t>(dataPaths.size()));
+
+    for (const auto& path : dataPaths) {
+        XMLElement* pathElement = m_xmlDoc.NewElement("Path");
+        pathElement->SetAttribute("Id", path.id);
+        pathElement->SetAttribute("Cost", path.cost);
+
+        for (const auto& linkId : path.GetLinks()) {
+            XMLElement* linkElement = m_xmlDoc.NewElement("Link");
+            linkElement->SetAttribute("Id", linkId);
+            pathElement->InsertEndChild(linkElement);
+        }
+
+        pathsElement->InsertEndChild(pathElement);
+    }
+
+    return pathsElement;
+}
+
+XMLElement* XmlHandler::CreateAckPathsElement(const std::list<Path>& ackPaths) {
+    XMLElement* pathsElement = m_xmlDoc.NewElement("AckPaths");
+    pathsElement->SetAttribute("NumPaths", boost::numeric_cast<uint32_t>(ackPaths.size()));
+
+    for (const auto& path : ackPaths) {
+        XMLElement* pathElement = m_xmlDoc.NewElement("Path");
+        pathElement->SetAttribute("Id", path.id);
+        pathElement->SetAttribute("Cost", path.cost);
+
+        for (const auto& linkId : path.GetLinks()) {
+            XMLElement* linkElement = m_xmlDoc.NewElement("Link");
+            linkElement->SetAttribute("Id", linkId);
+            pathElement->InsertEndChild(linkElement);
+        }
+
+        pathsElement->InsertEndChild(pathElement);
+    }
+
+    return pathsElement;
+}
+
 void XmlHandler::SaveFile(const std::string& xmlFilePath) {
     if (m_xmlDoc.SaveFile(xmlFilePath.c_str()) != tinyxml2::XML_SUCCESS) {
         throw std::runtime_error("Could not save XML File in " + xmlFilePath);
@@ -217,90 +250,4 @@ void XmlHandler::SaveFile(const std::string& xmlFilePath) {
 //    m_rootNode->InsertEndChild(net_top_element);
 //}
 //
-///**
-// * @brief Creates a Flow element from a flow object
-// * @param flow A flow object
-// * @return Returns a pointer to the created Flow element
-// */
-//tinyxml2::XMLElement*
-//XmlHandler::CreateFlowElement (const Flow &flow)
-//{
-//  using boost::numeric_cast;
-//  XMLElement* flowElement = m_xmlDoc.NewElement("Flow");
-//
-//  flowElement->SetAttribute ("Id",
-//                             numeric_cast<uint32_t> (flow.GetFlowId ()));
-//  flowElement->SetAttribute ("SourceNode",
-//                             numeric_cast<uint32_t> (flow.GetSourceId ()));
-//  flowElement->SetAttribute ("DestinationNode",
-//                             numeric_cast<uint32_t> (flow.GetDestinationId ()));
-//  flowElement->SetAttribute ("DataRate", flow.GetDataRate ());
-//  flowElement->SetAttribute ("PacketSize",
-//                             numeric_cast<uint32_t> (flow.GetPktSize ()));
-//  flowElement->SetAttribute ("NumOfPackets",
-//                             numeric_cast<uint32_t> (flow.GetNumOfPackets ()));
-//  flowElement->
-//    SetAttribute ("Protocol",
-//                  std::string (1, static_cast<char>
-//                                  (flow.GetProtocol ())).c_str ());
-//  flowElement->SetAttribute ("StartTime",
-//                             numeric_cast<uint32_t> (flow.GetStartTime ()));
-//  flowElement->SetAttribute ("EndTime",
-//                             numeric_cast<uint32_t> (flow.GetEndTime ()));
-//
-//  // Port numbers
-//  if (flow.GetProtocol () == Protocol::Tcp)
-//    {
-//      flowElement->SetAttribute ("SrcPortNumber",
-//                                 numeric_cast<uint32_t> (flow.GetSrcPort ()));
-//      flowElement->SetAttribute ("DstPortNumber",
-//                                 numeric_cast<uint32_t> (flow.GetDstPort ()));
-//    }
-//  else
-//    flowElement->SetAttribute ("PortNumber",
-//                               numeric_cast<uint32_t> (flow.GetDstPort ()));
-//
-//  if (flow.GetProtocol () == Protocol::Ack)
-//    flowElement->SetAttribute ("TcpFlowId",
-//                               numeric_cast<uint32_t> (flow.GetTcpFlowId ()));
-//
-//  return flowElement;
-//}
-///**
-// * @brief Creates the paths element
-// * @param pathNumber A path counter used to give each path a unique Id
-// * @param paths List of paths the flow has
-// * @param lemonGraph Reference to the LemonGraph class
-// * @return Returns the created paths element
-// */
-//tinyxml2::XMLElement*
-//XmlHandler::CreatePathsElement (uint32_t& pathNumber,
-//                                const std::vector<Path> &paths,
-//                                const LemonGraph& lemonGraph)
-//{
-//  using boost::numeric_cast;
-//
-//  XMLElement* pathsElement = m_xmlDoc.NewElement("Paths");
-//  pathsElement->SetAttribute ("NumPaths",
-//                              numeric_cast<uint32_t> (paths.size ()));
-//
-//  for (const auto& path: paths)
-//    {
-//      XMLElement *pathElement = m_xmlDoc.NewElement ("Path");
-//      pathElement->SetAttribute ("Id", pathNumber++);
-//      pathElement->SetAttribute ("Cost", path.pathCost);
-//
-//      for (const auto& link: path.links)
-//        {
-//          XMLElement* linkElement = m_xmlDoc.NewElement ("Link");
-//          linkElement->SetAttribute ("Id",
-//            numeric_cast <uint32_t> (lemonGraph.GetLinkId (link)));
-//
-//          pathElement->InsertEndChild (linkElement);
-//        }
-//
-//      pathsElement->InsertEndChild (pathElement);
-//    }
-//
-//  return pathsElement;
-//}
+

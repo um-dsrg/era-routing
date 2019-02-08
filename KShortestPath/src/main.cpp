@@ -52,9 +52,9 @@ int main(int argc, const char * argv[]) {
         XmlHandler kspResFile;
         kspResFile.AddParameterList(lgfPath, k);
         kspResFile.AddLinkDetails(boostGraph);
+        kspResFile.AddFlows(flows);
         kspResFile.SaveFile(kspXmlPath);
 
-//        kspFile.AddFlows (flows, lemonGraph);
 //        kspFile.add_network_topology(lemonGraph);
 //        kspFile.SaveXmlFile (kspXmlPath);
     } catch (std::exception& e) {

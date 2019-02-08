@@ -1,6 +1,7 @@
 #ifndef xml_handler_hpp
 #define xml_handler_hpp
 
+#include <list>
 #include <string>
 #include <tinyxml2.h>
 
@@ -10,11 +11,16 @@
 class XmlHandler {
 public:
     explicit XmlHandler();
-    void AddParameterList (const std::string& lgfPath, const uint32_t& k);
-    void AddLinkDetails (const BoostGraph& graph);
+    void AddParameterList(const std::string& lgfPath, const uint32_t& k);
+    void AddLinkDetails(const BoostGraph& graph);
+    void AddFlows(const Flow::flowContainer_t& flows);
 
     void SaveFile(const std::string& xmlFilePath);
 private:
+    tinyxml2::XMLElement* CreateFlowElement(const Flow& flow);
+    tinyxml2::XMLElement* CreateDataPathsElement(const std::list<Path>& dataPaths);
+    tinyxml2::XMLElement* CreateAckPathsElement(const std::list<Path>& ackPaths);
+
     tinyxml2::XMLDocument m_xmlDoc;
     tinyxml2::XMLNode* m_rootNode;
 };
