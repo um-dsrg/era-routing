@@ -87,7 +87,8 @@ XMLElement* XmlHandler::CreateFlowElement (const Flow &flow) {
                               boost::numeric_cast<uint32_t>(flow.packetSize));
     flowElement->SetAttribute("NumOfPakcets",
                               boost::numeric_cast<uint32_t>(flow.numOfPackets));
-    flowElement->SetAttribute("Protocol", static_cast<char>(flow.protocol));
+    std::string flowProtocol{static_cast<char>(flow.protocol)};
+    flowElement->SetAttribute("Protocol", flowProtocol.c_str());
     flowElement->SetAttribute("StartTime",
                               boost::numeric_cast<uint32_t>(flow.startTime));
     flowElement->SetAttribute("EndTime",
@@ -141,113 +142,94 @@ XMLElement* XmlHandler::CreateAckPathsElement(const std::list<Path>& ackPaths) {
     return pathsElement;
 }
 
+void XmlHandler::AddNetworkTopology(const BoostGraph& graph) {
+    XMLElement* netTopElement = m_xmlDoc.NewElement("NetworkTopology");
+
+    std::list<std::pair<id_t, id_t>> listPairs {FindLinkPairs(graph)};
+
+    for (const auto& listPair : listPairs) {
+        auto linkAId = listPair.first;
+        auto linkBId = listPair.second;
+
+        auto boostLink = graph.GetLink(linkAId);
+
+        XMLElement* linkElement = m_xmlDoc.NewElement("Link");
+        linkElement->SetAttribute("Delay", graph.GetLinkCost(boostLink));
+
+        if (linkAId == linkBId) { // No pair has been found
+            linkElement->InsertFirstChild(CreateLinkElement(graph, linkAId));
+        } else { // A pair has been found
+            linkElement->InsertFirstChild(CreateLinkElement(graph, linkAId));
+            linkElement->InsertFirstChild(CreateLinkElement(graph, linkBId));
+        }
+
+        netTopElement->InsertEndChild(linkElement);
+    }
+
+    // Add a comment in the XML file that will describe the units being used.
+    XMLComment* comment = m_xmlDoc.NewComment("Delay (ms), Capacity (Mbps), "
+                                              "Node Type (T=Terminal, S=Switch)");
+    netTopElement->InsertFirstChild(comment);
+    m_rootNode->InsertEndChild(netTopElement);
+}
+
+std::list<std::pair<id_t, id_t>> FindLinkPairs(const BoostGraph& graph) {
+    std::list<std::pair<id_t, id_t>> listPairs;
+    std::set<id_t> visitedLinks;
+
+    auto linkIterators = graph.GetLinkIterators();
+    for (auto linkIt = linkIterators.first; linkIt != linkIterators.second; ++linkIt) {
+        auto linkId = graph.GetLinkId(*linkIt);
+
+        if (visitedLinks.find(linkId) != visitedLinks.end()) { // This link has already been saved
+            continue;
+        }
+
+        auto ret = visitedLinks.emplace(linkId);
+        if (!ret.second) {
+            std::cerr << "Trying to insert a duplicate link when creating the network "
+            "topology element. Link Id " << linkId << std::endl;
+        }
+
+        // NOTE: If a pair was not found, the returned link id is equal to that given
+        id_t oppLinkId {graph.GetOppositeLink(linkId)};
+        listPairs.emplace_back(linkId, oppLinkId);
+
+        if (linkId != oppLinkId) {
+            ret = visitedLinks.emplace(oppLinkId);
+            if (!ret.second) {
+                std::cerr << "Trying to insert a duplicate link when creating the network "
+                "topology element. Link Id " << linkId << std::endl;
+            }
+        }
+    }
+
+    return listPairs;
+}
+
+XMLElement* XmlHandler::CreateLinkElement(const BoostGraph& graph, id_t linkId) {
+
+    auto link {graph.GetLink(linkId)};
+
+    XMLElement* linkElement = m_xmlDoc.NewElement("LinkElement");
+    linkElement->SetAttribute("Id", linkId);
+
+    auto srcNode {graph.GetSourceNode(link)};
+    auto dstNode {graph.GetDestinationNode(link)};
+
+    linkElement->SetAttribute("SourceNode", graph.GetNodeId(srcNode));
+    std::string srcNodeType {graph.GetNodeType(srcNode)};
+    linkElement->SetAttribute("SourceNodeType", srcNodeType.c_str());
+    linkElement->SetAttribute("DestinationNode", graph.GetNodeId(dstNode));
+    std::string dstNodeType {graph.GetNodeType(dstNode)};
+    linkElement->SetAttribute("DestinationNodeType", dstNodeType.c_str());
+    linkElement->SetAttribute("Capacity", graph.GetLinkCapacity(link));
+
+    return linkElement;
+}
+
 void XmlHandler::SaveFile(const std::string& xmlFilePath) {
     if (m_xmlDoc.SaveFile(xmlFilePath.c_str()) != tinyxml2::XML_SUCCESS) {
         throw std::runtime_error("Could not save XML File in " + xmlFilePath);
     }
 }
-//
-//XMLElement* create_link_element(tinyxml2::XMLDocument& xml_document,
-//                                lemon::SmartDigraph::Arc& link,
-//                                LemonGraph& lemon_graph)
-//{
-//    DefLemonGraph::graph_t& graph = lemon_graph.GetGraph();
-//    lemon::SmartDigraph::Node sourceNode = graph.source(link);
-//    lemon::SmartDigraph::Node destinationNode = graph.target(link);
-//    int sourceNodeId = lemon_graph.GetNodeId(sourceNode);
-//    int destinationNodeId = lemon_graph.GetNodeId(destinationNode);
-//
-//    XMLElement* linkElement = xml_document.NewElement("LinkElement");
-//
-//    linkElement->SetAttribute("Id", graph.id(link));
-//    linkElement->SetAttribute("SourceNode", sourceNodeId);
-//    linkElement->SetAttribute("SourceNodeType",
-//                              std::string(1, lemon_graph.GetNodeType(sourceNode)).c_str());
-//    linkElement->SetAttribute("DestinationNode", destinationNodeId);
-//    linkElement->SetAttribute("DestinationNodeType",
-//                              std::string(1, lemon_graph.GetNodeType(destinationNode)).c_str());
-//    linkElement->SetAttribute("Capacity", lemon_graph.GetLinkCapacity(link));
-//
-//    return linkElement;
-//}
-//
-//void XmlHandler::add_network_topology(LemonGraph &lemon_graph)
-//{
-//    XMLElement* net_top_element = m_xmlDoc.NewElement("NetworkTopology");
-//    auto num_terminals = lemon_graph.get_num_terminals();
-//    auto num_switches = lemon_graph.get_num_switches();
-//
-//    net_top_element->SetAttribute("NumberOfTerminals", num_terminals);
-//    net_top_element->SetAttribute("NumberOfSwitches", num_switches);
-//    net_top_element->SetAttribute("NumberOfLinks", lemon::countArcs(lemon_graph.GetGraph()));
-//
-//    std::set<int> visitedLinks;
-//
-//    // We need to loop through all the links and add their details.
-//    for (auto link = lemon_graph.GetLinkIt(); link != lemon::INVALID; ++ link)
-//    {
-//        int linkId( lemon_graph.GetLinkId(link) );
-//        int oppositeLinkId{0};
-//
-//        // This link is already stored in the XML file. Skip it.
-//        if (visitedLinks.find(linkId) != visitedLinks.end()) continue;
-//
-//        lemon::SmartDigraph::Arc oppositeLink;
-//
-//        double currentLinkDelay{ lemon_graph.GetLinkCost(link) };
-//        bool pairFound(false);
-//
-//        // Check if link with opposite source and destination exists.
-//        for (lemon::ConArcIt<lemon::SmartDigraph> oppositeLinkIt(lemon_graph.GetGraph(), lemon_graph.GetGraph().target(link), lemon_graph.GetGraph().source(link));
-//            oppositeLinkIt != lemon::INVALID; ++oppositeLinkIt)
-//        {
-//            oppositeLinkId = lemon_graph.GetLinkId(oppositeLinkIt);
-//            // This link is already stored in the XML file. Skip it.
-//            if (visitedLinks.find(oppositeLinkId) != visitedLinks.end()) continue;
-//
-//            //lemon::SmartDigraph::ArcMap<double> m_linkDelay;
-//            if (currentLinkDelay == lemon_graph.GetLinkCost(oppositeLinkIt))
-//            {
-//                pairFound = true;
-//                oppositeLink = oppositeLinkIt;
-//                break;
-//            }
-//        }
-//
-//        if (!pairFound) // If no pair was found issue a warning.
-//        {
-//            std::cerr << "Warning: Link " << linkId << " has no opposite link." << std::endl;
-//            visitedLinks.insert(linkId);
-//
-//            XMLElement* linkElement = m_xmlDoc.NewElement("Link");
-//            linkElement->SetAttribute("Delay", lemon_graph.GetLinkCost(link));
-//            linkElement->InsertFirstChild(create_link_element(m_xmlDoc, link, lemon_graph));
-//
-//            net_top_element->InsertFirstChild(linkElement);
-//        }
-//        else // A pair is found.
-//        {
-//            // Verify that the links have the same cost
-//            link_t link = lemon_graph.GetLink(linkId);
-//            link_t opposite_link = lemon_graph.GetLink(oppositeLinkId);
-//            assert(lemon_graph.GetLinkCost(link) == lemon_graph.GetLinkCost(opposite_link));
-//
-//            visitedLinks.insert(linkId);
-//            visitedLinks.insert(oppositeLinkId);
-//
-//            XMLElement* linkElement = m_xmlDoc.NewElement("Link");
-//            linkElement->SetAttribute("Delay", lemon_graph.GetLinkCost(link));
-//            linkElement->InsertFirstChild(create_link_element(m_xmlDoc, link, lemon_graph));
-//            linkElement->InsertFirstChild(create_link_element(m_xmlDoc, oppositeLink, lemon_graph));
-//
-//            net_top_element->InsertFirstChild(linkElement);
-//        }
-//    }
-//
-//    // Add a comment in the XML file that will describe the units being used.
-//    XMLComment* comment = m_xmlDoc.NewComment("Delay (ms), Capacity (Mbps), Node Type (T=Terminal, S=Switch)");
-//    net_top_element->InsertFirstChild(comment);
-//    m_rootNode->InsertEndChild(net_top_element);
-//}
-//
-

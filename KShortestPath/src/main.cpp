@@ -53,10 +53,8 @@ int main(int argc, const char * argv[]) {
         kspResFile.AddParameterList(lgfPath, k);
         kspResFile.AddLinkDetails(boostGraph);
         kspResFile.AddFlows(flows);
+        kspResFile.AddNetworkTopology(boostGraph);
         kspResFile.SaveFile(kspXmlPath);
-
-//        kspFile.add_network_topology(lemonGraph);
-//        kspFile.SaveXmlFile (kspXmlPath);
     } catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return -1;
