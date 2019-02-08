@@ -28,7 +28,7 @@ private:
 };
 
 struct Flow {
-    using flowContainer_t = std::map<identifier_t, Flow>;
+    using flowContainer_t = std::map<id_t, Flow>;
     using dataRate_t = double;
     using port_t = uint16_t;
     
@@ -41,9 +41,6 @@ struct Flow {
     Protocol protocol{Protocol::Undefined}; // The protocol the flow can use
     uint64_t startTime{0};                  // Time when to start transmission
     uint64_t endTime{0};                    // Time when to stop transmission
-//    identifier_t tcpFlowId;     // This is the flow ID of the TCP data stream.
-//                                // This is only used by ACK flows to determine
-//                                // to which data flow this ACK flow belongs to.
     
     Flow() = delete;
     explicit Flow(const std::string &line);
