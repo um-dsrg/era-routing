@@ -339,6 +339,10 @@ void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
     for (auto& flowPair : flows) {
         auto& flow {flowPair.second};
 
+        if (flow.protocol == Protocol::Udp) { // No ack paths necessary for UDP flows
+            continue;
+        }
+
         for (const auto& path : flow.GetDataPaths()) {
             Path ackPath(/* do not assign a path id to this path */ false);
             ackPath.id = path.id; // Set the Ack Path id to be identical to the Data path id
