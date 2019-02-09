@@ -47,8 +47,8 @@ std::ostream& operator<< (std::ostream& output, const Path& path) {
  Flow implementation
  */
 
-Flow::Flow(const std::string &line) {
-  Parse(line);
+Flow::Flow(const std::string &line, bool perFlowK, uint32_t globalK) {
+  Parse(line, perFlowK, globalK);
 }
 
 const std::list<Path>& Flow::GetDataPaths () const {
@@ -71,7 +71,7 @@ bool Flow::operator<(const Flow &other) const {
     return id < other.id;
 }
 
-void Flow::Parse(const std::string &line) {
+void Flow::Parse(const std::string &line, bool perFlowK, uint32_t globalK) {
     std::istringstream flowSs (line, std::istringstream::in);
     try {
         flowSs >> id >> sourceId >> destinationId >> dataRate >> packetSize
@@ -88,7 +88,13 @@ void Flow::Parse(const std::string &line) {
             throw std::invalid_argument ("Unknown protocol type");
         }
         
-        flowSs >> startTime >> endTime >> k;
+        flowSs >> startTime >> endTime;
+
+        if (perFlowK) {
+            flowSs >> k;
+        } else {
+            k = globalK;
+        }
     } catch (const std::invalid_argument& ia) {
         std::cerr << "Error when converting flow values OR Invalid Protocol Type\n"
                   << ia.what() << std::endl;
@@ -173,7 +179,7 @@ void SetFileCursorToFlowsSection(std::ifstream& file) {
 }
 
 
-Flow::flowContainer_t ParseFlows (const std::string& lgfPath) {
+Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uint32_t globalK) {
     Flow::flowContainer_t flows;
     
     try {
@@ -187,7 +193,7 @@ Flow::flowContainer_t ParseFlows (const std::string& lgfPath) {
         std::string line;
         while (std::getline(lgfFile, line)) {
             if (!line.empty()) {
-                Flow flow(line);
+                Flow flow(line, perFlowK, globalK);
                 auto ret = flows.emplace(flow.id, flow);
                 if (!ret.second) {
                     std::cerr << "ERROR: Trying to insert a duplicate flow. Flow Id: " << flow.id;

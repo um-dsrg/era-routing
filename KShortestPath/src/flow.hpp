@@ -44,8 +44,8 @@ struct Flow {
     uint32_t k{0};                          // The flow specific k value
 
     Flow() = delete;
-    explicit Flow(const std::string &line);
-    
+    explicit Flow(const std::string &line, bool perFlowK, uint32_t globalK);
+
     const std::list<Path>& GetDataPaths() const;
     const std::list<Path>& GetAckPaths() const;
     void AddDataPath(const Path& path);
@@ -55,7 +55,7 @@ struct Flow {
     friend std::ostream& operator<< (std::ostream& output, const Flow& flow);
 
 private:
-    void Parse (const std::string& line);
+    void Parse (const std::string& line, bool perFlowK, uint32_t globalK);
     std::list<Path> m_dataPaths; /**< List of paths the data flow will use */
     std::list<Path> m_ackPaths; /**< List of paths the ack flow will use */
 };
@@ -65,7 +65,7 @@ private:
  * @param lgfPath The full path to the LGF file.
  * @return Vector of flows
  */
-Flow::flowContainer_t ParseFlows (const std::string& lgfPath);
+Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uint32_t globalK);
 
 void PrintFlows (const Flow::flowContainer_t& flows);
     

@@ -153,30 +153,36 @@ bool numbersAreClose(double value1, double value2, double accuracy=1e-9) {
 }
 
 /**
- * @brief Add the kth shortest paths for each data flow including paths with
- * same cost as path k
- *
- * Add the kth shortest paths for each data flow including paths with same
- * cost as path k. Data flows refer to either TCP or UDP flows. Acknowledgement
- * flows are routed over the single shortest path (i.e. k = 1).
- *
- * @param flows List of flows that will be updated with the paths
- * @param k The number of paths to include for each flow
+ @brief Add the kth shortest path for each data flow based on the flow's k value
+
+ Add the kth shortest paths for each data flow. If includeAllKEqualCostPaths is
+ set include all the paths with the same cost as path k. If k is equal to 1, then
+ only one path will be chosen to simulate OSPF routing.
+
+ Acknowledgement paths take the reverse route of the corresponding data path.
+
+ @param flows The flows that will be updated with the paths
+ @param includeAllKEqualCostPaths Flag that when set allows the KSP algorithm to
+                                  include all the paths with cost equal to the kth
+                                  path.
  */
-void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, uint32_t k) {
+void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAllKEqualCostPaths) {
     for (auto& flowPair : flows) {
         auto& flow {flowPair.second};
-        
+
+        auto k = flow.k;
         auto& srcNode {m_nodeMap.at(flow.sourceId)};
         auto& dstNode {m_nodeMap.at(flow.destinationId)};
         
         auto kShortestPaths = pathContainer_t{boost::yen_ksp(m_graph, srcNode, dstNode,
-                                                             /* Link weight attribute */boost::get(&LinkDetails::cost, m_graph),
+                                                             /* Link weight attribute */ boost::get(&LinkDetails::cost, m_graph),
                                                              boost::get(boost::vertex_index_t(), m_graph), k)};
         
         if (kShortestPaths.empty()) {
             throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
-        } else if (kShortestPaths.size() == k) { // Need to find more paths to ensure we are including all equal cost paths
+        } else if ( k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size() == k)) {
+            // Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is enabled, and if the number
+            // of found paths is equal to k; thus, we need more paths to determine whether all paths have been included.
             auto kthPathCost {kShortestPaths.back().first};
             auto allEqualCostPathsFound = bool{false};
             auto extendedK = uint32_t{k};

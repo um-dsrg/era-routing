@@ -8,25 +8,32 @@
 namespace po = boost::program_options;
 
 int main(int argc, const char * argv[]) {
-    uint32_t k {0};
+    std::string inputPath;
+    std::string outputPath;
+    uint32_t globalK {0};
+    bool perFlowK {false};
+    bool includeAllKEqualCostPaths {false};
     bool verbose {false};
-    std::string lgfPath;
-    std::string kspXmlPath;
-    
+
     try {
         po::options_description cmdLineParams("Allowed options");
         cmdLineParams.add_options()
-                      ("help", "produce help message")
-                      ("lgfPath", po::value<std::string>(&lgfPath)->required(),
-                       "The path to the LGF graph file")
-                      ("k", po::value<uint32_t>(&k)->required(),
-                       "Number of shortest paths to calculate")
-                      ("verbose", po::value<bool>(&verbose),
-                       "Enable verbose output")
-                      ("kspXmlPath", po::value<std::string>(&kspXmlPath)->required(),
-                       "The path where to store the output of the KSP algorithm in XML format."
-                       "This file is used by the Genetic Algorithm to build the network and "
-                       "paths");
+                      ("help,h", "Produce the help message.")
+                      ("input,i", po::value<std::string>(&inputPath)->required(),
+                       "The path to the LGF graph file.")
+                      ("output,o", po::value<std::string>(&outputPath)->required(),
+                       "The path where to store the output of the KSP algorithm in XML format.")
+                      ("globalK", po::value<uint32_t>(&globalK),
+                       "Number of shortest paths to calculate for every flow.")
+                      ("perFlowK", po::bool_switch(&perFlowK),
+                       "When set, the number of paths per flow will be determined based on the "
+                       "per flow k value.")
+                      ("includeAllKEqualCostPaths", po::bool_switch(&includeAllKEqualCostPaths),
+                       "When set, all the paths with the same cost as the kth path will be "
+                       "included. Irrelevant of this setting, flows with k=1 will only have "
+                       "one path to simulate OSPF")
+                      ("verbose,v", po::bool_switch(&verbose),
+                       "Enable verbose output.");
         
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, cmdLineParams), vm);
@@ -37,25 +44,29 @@ int main(int argc, const char * argv[]) {
         }
         
         po::notify(vm); // Check if all parameters required were passed
-        
-        LemonGraph lemonGraph (lgfPath);
+
+        if (!perFlowK && globalK <= 0) {
+            throw std::runtime_error("The global K value needs to be set if per flow K is disabled");
+        }
+
+        LemonGraph lemonGraph (inputPath);
         BoostGraph boostGraph (lemonGraph);
-        
-        Flow::flowContainer_t flows {ParseFlows(lgfPath)};
-        boostGraph.FindKShortestPaths(flows, k);
+
+        Flow::flowContainer_t flows {ParseFlows(inputPath, perFlowK, globalK)};
+        boostGraph.FindKShortestPaths(flows, includeAllKEqualCostPaths);
         boostGraph.AddAckPaths(flows);
 
         if (verbose) {
             PrintFlows(flows);
         }
-        
+
         XmlHandler kspResFile;
-        kspResFile.AddParameterList(lgfPath, k);
+//        kspResFile.AddParameterList(inputPath, k);
         kspResFile.AddLinkDetails(boostGraph);
         kspResFile.AddFlows(flows);
         kspResFile.AddNetworkTopology(boostGraph);
-        kspResFile.SaveFile(kspXmlPath);
-    } catch (std::exception& e) {
+        kspResFile.SaveFile(outputPath);
+    } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return -1;
     } catch (...) {
