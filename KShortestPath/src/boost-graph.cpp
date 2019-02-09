@@ -5,13 +5,19 @@
 #include "yen_ksp.hpp"
 #include "boost-graph.hpp"
 
+/**
+ Construct the BoostGraph object from the lemon graph.
+
+ @param lemonGraph Instance of the LemonGraph object.
+ */
 BoostGraph::BoostGraph (const LemonGraph& lemonGraph) {
     GenerateBoostGraph(lemonGraph);
 }
 
 /**
- * @brief Generate a boost graph equivalent of the lemon graph
- * @param lemonGraph LemonGraph instance that contains the parsed lemon graph
+ Generate the boost graph equivalent of the given Lemon graph.
+
+ @param lemonGraph Instance of the LemonGraph object.
  */
 void BoostGraph::GenerateBoostGraph(const LemonGraph& lemonGraph) {
     GenerateBoostNodes(lemonGraph);
@@ -19,6 +25,11 @@ void BoostGraph::GenerateBoostGraph(const LemonGraph& lemonGraph) {
     LOG_MSG("LEMON Graph converted to BOOST Graph successfully");
 }
 
+/**
+ Generates the equivalent boost graph nodes from the Lemon graph.
+
+ @param lemonGraph Instance of the LemonGraph object.
+ */
 void BoostGraph::GenerateBoostNodes(const LemonGraph& lemonGraph) {
     LOG_MSG("Building nodes...");
     for (auto lemonNode = lemonGraph.GetNodeIt(); lemonNode != lemon::INVALID; ++lemonNode) {
@@ -37,6 +48,11 @@ void BoostGraph::GenerateBoostNodes(const LemonGraph& lemonGraph) {
     }
 }
 
+/**
+ Generates the equivalent boost graph links from the Lemon graph.
+
+ @param lemonGraph Instance of the LemonGraph object.
+ */
 void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
     LOG_MSG("Building links...");
     for (auto lemonLink = lemonGraph.GetLinkIt(); lemonLink != lemon::INVALID; ++lemonLink) {
@@ -76,6 +92,12 @@ void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
     }
 }
 
+/**
+ Return the boost link given a link id.
+
+ @param linkId The link id.
+ @return The boost graph link.
+ */
 BoostGraph::link_t BoostGraph::GetLink(id_t linkId) const {
     try {
         return m_linkMap.at(linkId);
@@ -85,18 +107,49 @@ BoostGraph::link_t BoostGraph::GetLink(id_t linkId) const {
     }
 }
 
+/**
+ Returns the link id given a boost graph link.
+
+ @param link The boost graph link.
+ @return The link id.
+ */
 id_t BoostGraph::GetLinkId(const BoostGraph::link_t& link) const {
     return boost::get(&LinkDetails::id, m_graph, link);
 }
 
+/**
+ Returns the cost of the given boost graph link.
+
+ @param link The boost graph link.
+ @return The link cost.
+ */
 linkCost_t BoostGraph::GetLinkCost(const BoostGraph::link_t& link) const {
     return boost::get(&LinkDetails::cost, m_graph, link);
 }
 
+/**
+ Returns the capacity of the given boost graph link.
+
+ @param link The boost graph link.
+ @return The link capacity.
+ */
 linkCapacity_t BoostGraph::GetLinkCapacity(const BoostGraph::link_t& link) const {
     return boost::get(&LinkDetails::capacity, m_graph, link);
 }
 
+/**
+ @brief Retrieve the link oppositve to that given by \p linkId.
+
+ Retrieve the link opposite to that given by \p linkId. The opposite link is defined
+ as the link that has the opposite source and destination nodes BUT identical delay
+ values. The capacities may be different.
+
+ If the opposite link has not been found, the returned link id is equal to \p linkId.
+
+ @param linkId The id of the link to find the opposite of.
+ @return The link id of the opposite link. If the opposite link is not found, the
+         returned link id is equal to that given.
+ */
 id_t BoostGraph::GetOppositeLink(id_t linkId) const {
     auto link = GetLink(linkId);
     auto linkCost {GetLinkCost(link)};
@@ -127,27 +180,69 @@ id_t BoostGraph::GetOppositeLink(id_t linkId) const {
     return oppositeLinkId;
 }
 
+/**
+ Get iterators over the boost graph links.
+
+ @return Iterator over the boost graph links.
+ */
 std::pair<BoostGraph::graph_t::edge_iterator,
           BoostGraph::graph_t::edge_iterator> BoostGraph::GetLinkIterators() const {
     return boost::edges(m_graph);
 }
 
+/**
+ Returns the node id given a boost graph node.
+
+ @param node The boost graph node.
+ @return The node id.
+ */
 id_t BoostGraph::GetNodeId(const BoostGraph::node_t& node) const {
     return boost::get(&NodeDetails::id, m_graph, node);
 }
 
+/**
+ @brief Returns the node type for the given boost graph node.
+
+ Returns the node type for the given boost graph node. A node type of
+ 'S' means the node is a switch. A node type of 'T' means the node is
+ a terminal.
+
+ @param node The boost graph node.
+ @return The node type.
+ */
 char BoostGraph::GetNodeType(const node_t node) const {
     return boost::get(&NodeDetails::type, m_graph, node);
 }
 
+/**
+ Returns the source node of the given link.
+
+ @param link The boost graph link.
+ @return The source node of the given link.
+ */
 BoostGraph::node_t BoostGraph::GetSourceNode(const link_t& link) const {
     return boost::source(link, m_graph);
 }
 
+/**
+ Returns the destination node of the given link.
+
+ @param link The boost graph link.
+ @return The destination node of the given link.
+ */
 BoostGraph::node_t BoostGraph::GetDestinationNode(const link_t& link) const {
     return boost::target(link, m_graph);
 }
 
+/**
+ A function that compares two floating point numbers to check for equality.
+
+ @param value1 The first value to compare.
+ @param value2 The second value to compare.
+ @param accuracy The accuracty used during the comparison. Default: 1e-9.
+ @return True: The numbers are equal at the given accuracy.
+         False: The numbers are not equal at the given accuracy.
+ */
 bool numbersAreClose(double value1, double value2, double accuracy=1e-9) {
     return (std::fabs (value1 - value2) < accuracy);
 }
@@ -181,8 +276,8 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
         if (kShortestPaths.empty()) {
             throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
         } else if ( k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size() == k)) {
-            // Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is enabled, and if the number
-            // of found paths is equal to k; thus, we need more paths to determine whether all paths have been included.
+            /* Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is enabled, and if the number
+               of found paths is equal to k; thus, we need more paths to determine whether all paths have been included. */
             auto kthPathCost {kShortestPaths.back().first};
             auto allEqualCostPathsFound = bool{false};
             auto extendedK = uint32_t{k};
@@ -213,6 +308,12 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
     }
 }
 
+/**
+ Update the flow object to include the paths returned by the KSP algorithm.
+
+ @param flow The flow object to update.
+ @param paths The paths to add to the flow.
+ */
 void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& paths) {
     for (const auto& path: paths) {
         Path dataPath(/* assign a path id to this path */ true);
@@ -225,6 +326,15 @@ void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& pat
     }
 }
 
+/**
+ @brief Find the routes that the Acknowledgment flows will take for TCP flows.
+
+ Find the routes that the Acknowledgment flows will take for TCP flows by looping
+ through all the paths of each flow and finding the reverse path for each data
+ path in the flow.
+
+ @param[in,out] flows The flow container.
+ */
 void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
     for (auto& flowPair : flows) {
         auto& flow {flowPair.second};

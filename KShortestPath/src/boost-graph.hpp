@@ -8,11 +8,17 @@
 #include "definitions.hpp"
 #include "lemon-graph.hpp"
 
+/**
+ Represents all the details associated with a boost graph node.
+ */
 struct NodeDetails {
     id_t id;
     char type; /* S = Switch | T = Terminal */
 };
 
+/**
+ Represents all the details associated with a boost graph link.
+ */
 struct LinkDetails {
     id_t id;
     linkCost_t cost;
@@ -52,9 +58,9 @@ private:
     
     void AddDataPaths(Flow& flow, const pathContainer_t& paths);
     
-    graph_t m_graph;
-    std::map<id_t, node_t> m_nodeMap;
-    std::map<id_t, link_t> m_linkMap;
+    graph_t m_graph;                    /**< The boost graph. */
+    std::map<id_t, node_t> m_nodeMap;   /**< Maps the node id with its respective boost node. */
+    std::map<id_t, link_t> m_linkMap;   /**< Maps the link id with its respective boost link. */
 };
 
 #endif /* boostgraph_hpp */
