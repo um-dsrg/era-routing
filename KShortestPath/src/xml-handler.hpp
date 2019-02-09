@@ -11,7 +11,9 @@
 class XmlHandler {
 public:
     explicit XmlHandler();
-    void AddParameterList(const std::string& lgfPath, const uint32_t& k);
+    void AddParameterList (const std::string& inputFile, const std::string& outputFile,
+                           const uint32_t globalK, bool perFlowK,
+                           bool includeAllKEqualCostPaths);
     void AddLinkDetails(const BoostGraph& graph);
     void AddFlows(const Flow::flowContainer_t& flows);
     void AddNetworkTopology(const BoostGraph& graph);

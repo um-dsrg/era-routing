@@ -8,8 +8,8 @@
 namespace po = boost::program_options;
 
 int main(int argc, const char * argv[]) {
-    std::string inputPath;
-    std::string outputPath;
+    std::string inputFile;
+    std::string outputFile;
     uint32_t globalK {0};
     bool perFlowK {false};
     bool includeAllKEqualCostPaths {false};
@@ -19,9 +19,9 @@ int main(int argc, const char * argv[]) {
         po::options_description cmdLineParams("Allowed options");
         cmdLineParams.add_options()
                       ("help,h", "Produce the help message.")
-                      ("input,i", po::value<std::string>(&inputPath)->required(),
+                      ("input,i", po::value<std::string>(&inputFile)->required(),
                        "The path to the LGF graph file.")
-                      ("output,o", po::value<std::string>(&outputPath)->required(),
+                      ("output,o", po::value<std::string>(&outputFile)->required(),
                        "The path where to store the output of the KSP algorithm in XML format.")
                       ("globalK", po::value<uint32_t>(&globalK),
                        "Number of shortest paths to calculate for every flow.")
@@ -49,10 +49,10 @@ int main(int argc, const char * argv[]) {
             throw std::runtime_error("The global K value needs to be set if per flow K is disabled");
         }
 
-        LemonGraph lemonGraph (inputPath);
+        LemonGraph lemonGraph (inputFile);
         BoostGraph boostGraph (lemonGraph);
 
-        Flow::flowContainer_t flows {ParseFlows(inputPath, perFlowK, globalK)};
+        Flow::flowContainer_t flows {ParseFlows(inputFile, perFlowK, globalK)};
         boostGraph.FindKShortestPaths(flows, includeAllKEqualCostPaths);
         boostGraph.AddAckPaths(flows);
 
@@ -61,11 +61,12 @@ int main(int argc, const char * argv[]) {
         }
 
         XmlHandler kspResFile;
-//        kspResFile.AddParameterList(inputPath, k);
+        kspResFile.AddParameterList(inputFile, outputFile, globalK, perFlowK,
+                                    includeAllKEqualCostPaths);
         kspResFile.AddLinkDetails(boostGraph);
         kspResFile.AddFlows(flows);
         kspResFile.AddNetworkTopology(boostGraph);
-        kspResFile.SaveFile(outputPath);
+        kspResFile.SaveFile(outputFile);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return -1;

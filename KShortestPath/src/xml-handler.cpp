@@ -15,24 +15,40 @@ XmlHandler::XmlHandler() {
     }
 }
 
-/**
- Log the parameters used to generate the result given in this XML result
- file.
-
- @param lgfPath The path to the LGF file used.
- @param k The number of paths to find for each flow.
- */
-void XmlHandler::AddParameterList (const std::string &lgfPath, const uint32_t &k) {
-    // TODO: This needs to be updated because K may be set separate for each flow
+void XmlHandler::AddParameterList (const std::string& inputFile,
+                                   const std::string& outputFile,
+                                   const uint32_t globalK,
+                                   bool perFlowK,
+                                   bool includeAllKEqualCostPaths) {
     XMLElement* parametersElement = m_xmlDoc.NewElement ("Parameters");
 
-    XMLElement* lgfElement = m_xmlDoc.NewElement ("LgfFile");
-    lgfElement->SetText (lgfPath.c_str ());
-    parametersElement->InsertEndChild (lgfElement);
+    XMLElement* inputFileElement = m_xmlDoc.NewElement ("InputFile");
+    inputFileElement->SetText(inputFile.c_str());
+    parametersElement->InsertEndChild(inputFileElement);
 
-    XMLElement* kElement = m_xmlDoc.NewElement ("k");
-    kElement->SetText (k);
-    parametersElement->InsertEndChild (kElement);
+    XMLElement* outputFileElement = m_xmlDoc.NewElement ("OutputFile");
+    outputFileElement->SetText(outputFile.c_str());
+    parametersElement->InsertEndChild(outputFileElement);
+
+    XMLElement* globalKElement = m_xmlDoc.NewElement("GlobalK");
+    globalKElement->SetText(globalK);
+    parametersElement->InsertEndChild(globalKElement);
+
+    XMLElement* perFlowKElement = m_xmlDoc.NewElement("PerFlowK");
+    if (perFlowK) {
+        perFlowKElement->SetText("Enabled");
+    } else {
+        perFlowKElement->SetText("Disabled");
+    }
+    parametersElement->InsertEndChild(perFlowKElement);
+
+    XMLElement* includeAllPathsElement = m_xmlDoc.NewElement("includeAllKEqualCostPaths");
+    if (includeAllKEqualCostPaths) {
+        includeAllPathsElement->SetText("Enabled");
+    } else {
+        includeAllPathsElement->SetText("Disabled");
+    }
+    parametersElement->InsertEndChild(includeAllPathsElement);
 
     m_rootNode->InsertEndChild (parametersElement);
 }
