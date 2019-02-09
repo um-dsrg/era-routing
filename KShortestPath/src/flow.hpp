@@ -8,7 +8,7 @@
 
 #include "definitions.hpp"
 
-enum class Protocol : char {Tcp='T', Ack='A', Udp='U', Undefined='X'};
+enum class Protocol : char {Tcp='T', Udp='U', Undefined='X'};
 
 struct Path {
     static id_t globalPathId;
@@ -41,7 +41,8 @@ struct Flow {
     Protocol protocol{Protocol::Undefined}; // The protocol the flow can use
     uint64_t startTime{0};                  // Time when to start transmission
     uint64_t endTime{0};                    // Time when to stop transmission
-    
+    uint32_t k{0};                          // The flow specific k value
+
     Flow() = delete;
     explicit Flow(const std::string &line);
     

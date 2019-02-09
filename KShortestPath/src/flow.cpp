@@ -72,13 +72,11 @@ bool Flow::operator<(const Flow &other) const {
 }
 
 void Flow::Parse(const std::string &line) {
-    
     std::istringstream flowSs (line, std::istringstream::in);
     try {
-        auto tempDstPort{0}; // Port number is no longer needed; thus, it is ignored
-        flowSs >> id >> sourceId >> destinationId >> tempDstPort >> dataRate
-               >> packetSize >> numOfPackets;
-        
+        flowSs >> id >> sourceId >> destinationId >> dataRate >> packetSize
+               >> numOfPackets;
+
         char parsedProtocol;
         flowSs >> parsedProtocol;
         
@@ -86,13 +84,11 @@ void Flow::Parse(const std::string &line) {
             protocol = Protocol::Tcp;
         } else if (parsedProtocol == 'U') {
             protocol = Protocol::Udp;
-        } else if (parsedProtocol == 'A') {
-            protocol = Protocol::Ack;
         } else {
             throw std::invalid_argument ("Unknown protocol type");
         }
         
-        flowSs >> startTime >> endTime;
+        flowSs >> startTime >> endTime >> k;
     } catch (const std::invalid_argument& ia) {
         std::cerr << "Error when converting flow values OR Invalid Protocol Type\n"
                   << ia.what() << std::endl;
@@ -114,6 +110,7 @@ std::ostream& operator<< (std::ostream& output, const Flow& flow) {
     << " Protocol: " << static_cast<char>(flow.protocol) << "\n"
     << " Start Time: " << flow.startTime << "s\n"
     << " End Time: " << flow.endTime << "s\n"
+    << " K Value: " << flow.k << "\n"
     << "----------\n";
 
     if (!flow.m_dataPaths.empty()) {
@@ -191,13 +188,6 @@ Flow::flowContainer_t ParseFlows (const std::string& lgfPath) {
         while (std::getline(lgfFile, line)) {
             if (!line.empty()) {
                 Flow flow(line);
-                
-                if (flow.protocol == Protocol::Ack) { // Ignore Acknowledgement flows
-                    std::cout << "Warning: Acknowledgement flows in the LGF will be ignored and will "
-                                 "be setup automatically" << std::endl;
-                    continue;
-                }
-                
                 auto ret = flows.emplace(flow.id, flow);
                 if (!ret.second) {
                     std::cerr << "ERROR: Trying to insert a duplicate flow. Flow Id: " << flow.id;
