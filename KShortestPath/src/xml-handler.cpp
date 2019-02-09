@@ -109,6 +109,7 @@ XMLElement* XmlHandler::CreateFlowElement (const Flow &flow) {
                               boost::numeric_cast<uint32_t>(flow.startTime));
     flowElement->SetAttribute("EndTime",
                               boost::numeric_cast<uint32_t>(flow.endTime));
+    flowElement->SetAttribute("k", flow.k);
 
     flowElement->InsertEndChild(CreateDataPathsElement(flow.GetDataPaths()));
     flowElement->InsertEndChild(CreateAckPathsElement(flow.GetAckPaths()));
