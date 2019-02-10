@@ -1,5 +1,5 @@
-#ifndef LEMONGRAPH_HPP
-#define LEMONGRAPH_HPP
+#ifndef lemon_graph_hpp
+#define lemon_graph_hpp
 
 #include <map>
 #include <lemon/dim2.h>
@@ -26,36 +26,32 @@ public:
     explicit LemonGraph(const std::string& lgfPath);
 
     /* Node getters */
-    node_t GetNode(id_t nodeId) const;
     id_t GetNodeId(node_t node) const;
     char GetNodeType(node_t node) const;
     nodeIt_t GetNodeIt() const;
     
     /* Link getters */
-    link_t GetLink(id_t linkId) const;
     id_t GetLinkId(link_t link) const;
     linkCost_t GetLinkCost(link_t link) const;
     linkCapacity_t GetLinkCapacity(link_t link) const;
     linkIt_t GetLinkIt() const;
     node_t GetSourceNode(link_t link) const;
     node_t GetDestinationNode(link_t link) const;
-    
+
 private:
     void LoadGraphFromFile(const std::string& lgfPath);
     
-    graph_t m_graph;
+    graph_t m_graph; /**< The Lemon graph. */
     
     /* Node Maps */
-    nodeLabelMap_t m_nodeLabel;
-    nodeTypeMap_t m_nodeType;
-    nodeCoordMap_t m_nodeCoordinates;
-    std::map<id_t, node_t> m_nodeIdToNode;
-    
+    nodeLabelMap_t m_nodeLabel;       /**< Maps the node label (id) with the node. */
+    nodeTypeMap_t m_nodeType;         /**< Maps the node type with the node. */
+    nodeCoordMap_t m_nodeCoordinates; /**< Maps the node coordinates with the node. */
+
     /* Link Maps */
-    linkLabelMap_t m_linkLabel;
-    linkCostMap_t m_linkCost;
-    linkCapacityMap_t m_linkCapacity;
-    std::map<id_t, link_t> m_linkIdToLink;
+    linkLabelMap_t m_linkLabel;       /**< Maps the link label (id) with the link. */
+    linkCostMap_t m_linkCost;         /**< Maps the link cost with the link. */
+    linkCapacityMap_t m_linkCapacity; /**< Maps the link capacity with the link. */
 };
 
-#endif // LEMONGRAPH_HPP
+#endif /* lemon_graph_hpp */
