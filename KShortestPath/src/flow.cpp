@@ -10,27 +10,46 @@
 
 id_t Path::globalPathId = 0;
 
+/**
+ The Path constructor.
+
+ When the flag \p setPathId is set, the path will be assigned an id.
+ This functionality is there such that ACK related paths are not assigned
+ an id as their path id will be equivalent to the data path id.
+
+ @param setPathId When set the path is assigned an id.
+ */
 Path::Path(bool setPathId) {
     if (setPathId) {
         id = globalPathId++;
     }
 }
 
+/**
+ Adds a link to the path's links list
+
+ @param linkId The link id.
+ */
 void Path::AddLink(id_t linkId) {
     m_links.emplace_back(linkId);
 }
 
+/**
+ Returns a const reference to the path links.
+
+ @return The path links.
+ */
 const std::list<id_t>& Path::GetLinks() const {
     return m_links;
 }
 
 /**
- * @brief Overloads the Path::operator < to compare to paths. Used for sorting
- */
-bool Path::operator<(const Path& other) const {
-    return cost < other.cost;
-}
+ Outputs the path object to an output stream.
 
+ @param output The output stream.
+ @param path The path instance to be described.
+ @return The output stream.
+ */
 std::ostream& operator<< (std::ostream& output, const Path& path) {
     output << "  Path ID: " << path.id << "\n"
            << "  Path Cost: " << path.cost << "\n"
@@ -47,30 +66,62 @@ std::ostream& operator<< (std::ostream& output, const Path& path) {
  Flow implementation
  */
 
+/**
+ Generate a flow object from a line taken from the LGF file.
+
+ @param line The lgf line describing the flow.
+ @param perFlowK Flag that determines whether the K value will be parsed on a
+                 per flow basis.
+ @param globalK  The global K value that will be used if perFlowK is not set.
+ */
 Flow::Flow(const std::string &line, bool perFlowK, uint32_t globalK) {
   Parse(line, perFlowK, globalK);
 }
 
+/**
+ Returns a reference to the list of data paths.
+
+ @return Returns a reference to the list of data paths of the flow.
+ */
 const std::list<Path>& Flow::GetDataPaths () const {
     return m_dataPaths;
 }
 
+/**
+ Returns a reference to the list of ack paths.
+
+ @return Returns a reference to the list of acknowledgement paths of the flow.
+ */
 const std::list<Path>& Flow::GetAckPaths() const {
     return m_ackPaths;
 }
 
+/**
+ Add a data path to the list of data paths.
+
+ @param path The data path to add in the flow.
+ */
 void Flow::AddDataPath (const Path& path) {
     m_dataPaths.emplace_back(path);
 }
 
+/**
+ Add an ACK path to the list of ACK paths.
+
+ @param path The ACK path to add in the flow.
+ */
 void Flow::AddAckPath(const Path &path) {
     m_ackPaths.emplace_back(path);
 }
 
-bool Flow::operator<(const Flow &other) const {
-    return id < other.id;
-}
+/**
+ Build a flow object from the flow as described in the LGF file.
 
+ @param line Flow description found in the LGF file.
+ @param perFlowK Flag that represents whether or not per flow K is enabled.
+ @param globalK The value of the global K value if the \p perFlowK flag
+                is not set.
+ */
 void Flow::Parse(const std::string &line, bool perFlowK, uint32_t globalK) {
     std::istringstream flowSs (line, std::istringstream::in);
     try {
@@ -105,6 +156,13 @@ void Flow::Parse(const std::string &line, bool perFlowK, uint32_t globalK) {
     }
 }
 
+/**
+ Returns a string representation of the Flow to the output stream.
+
+ @param output Output stream.
+ @param flow The flow to describe.
+ @return The output stream.
+ */
 std::ostream& operator<< (std::ostream& output, const Flow& flow) {
     output << "----------\n"
     << "Id: " << flow.id << "\n"
@@ -178,7 +236,14 @@ void SetFileCursorToFlowsSection(std::ifstream& file) {
     }
 }
 
+/**
+ Parse the LGF file and build the flow objects.
 
+ @param lgfPath The path to the LGF file.
+ @param perFlowK The perFlowK flag that is given as command line parameters.
+ @param globalK The globalK value if the perFlowK flag is not set.
+ @return A container storing all the parsed flows.
+ */
 Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uint32_t globalK) {
     Flow::flowContainer_t flows;
     
@@ -210,6 +275,11 @@ Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uin
     return flows;
 }
 
+/**
+ Print all the flow details
+
+ @param flows The flow container.
+ */
 void PrintFlows (const Flow::flowContainer_t& flows) {
     for (const auto& flowPair : flows) {
         std::cout << flowPair.second;
