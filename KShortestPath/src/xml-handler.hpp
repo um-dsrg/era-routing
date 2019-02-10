@@ -25,8 +25,8 @@ private:
     tinyxml2::XMLElement* CreateAckPathsElement(const std::list<Path>& ackPaths);
     tinyxml2::XMLElement* CreateLinkElement(const BoostGraph& graph, id_t linkId);
     
-    tinyxml2::XMLDocument m_xmlDoc;
-    tinyxml2::XMLNode* m_rootNode;
+    tinyxml2::XMLDocument m_xmlDoc; /**< The XML Document. */
+    tinyxml2::XMLNode* m_rootNode;  /**< Pointer to the XML root node. */
 };
 
 std::list<std::pair<id_t, id_t>> FindLinkPairs(const BoostGraph& graph);

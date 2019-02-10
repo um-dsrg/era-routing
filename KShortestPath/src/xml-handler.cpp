@@ -5,7 +5,7 @@
 using namespace tinyxml2;
 
 /**
- Constructs the XML Document and creates the Log root element.
+ Creates an XML Document and creates the Log root element.
  */
 XmlHandler::XmlHandler() {
     XMLNode* rootElement = m_xmlDoc.NewElement("Log");
@@ -15,6 +15,15 @@ XmlHandler::XmlHandler() {
     }
 }
 
+/**
+ Add the paramters used in the result file.
+
+ @param inputFile The path to the LGF input file.
+ @param outputFile The output path where to store the result.
+ @param globalK The value of the \p globalK variable.
+ @param perFlowK The value of the \p perFlowK flag.
+ @param includeAllKEqualCostPaths The value of the \p includeAllKEqualCostPaths variable.
+ */
 void XmlHandler::AddParameterList (const std::string& inputFile,
                                    const std::string& outputFile,
                                    const uint32_t globalK,
@@ -53,7 +62,6 @@ void XmlHandler::AddParameterList (const std::string& inputFile,
     m_rootNode->InsertEndChild (parametersElement);
 }
 
-
 /**
  Adds a list of each link details to the XML result file.
 
@@ -76,7 +84,11 @@ void XmlHandler::AddLinkDetails(const BoostGraph &graph) {
     m_rootNode->InsertEndChild(linkDetElement);
 }
 
+/**
+ Add the flow details, including each of their paths to the XML result file.
 
+ @param flows The flows container.
+ */
 void XmlHandler::AddFlows (const Flow::flowContainer_t& flows) {
     XMLElement* flowDetElement = m_xmlDoc.NewElement("FlowDetails");
 
@@ -91,6 +103,12 @@ void XmlHandler::AddFlows (const Flow::flowContainer_t& flows) {
     m_rootNode->InsertEndChild(flowDetElement);
 }
 
+/**
+ Generate an XML Flow element given a Flow object.
+
+ @param flow The flow object to generate an element.
+ @return The created XML element.
+ */
 XMLElement* XmlHandler::CreateFlowElement (const Flow &flow) {
     using boost::numeric_cast;
     XMLElement* flowElement = m_xmlDoc.NewElement("Flow");
@@ -117,6 +135,12 @@ XMLElement* XmlHandler::CreateFlowElement (const Flow &flow) {
     return flowElement;
 }
 
+/**
+ Generate an XML element housing the Data paths of a given flow.
+
+ @param dataPaths The list of data paths.
+ @return The created XMLElement.
+ */
 XMLElement* XmlHandler::CreateDataPathsElement(const std::list<Path>& dataPaths) {
     XMLElement* pathsElement = m_xmlDoc.NewElement("Paths");
     pathsElement->SetAttribute("NumPaths", boost::numeric_cast<uint32_t>(dataPaths.size()));
@@ -138,6 +162,12 @@ XMLElement* XmlHandler::CreateDataPathsElement(const std::list<Path>& dataPaths)
     return pathsElement;
 }
 
+/**
+ Generate an XML element housing the ACK paths of a given flow.
+
+ @param ackPaths The list of ACK paths.
+ @return The created XMLElement.
+ */
 XMLElement* XmlHandler::CreateAckPathsElement(const std::list<Path>& ackPaths) {
     XMLElement* pathsElement = m_xmlDoc.NewElement("AckPaths");
     pathsElement->SetAttribute("NumPaths", boost::numeric_cast<uint32_t>(ackPaths.size()));
@@ -159,6 +189,12 @@ XMLElement* XmlHandler::CreateAckPathsElement(const std::list<Path>& ackPaths) {
     return pathsElement;
 }
 
+/**
+ Add the Network topology element in the result file. This element is used by
+ ns3 to build the network topology.
+
+ @param graph The Boost graph.
+ */
 void XmlHandler::AddNetworkTopology(const BoostGraph& graph) {
     XMLElement* netTopElement = m_xmlDoc.NewElement("NetworkTopology");
 
@@ -190,6 +226,14 @@ void XmlHandler::AddNetworkTopology(const BoostGraph& graph) {
     m_rootNode->InsertEndChild(netTopElement);
 }
 
+/**
+ Given a graph, find all the link pairs. A link pair is defined as the two links that
+ have opposite source and destination nodes and identical delay values. Note that their
+ data rates may be different.
+
+ @param graph The graph.
+ @return List of link pairs.
+ */
 std::list<std::pair<id_t, id_t>> FindLinkPairs(const BoostGraph& graph) {
     std::list<std::pair<id_t, id_t>> listPairs;
     std::set<id_t> visitedLinks;
@@ -224,6 +268,13 @@ std::list<std::pair<id_t, id_t>> FindLinkPairs(const BoostGraph& graph) {
     return listPairs;
 }
 
+/**
+ Generate an XML element for the given link.
+
+ @param graph The graph.
+ @param linkId The link id.
+ @return The created XMLElement.
+ */
 XMLElement* XmlHandler::CreateLinkElement(const BoostGraph& graph, id_t linkId) {
 
     auto link {graph.GetLink(linkId)};
@@ -245,6 +296,11 @@ XMLElement* XmlHandler::CreateLinkElement(const BoostGraph& graph, id_t linkId) 
     return linkElement;
 }
 
+/**
+ Save the XML file in the location specified by \p xmlFilePath.
+
+ @param xmlFilePath The full path where to save the result file.
+ */
 void XmlHandler::SaveFile(const std::string& xmlFilePath) {
     if (m_xmlDoc.SaveFile(xmlFilePath.c_str()) != tinyxml2::XML_SUCCESS) {
         throw std::runtime_error("Could not save XML File in " + xmlFilePath);
