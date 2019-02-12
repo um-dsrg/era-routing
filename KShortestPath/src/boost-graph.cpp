@@ -270,14 +270,18 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
         auto& dstNode {m_nodeMap.at(flow.destinationId)};
         
         auto kShortestPaths = pathContainer_t{boost::yen_ksp(m_graph, srcNode, dstNode,
-                                                             /* Link weight attribute */ boost::get(&LinkDetails::cost, m_graph),
+                                                             /* Link weight attribute */
+                                                             boost::get(&LinkDetails::cost, m_graph),
                                                              boost::get(boost::vertex_index_t(), m_graph), k)};
         
         if (kShortestPaths.empty()) {
             throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
         } else if ( k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size() == k)) {
-            /* Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is enabled, and if the number
-               of found paths is equal to k; thus, we need more paths to determine whether all paths have been included. */
+            /**
+             Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is enabled, and if the
+             number of found paths is equal to k; thus, we need more paths to determine whether all paths have been
+             included.
+             */
             auto kthPathCost {kShortestPaths.back().first};
             auto allEqualCostPathsFound = bool{false};
             auto extendedK = uint32_t{k};
@@ -289,11 +293,12 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
                                                 boost::get(boost::vertex_index_t(), m_graph), extendedK);
                 
                 if (numbersAreClose(kShortestPaths.back().first, kthPathCost)) {
-                    continue; // The last path cost is equal to the K shortest path. Need to increase K even further.
+                    continue; // The last path cost is equal to the K shortest path. Need to increase K further.
                 } else {
                     allEqualCostPathsFound = true;
                     // Remove all paths that have a cost larger than the kthPathCost
-                    kShortestPaths.remove_if([kthPathCost](const std::pair<linkCost_t, std::list<BoostGraph::link_t>>& path) -> bool {
+                    kShortestPaths.remove_if([kthPathCost](const std::pair<linkCost_t,
+                                                           std::list<BoostGraph::link_t>>& path) -> bool {
                         if (path.first < kthPathCost || numbersAreClose(path.first, kthPathCost)) {
                             return true;
                         } else {
