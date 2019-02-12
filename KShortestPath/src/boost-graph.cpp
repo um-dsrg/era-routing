@@ -376,3 +376,39 @@ void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
         }
     }
 }
+
+/**
+ @brief Find the shortest route that the Acknowledgement flow can take.
+
+ Find the shortest route that the Acknowledgement flow can take. This ack route will be used by the
+ network simulator when the PPFS switch will be used where only a single path for the ACK is needed.
+
+ @param[in,out] flows The flow container.
+ */
+void BoostGraph::AddShortestPathAck(Flow::flowContainer_t &flows) {
+    for (auto& flowPair : flows) {
+        auto& flow {flowPair.second};
+
+        auto& srcNode {m_nodeMap.at(flow.sourceId)};
+        auto& dstNode {m_nodeMap.at(flow.destinationId)};
+
+        auto ackPathContainer = pathContainer_t{boost::yen_ksp(m_graph, dstNode, srcNode,
+                                                               /* Link weight attribute */
+                                                               boost::get(&LinkDetails::cost, m_graph),
+                                                               boost::get(boost::vertex_index_t(), m_graph), 1)};
+
+        if (ackPathContainer.empty()) {
+            throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
+        } else {
+            const auto& ackPathPair {ackPathContainer.front()};
+            Path ackPath(false);
+            ackPath.cost = ackPathPair.first;
+
+            for (const auto& link : ackPathPair.second) {
+                ackPath.AddLink(boost::get(&LinkDetails::id, m_graph, link));
+            }
+
+            flow.AddAckShortestPath(ackPath);
+        }
+    }
+}

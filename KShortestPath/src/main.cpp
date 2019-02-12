@@ -55,6 +55,7 @@ int main(int argc, const char * argv[]) {
         Flow::flowContainer_t flows {ParseFlows(inputFile, perFlowK, globalK)};
         boostGraph.FindKShortestPaths(flows, includeAllKEqualCostPaths);
         boostGraph.AddAckPaths(flows);
+        boostGraph.AddShortestPathAck(flows);
 
         if (verbose) {
             PrintFlows(flows);

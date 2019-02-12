@@ -46,21 +46,21 @@ struct Flow {
 
     const std::list<Path>& GetDataPaths() const;
     const std::list<Path>& GetAckPaths() const;
+    const Path& GetAckShortestPath() const;
+
     void AddDataPath(const Path& path);
     void AddAckPath(const Path& path);
+    void AddAckShortestPath(const Path& path);
+
     friend std::ostream& operator<< (std::ostream& output, const Flow& flow);
 
 private:
     void Parse (const std::string& line, bool perFlowK, uint32_t globalK);
     std::list<Path> m_dataPaths; /**< List of paths the data flow will use */
-    std::list<Path> m_ackPaths; /**< List of paths the ack flow will use */
+    std::list<Path> m_ackPaths;  /**< List of paths the ack flow will use */
+    Path m_ackShortestPath;      /**< The path the ACK flow will take if PPFS is used */
 };
 
-/**
- * @brief Load and parse the flows in the given LGF file to the vector m_flows.
- * @param lgfPath The full path to the LGF file.
- * @return Vector of flows
- */
 Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uint32_t globalK);
 void PrintFlows (const Flow::flowContainer_t& flows);
     

@@ -131,6 +131,7 @@ XMLElement* XmlHandler::CreateFlowElement (const Flow &flow) {
 
     flowElement->InsertEndChild(CreateDataPathsElement(flow.GetDataPaths()));
     flowElement->InsertEndChild(CreateAckPathsElement(flow.GetAckPaths()));
+    flowElement->InsertEndChild(CreateAckShortestPathElement(flow.GetAckShortestPath()));
 
     return flowElement;
 }
@@ -187,6 +188,24 @@ XMLElement* XmlHandler::CreateAckPathsElement(const std::list<Path>& ackPaths) {
     }
 
     return pathsElement;
+}
+
+/**
+ Generate an XML element housing the ACK shortest path for a given flow.
+
+ @param ackShortestPath The ACK shortest path.
+ @return The created XMLElement.
+ */
+XMLElement* XmlHandler::CreateAckShortestPathElement(const Path &ackShortestPath) {
+    XMLElement* ackShortestPathElement = m_xmlDoc.NewElement("AckShortestPath");
+
+    for (const auto& linkId : ackShortestPath.GetLinks()) {
+        XMLElement* linkElement = m_xmlDoc.NewElement("Link");
+        linkElement->SetAttribute("Id", linkId);
+        ackShortestPathElement->InsertEndChild(linkElement);
+    }
+
+    return ackShortestPathElement;
 }
 
 /**

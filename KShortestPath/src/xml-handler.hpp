@@ -23,6 +23,7 @@ private:
     tinyxml2::XMLElement* CreateFlowElement(const Flow& flow);
     tinyxml2::XMLElement* CreateDataPathsElement(const std::list<Path>& dataPaths);
     tinyxml2::XMLElement* CreateAckPathsElement(const std::list<Path>& ackPaths);
+    tinyxml2::XMLElement* CreateAckShortestPathElement(const Path& ackShortestPath);
     tinyxml2::XMLElement* CreateLinkElement(const BoostGraph& graph, id_t linkId);
     
     tinyxml2::XMLDocument m_xmlDoc; /**< The XML Document. */

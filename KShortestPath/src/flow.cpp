@@ -74,7 +74,8 @@ std::ostream& operator<< (std::ostream& output, const Path& path) {
                  per flow basis.
  @param globalK  The global K value that will be used if perFlowK is not set.
  */
-Flow::Flow(const std::string &line, bool perFlowK, uint32_t globalK) {
+Flow::Flow(const std::string &line, bool perFlowK, uint32_t globalK) :
+m_ackShortestPath(/* Path id is not required */ false) {
   Parse(line, perFlowK, globalK);
 }
 
@@ -97,6 +98,15 @@ const std::list<Path>& Flow::GetAckPaths() const {
 }
 
 /**
+ Returns a reference to the path the Acknowledgement flow's shortest path from destination to source.
+
+ @return The acknowledgement path.
+ */
+const Path& Flow::GetAckShortestPath() const {
+    return m_ackShortestPath;
+}
+
+/**
  Add a data path to the list of data paths.
 
  @param path The data path to add in the flow.
@@ -112,6 +122,15 @@ void Flow::AddDataPath (const Path& path) {
  */
 void Flow::AddAckPath(const Path &path) {
     m_ackPaths.emplace_back(path);
+}
+
+/**
+ Add the shortest ACK path to the flow.
+
+ @param path The shortest ACK path.
+ */
+void Flow::AddAckShortestPath(const Path &path) {
+    m_ackShortestPath = path;
 }
 
 /**
