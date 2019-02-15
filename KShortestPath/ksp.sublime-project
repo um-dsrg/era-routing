@@ -1,35 +1,51 @@
 {
-  "folders":
-  [
+    "build_systems":
+    [
+        {
+            "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "Ksp build debug",
+            "shell_cmd": "cd $project_path && ./build.sh debug",
+            "working_dir": "$project_path/build"
+        },
+        {
+            "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "Ksp build release",
+            "shell_cmd": "cd $project_path && ./build.sh release",
+            "working_dir": "$project_path/build"
+        },
+        {
+            "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "Ksp build all",
+            "shell_cmd": "cd $project_path && ./build.sh",
+            "working_dir": "$project_path/build"
+        },
+        {
+            "file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+            "name": "Anaconda Python Builder",
+            "selector": "source.python",
+            "shell_cmd": "\"/usr/bin/python3\" -u \"$file\""
+        }
+    ],
+    "folders":
+    [
+        {
+            "binary_file_patterns":
+            [
+                "build/",
+                "doc/"
+            ],
+            "path": "."
+        }
+    ],
+    "settings":
     {
-      "path": ".",
-      "binary_file_patterns": ["build/", "doc/"]
+        "todoreview":
+        {
+            "exclude_folders":
+            [
+                "*.git*",
+                "build*"
+            ]
+        }
     }
-  ],
-  "build_systems":
-  [
-    {
-      "name": "Ksp build debug",
-      "working_dir": "$project_path/build",
-      "shell_cmd": "cd $project_path && ./build.sh debug",
-      "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
-    },
-    {
-      "name": "Ksp build release",
-      "working_dir": "$project_path/build",
-      "shell_cmd": "cd $project_path && ./build.sh release",
-      "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
-    },
-    {
-      "name": "Ksp build all",
-      "working_dir": "$project_path/build",
-      "shell_cmd": "cd $project_path && ./build.sh",
-      "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
-    }
-  ],
-  "settings": {
-    "todoreview": {
-      "exclude_folders": ["*.git*", "build*"]
-    },
-  },
 }
