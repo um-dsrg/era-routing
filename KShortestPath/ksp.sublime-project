@@ -1,0 +1,35 @@
+{
+  "folders":
+  [
+    {
+      "path": ".",
+      "binary_file_patterns": ["build/", "doc/"]
+    }
+  ],
+  "build_systems":
+  [
+    {
+      "name": "Ksp build debug",
+      "working_dir": "$project_path/build",
+      "shell_cmd": "cd $project_path && ./build.sh debug",
+      "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+    },
+    {
+      "name": "Ksp build release",
+      "working_dir": "$project_path/build",
+      "shell_cmd": "cd $project_path && ./build.sh release",
+      "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+    },
+    {
+      "name": "Ksp build all",
+      "working_dir": "$project_path/build",
+      "shell_cmd": "cd $project_path && ./build.sh",
+      "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+    }
+  ],
+  "settings": {
+    "todoreview": {
+      "exclude_folders": ["*.git*", "build*"]
+    },
+  },
+}
