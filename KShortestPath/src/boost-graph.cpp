@@ -353,7 +353,7 @@ void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
             ackPath.id = path.id; // Set the Ack Path id to be identical to the Data path id
 
             for (const auto& link : path.GetLinks()) {
-                std::cout << "We are working on link " << link << std::endl;
+                LOG_MSG("We are working on link " << link);
                 auto& dataLink = m_linkMap.at(link);
 
                 auto dataSrcNode = boost::source(dataLink, m_graph);
