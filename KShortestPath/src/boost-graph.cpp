@@ -296,13 +296,13 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
                     continue; // The last path cost is equal to the K shortest path. Need to increase K further.
                 } else {
                     allEqualCostPathsFound = true;
-                    // Remove all paths that have a cost larger than the kthPathCost
+                    // Keep all the paths with cost lower than or equal to the kthPathCost
                     kShortestPaths.remove_if([kthPathCost](const std::pair<linkCost_t,
                                                            std::list<BoostGraph::link_t>>& path) -> bool {
                         if (path.first < kthPathCost || numbersAreClose(path.first, kthPathCost)) {
-                            return true;
-                        } else {
                             return false;
+                        } else {
+                            return true;
                         }
                     });
                 }
