@@ -103,7 +103,7 @@ class ResultAnalyser:
 class KspTestClass(unittest.TestCase):
     def setUp(self):
         home_dir = str(Path.home())
-        self.kspExePath = home_dir + '/Repositories/Development/KShortestPath/build/release/ksp'
+        self.kspExePath = home_dir + '/Repositories/Development/KShortestPath/build/debug/ksp'
         self.assertTrue(os.path.isfile(self.kspExePath), 'The KSP release executable was not found')
         self.baseDir = os.path.dirname(os.path.abspath(__file__))
 
@@ -146,6 +146,23 @@ class KspTestClass(unittest.TestCase):
         self.assertTrue(ra.comparePathIds(0, [2, 5], [11, 8]), 'The ack and data paths do not match')
 
         self.assertTrue(ra.compareAckShortestPath(0, [6, 9]), 'The shortest path ack does not match')
+
+    def testButterflyPerFlowK(self):
+        inputGraphFile = self.baseDir + '/graphs/butterfly.lgf'
+        outputFile = self.baseDir + '/graphs/butterflyPerFlowK.xml'
+        kspCommand = self.genKspCommand(inputGraphFile, outputFile, perFlowK=True, includeAllKEqualCostPaths=True)
+        print(kspCommand)
+        os.system(kspCommand)
+
+        ra = ResultAnalyser(outputFile)
+
+        # Flow 0
+        self.assertEqual(ra.getNumDataPaths(0), 1, 'The number of data paths is not equal to 1')
+        self.assertEqual(ra.getNumAckPaths(0), 1, 'The number of ack paths is not equal to 1')
+
+        # Flow 1
+        self.assertEqual(ra.getNumDataPaths(1), 2, 'The number of data paths is not equal to 2')
+        self.assertEqual(ra.getNumAckPaths(1), 2, 'The number of ack paths is not equal to 2')
 
 
 if __name__ == '__main__':
