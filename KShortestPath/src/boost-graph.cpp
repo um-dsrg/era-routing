@@ -35,14 +35,14 @@ void BoostGraph::GenerateBoostNodes(const LemonGraph& lemonGraph) {
     for (auto lemonNode = lemonGraph.GetNodeIt(); lemonNode != lemon::INVALID; ++lemonNode) {
         auto nodeId {lemonGraph.GetNodeId(lemonNode)};
         auto nodeType {lemonGraph.GetNodeType(lemonNode)};
-        
+
         auto boostNode {boost::add_vertex({nodeId, nodeType}, m_graph)};
         auto ret = m_nodeMap.emplace(nodeId, boostNode);
         if (!ret.second) {
             throw std::runtime_error("Trying to insert a duplicate node. Node Id: " +
                                      std::to_string(nodeId) + "\n");
         }
-        
+
         LOG_MSG("Added node " << boost::get(&NodeDetails::id, m_graph, boostNode) <<
                 " Type " << boost::get(&NodeDetails::type, m_graph, boostNode));
     }
@@ -58,18 +58,18 @@ void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
     for (auto lemonLink = lemonGraph.GetLinkIt(); lemonLink != lemon::INVALID; ++lemonLink) {
         auto srcNodeId = lemonGraph.GetNodeId(lemonGraph.GetSourceNode(lemonLink));
         auto dstNodeId = lemonGraph.GetNodeId(lemonGraph.GetDestinationNode(lemonLink));
-        
+
         auto linkId = lemonGraph.GetLinkId(lemonLink);
         auto linkCost = lemonGraph.GetLinkCost(lemonLink);
         auto linkCapacity = lemonGraph.GetLinkCapacity(lemonLink);
-        
+
         link_t boostLink;
         bool linkAdded {false};
         std::tie(boostLink, linkAdded) = boost::add_edge(m_nodeMap.at(srcNodeId),
                                                          m_nodeMap.at(dstNodeId),
                                                          {linkId, linkCost, linkCapacity},
                                                          m_graph);
-        
+
         if (!linkAdded) {
             throw std::runtime_error("Link could not be added in Boost graph. Link Id: "
                                      + std::to_string(linkId) + "\n");
@@ -163,12 +163,13 @@ id_t BoostGraph::GetOppositeLink(id_t linkId) const {
 
     for (auto incomingLinkIt = incomingLinksIterators.first;
          incomingLinkIt != incomingLinksIterators.second;
-         ++incomingLinkIt) {
+         ++incomingLinkIt)
+    {
         auto incomingLinkSrcNodeId = GetNodeId(boost::source(*incomingLinkIt, m_graph));
         auto incomingLinkCost = GetLinkCost(*incomingLinkIt);
 
         if ((incomingLinkSrcNodeId == dstNodeId) && (linkCost == incomingLinkCost)) {
-            oppositeLinkId = incomingLinkSrcNodeId;
+            oppositeLinkId = GetLinkId(*incomingLinkIt);
             break;
         }
     }
@@ -268,12 +269,12 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
         auto k = flow.k;
         auto& srcNode {m_nodeMap.at(flow.sourceId)};
         auto& dstNode {m_nodeMap.at(flow.destinationId)};
-        
+
         auto kShortestPaths = pathContainer_t{boost::yen_ksp(m_graph, srcNode, dstNode,
                                                              /* Link weight attribute */
                                                              boost::get(&LinkDetails::cost, m_graph),
                                                              boost::get(boost::vertex_index_t(), m_graph), k)};
-        
+
         if (kShortestPaths.empty()) {
             throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
         } else if ( k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size() == k)) {
@@ -285,13 +286,13 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
             auto kthPathCost {kShortestPaths.back().first};
             auto allEqualCostPathsFound = bool{false};
             auto extendedK = uint32_t{k};
-            
+
             while (allEqualCostPathsFound == false) {
                 extendedK = boost::numeric_cast<uint32_t>(std::ceil(extendedK * 1.5));
                 kShortestPaths = boost::yen_ksp(m_graph, srcNode, dstNode,
                                                 boost::get(&LinkDetails::cost, m_graph),
                                                 boost::get(boost::vertex_index_t(), m_graph), extendedK);
-                
+
                 if (numbersAreClose(kShortestPaths.back().first, kthPathCost)) {
                     continue; // The last path cost is equal to the K shortest path. Need to increase K further.
                 } else {
@@ -308,7 +309,7 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
                 }
             }
         }
-        
+
         AddDataPaths(flow, kShortestPaths);
     }
 }
@@ -323,7 +324,7 @@ void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& pat
     for (const auto& path: paths) {
         Path dataPath(/* assign a path id to this path */ true);
         dataPath.cost = path.first;
-        
+
         for (const auto& link : path.second) {
             dataPath.AddLink(boost::get(&LinkDetails::id, m_graph, link));
         }
