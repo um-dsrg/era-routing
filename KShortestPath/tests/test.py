@@ -103,7 +103,7 @@ class ResultAnalyser:
 class KspTestClass(unittest.TestCase):
     def setUp(self):
         home_dir = str(Path.home())
-        self.kspExePath = home_dir + '/Repositories/Development/KShortestPath/build/debug/ksp'
+        self.kspExePath = home_dir + '/Repositories/Development/KShortestPath/build/release/ksp'
         self.assertTrue(os.path.isfile(self.kspExePath), 'The KSP release executable was not found')
         self.baseDir = os.path.dirname(os.path.abspath(__file__))
 
@@ -151,7 +151,6 @@ class KspTestClass(unittest.TestCase):
         inputGraphFile = self.baseDir + '/graphs/butterfly.lgf'
         outputFile = self.baseDir + '/graphs/butterflyPerFlowK.xml'
         kspCommand = self.genKspCommand(inputGraphFile, outputFile, perFlowK=True, includeAllKEqualCostPaths=True)
-        print(kspCommand)
         os.system(kspCommand)
 
         ra = ResultAnalyser(outputFile)
@@ -159,10 +158,22 @@ class KspTestClass(unittest.TestCase):
         # Flow 0
         self.assertEqual(ra.getNumDataPaths(0), 1, 'The number of data paths is not equal to 1')
         self.assertEqual(ra.getNumAckPaths(0), 1, 'The number of ack paths is not equal to 1')
+        self.assertTrue(ra.dataPathExists(0, [0, 4, 18]), 'The data path 0 - 2 - 6 - 8 does not exist')
+        self.assertTrue(ra.ackPathExists(0, [19, 5, 1]), 'The ack path 8 - 6 - 2 - 0 does not exist')
+        self.assertTrue(ra.comparePathIds(0, [0, 4, 18], [19, 5, 1]), 'The ack and data paths do not match')
 
         # Flow 1
         self.assertEqual(ra.getNumDataPaths(1), 2, 'The number of data paths is not equal to 2')
         self.assertEqual(ra.getNumAckPaths(1), 2, 'The number of ack paths is not equal to 2')
+
+        self.assertTrue(ra.dataPathExists(1, [2, 12, 20]), 'The data path 1 - 3 - 7 - 9 does not exist')
+        self.assertTrue(ra.ackPathExists(1, [21, 13, 3]), 'The ack path 9 - 7 - 3 - 1 does not exist')
+        self.assertTrue(ra.comparePathIds(1, [2, 12, 20], [21, 13, 3]), 'The ack and data paths do not match')
+
+        self.assertTrue(ra.dataPathExists(1, [2, 8, 10, 16, 20]), 'The data path 2 - 8 - 10 - 16 - 20 does not exist')
+        self.assertTrue(ra.ackPathExists(1, [21, 17, 11, 9, 3]), 'The ack path 20 - 16 - 10 - 8 - 2 does not exist')
+        self.assertTrue(ra.comparePathIds(1, [2, 8, 10, 16, 20], [21, 17, 11, 9, 3]),
+                        'The ack and data paths do not match')
 
 
 if __name__ == '__main__':
