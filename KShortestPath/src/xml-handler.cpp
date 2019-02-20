@@ -116,7 +116,7 @@ XMLElement* XmlHandler::CreateFlowElement (const Flow &flow) {
     flowElement->SetAttribute("Id", flow.id);
     flowElement->SetAttribute("SourceNode", flow.sourceId);
     flowElement->SetAttribute("DestinationNode", flow.destinationId);
-    flowElement->SetAttribute("DataRate", flow.dataRate);
+    flowElement->SetAttribute("RequestedDataRate", flow.dataRate);
     flowElement->SetAttribute("PacketSize",
                               boost::numeric_cast<uint32_t>(flow.packetSize));
     flowElement->SetAttribute("NumOfPakcets",
