@@ -287,14 +287,29 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
             auto allEqualCostPathsFound = bool{false};
             auto extendedK = uint32_t{k};
 
+            /**
+             The number of paths found in the previous run. This variable will be used to stop the algorithm
+             when all the paths for a particular flow have been found.
+             */
+            auto prevNumPathsFound {kShortestPaths.size()};
+
             while (allEqualCostPathsFound == false) {
                 extendedK = boost::numeric_cast<uint32_t>(std::ceil(extendedK * 1.5));
                 kShortestPaths = boost::yen_ksp(m_graph, srcNode, dstNode,
                                                 boost::get(&LinkDetails::cost, m_graph),
                                                 boost::get(boost::vertex_index_t(), m_graph), extendedK);
 
-                if (numbersAreClose(kShortestPaths.back().first, kthPathCost)) {
-                    continue; // The last path cost is equal to the K shortest path. Need to increase K further.
+                if (numbersAreClose(kShortestPaths.back().first, kthPathCost) && prevNumPathsFound != kShortestPaths.size()) {
+                    /**
+                     * This if condition will be true when the last path's cost is equal to the K shortest path and
+                     * the number of paths found in the previous run and this run are different. If both of those conditions
+                     * are satisfied, the K value needs to be increased further to make sure that all the paths are being
+                     * taken into consideration.
+                     * Note that if the number of paths returned in the previous run and this run are equal than this particular
+                     * flow has no more paths to offer and the loop should be terminated.
+                     */
+                    prevNumPathsFound = kShortestPaths.size();
+                    continue;
                 } else {
                     allEqualCostPathsFound = true;
                     // Keep all the paths with cost lower than or equal to the kthPathCost
