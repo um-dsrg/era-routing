@@ -133,7 +133,7 @@ SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer
       XMLElement* flowElement = xmlDoc.NewElement("Flow");
       flowElement->SetAttribute("Id", flow->getId());
       flowElement->SetAttribute("RequestedDataRate", flow->getRequestedDataRate());
-      flowElement->SetAttribute("DataRate", flow->getAllocatedDataRate());
+      flowElement->SetAttribute("AllocatedDataRate", flow->getAllocatedDataRate());
 
       for (Path* path: flow->getPaths())
         {

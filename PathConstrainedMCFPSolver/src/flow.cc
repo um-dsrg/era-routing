@@ -12,7 +12,7 @@ Flow::Flow (tinyxml2::XMLElement* flowElement) : m_allocatedDataRate {0.0}
   using namespace tinyxml2;
 
   flowElement->QueryAttribute("Id", &m_id);
-  flowElement->QueryAttribute("DataRate", &m_requestedDataRate);
+  flowElement->QueryAttribute("RequestedDataRate", &m_requestedDataRate);
 }
 
 void
