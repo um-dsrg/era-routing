@@ -1,10 +1,9 @@
-# Ignore build directory
+# Build directory
 build/
 
-# Eclipse project files
-.cproject
-.project
-.settings/
+# Sublime specific
+*.sublime-workspace
 
-# MacOs
+# MacOS
 .DS_Store
+

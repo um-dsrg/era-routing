@@ -1,0 +1,45 @@
+{
+    "build_systems":
+    [
+        {
+            "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "Build: Debug",
+            "shell_cmd": "cd $project_path && ./build.sh debug",
+            "working_dir": "$project_path/build"
+        },
+        {
+            "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "Build: Release",
+            "shell_cmd": "cd $project_path && ./build.sh release",
+            "working_dir": "$project_path/build"
+        },
+        {
+            "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "name": "Build: All",
+            "shell_cmd": "cd $project_path && ./build.sh",
+            "working_dir": "$project_path/build"
+        },
+    ],
+    "folders":
+    [
+        {
+            "binary_file_patterns":
+            [
+                "build/",
+                "doc/"
+            ],
+            "path": "."
+        }
+    ],
+    "settings":
+    {
+        "todoreview":
+        {
+            "exclude_folders":
+            [
+                "*.git*",
+                "build*"
+            ]
+        }
+    }
+}
