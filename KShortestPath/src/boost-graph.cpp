@@ -150,7 +150,7 @@ linkCapacity_t BoostGraph::GetLinkCapacity(const BoostGraph::link_t& link) const
  @return The link id of the opposite link. If the opposite link is not found, the
          returned link id is equal to that given.
  */
-id_t BoostGraph::GetOppositeLink(id_t linkId) const {
+std::list<id_t> BoostGraph::GetOppositeLink(id_t linkId) const {
     auto link = GetLink(linkId);
     auto linkCost {GetLinkCost(link)};
 
@@ -158,7 +158,7 @@ id_t BoostGraph::GetOppositeLink(id_t linkId) const {
     auto dstNode {boost::target(link, m_graph)};
     auto dstNodeId {GetNodeId(dstNode)};
 
-    auto oppositeLinkId = id_t{linkId};
+    std::list<id_t> oppositeLinks;
     auto incomingLinksIterators {boost::in_edges(srcNode, m_graph)};
 
     for (auto incomingLinkIt = incomingLinksIterators.first;
@@ -169,16 +169,15 @@ id_t BoostGraph::GetOppositeLink(id_t linkId) const {
         auto incomingLinkCost = GetLinkCost(*incomingLinkIt);
 
         if ((incomingLinkSrcNodeId == dstNodeId) && (linkCost == incomingLinkCost)) {
-            oppositeLinkId = GetLinkId(*incomingLinkIt);
-            break;
+            oppositeLinks.emplace_back(GetLinkId(*incomingLinkIt));
         }
     }
 
-    if (linkId == oppositeLinkId) {
+    if (oppositeLinks.empty()) {
         std::cout << "Warning: Link " << linkId << " has no opposite link" << std::endl;
     }
 
-    return oppositeLinkId;
+    return oppositeLinks;
 }
 
 /**

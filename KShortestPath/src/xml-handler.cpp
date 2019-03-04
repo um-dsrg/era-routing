@@ -271,15 +271,15 @@ std::list<std::pair<id_t, id_t>> FindLinkPairs(const BoostGraph& graph) {
             "topology element. Link Id " << linkId << std::endl;
         }
 
-        // NOTE: If a pair was not found, the returned link id is equal to that given
-        id_t oppLinkId {graph.GetOppositeLink(linkId)};
-        listPairs.emplace_back(linkId, oppLinkId);
+        std::list<id_t> oppositeLinks {graph.GetOppositeLink(linkId)};
 
-        if (linkId != oppLinkId) {
-            ret = visitedLinks.emplace(oppLinkId);
-            if (!ret.second) {
-                std::cerr << "Trying to insert a duplicate link when creating the network "
-                "topology element. Link Id " << linkId << std::endl;
+        // Loop over the list of opposite links to check if there are any available that
+        // have not yet been visited.
+        for (const auto& oppositeLinkId : oppositeLinks) {
+            if (visitedLinks.find(oppositeLinkId) == visitedLinks.end()) {
+                listPairs.emplace_back(linkId, oppositeLinkId);
+                visitedLinks.emplace(oppositeLinkId);
+                break;
             }
         }
     }

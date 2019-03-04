@@ -39,7 +39,7 @@ public:
     id_t GetLinkId(const link_t& link) const;
     linkCost_t GetLinkCost(const link_t& link) const;
     linkCapacity_t GetLinkCapacity(const link_t& link) const;
-    id_t GetOppositeLink(id_t linkId) const;
+    std::list<id_t> GetOppositeLink(id_t linkId) const;
     std::pair<graph_t::edge_iterator, graph_t::edge_iterator> GetLinkIterators() const;
 
     id_t GetNodeId(const node_t& node) const;
@@ -55,9 +55,9 @@ private:
     void GenerateBoostGraph(const LemonGraph& lemonGraph);
     void GenerateBoostNodes(const LemonGraph& lemonGraph);
     void GenerateBoostLinks(const LemonGraph& lemonGraph);
-    
+
     void AddDataPaths(Flow& flow, const pathContainer_t& paths);
-    
+
     graph_t m_graph;                    /**< The boost graph. */
     std::map<id_t, node_t> m_nodeMap;   /**< Maps the node id with its respective boost node. */
     std::map<id_t, link_t> m_linkMap;   /**< Maps the link id with its respective boost link. */
