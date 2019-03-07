@@ -348,7 +348,7 @@ def add_flows_to_lgf_file(flows, switch_to_terminal, updated_lgf_file):
         updated_lgf_file   -- List of strings representing the LGF file
     """
     updated_lgf_file.append('# Flow ID / Source Node / Destination Node / '
-                            '/ DataRate (incl. Headers) Mbps / '
+                            'DataRate (incl. Headers) Mbps / '
                             'Packet Size (incl. Headers) bytes / '
                             'No. of Packets / Protocol (TCP=T/UDP=U) / '
                             'Start Time (Seconds) / End Time (Seconds)\n')
