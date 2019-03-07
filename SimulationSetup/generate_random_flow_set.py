@@ -77,11 +77,10 @@ class Flow:
 
     # Default Values
     flow_id = 0         # Flow Id counter
-    port_number = 1399  # Port number counter
     packet_size = 590   # Packet size
     num_packets = 100   # Num Packets
 
-    def __init__(self, src_node, dst_node, protocol, tcp_flow=None):
+    def __init__(self, src_node, dst_node, protocol):
         """
         Note: At first the source and destination nodes will refer to switch
         nodes and will later be updated to refer to the terminal link ids.
@@ -89,32 +88,24 @@ class Flow:
         Keyword Arguments:
             src_node    -- The flow's source node
             dst_node    -- The flow's destination node
-            protocol    -- The flow's protocol. TCP/UDP/ACK
-            tcp_flow_id -- When protocol is ACK, tcp_flow_id refers to the respective Id of the TCP flow
+            protocol    -- The flow's protocol. TCP/UDP
         """
         self.flow_id = self._get_flow_id()
         self.src_node = src_node
         self.dst_node = dst_node
-        self.port_number = self._get_port_number()
+        self.data_rate = self._generate_random_data_rate()
         self.packet_size = Flow.packet_size
         self.num_packets = Flow.num_packets
         self.protocol = protocol
         self.start_time = 0
         self.end_time = 0
 
-        if self.protocol == 'A':  # ACK Flow
-            self.tcp_flow_id = tcp_flow.flow_id
-            self.data_rate = 0.1
-        else:  # TCP/UDP Flow
-            self.data_rate = self._generate_random_data_rate()
-            self.tcp_flow_id = '-'
 
     def __str__(self):
-        flow_str = ('{}\t{}\t{}\t{}\t{:.2f}\t{}\t{}\t{}\t{}\t{}\t{}\n'
+        flow_str = ('{}\t{}\t{}\t{:.2f}\t{}\t{}\t{}\t{}\t{}\n'
                     .format(self.flow_id, self.src_node, self.dst_node,
-                            self.port_number, self.data_rate, self.packet_size,
-                            self.num_packets, self.protocol, self.start_time,
-                            self.end_time, self.tcp_flow_id))
+                            self.data_rate, self.packet_size, self.num_packets,
+                            self.protocol, self.start_time, self.end_time))
         return convert_tabs_to_spaces(flow_str)
 
     @staticmethod
@@ -125,12 +116,6 @@ class Flow:
             assert num_flows % 2 == 0, \
                 'When using the medium load the number of flows needs to be exactly divisible by 2'
             Flow.high_load_counter = Flow.low_load_counter = (num_flows / 2)
-
-    @staticmethod
-    def _get_port_number():
-        """Returns the port number"""
-        Flow.port_number += 1
-        return Flow.port_number
 
     @staticmethod
     def _get_flow_id():
@@ -274,10 +259,6 @@ def generate_random_flow_set(nodes, flow_protocol, num_flows_to_generate):
         data_flow = Flow(src_node, dst_node, flow_protocol)
         flows[data_flow.flow_id] = data_flow
 
-        if flow_protocol == 'T':  # If TCP flow, create ACK flow
-            ack_flow = Flow(dst_node, src_node, 'A', data_flow)
-            flows[ack_flow.flow_id] = ack_flow
-
     return flows
 
 
@@ -367,18 +348,12 @@ def add_flows_to_lgf_file(flows, switch_to_terminal, updated_lgf_file):
         updated_lgf_file   -- List of strings representing the LGF file
     """
     updated_lgf_file.append('# Flow ID / Source Node / Destination Node / '
-                            'Port Number / DataRate Incl. Headers (Mbps) / '
-                            'Packet Size  Incl. Headers(bytes) / '
-                            'No. of Packets / Protocol (TCP=T/UDP=U/ACK=A) / '
-                            'Start Time (Seconds) / End Time (Seconds) / '
-                            'TCP Flow Id\n')
-    updated_lgf_file.append('# TCP Flow Id is ONLY used by Acknowledgement '
-                            'type flows to identify the TCP data flow they '
-                            'belong to.\n')
-    updated_lgf_file.append('# A is the Acknowledgement flow that TCP will '
-                            'use to send back acknowledgements.\n')
-    updated_lgf_file.append('#ID     Source  Dest    Port    DR      PS      '
-                            'NP      Prtcl   Start   End     TCP Flow Id\n')
+                            '/ DataRate (incl. Headers) Mbps / '
+                            'Packet Size (incl. Headers) bytes / '
+                            'No. of Packets / Protocol (TCP=T/UDP=U) / '
+                            'Start Time (Seconds) / End Time (Seconds)\n')
+    updated_lgf_file.append('#ID     Source  Dest    DR      PS      '
+                            'NP      Prtcl   Start   End\n')
 
     # Set the Flow source and destination nodes to be equal to the terminal
     # nodes instead of the switches
