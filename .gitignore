@@ -140,11 +140,11 @@ venv.bak/
 *.out
 *.app
 
+# Ns3 Folder
+Ns3/
+
 # # # General # # #
 .DS_Store
 tags
 tags.lock
 *.swp
-
-# # # Xcode projects # # #
-*.xcodeproj/
