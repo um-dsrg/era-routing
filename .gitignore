@@ -148,3 +148,6 @@ Ns3/
 tags
 tags.lock
 *.swp
+
+# Sublime
+*.sublime-workspace
