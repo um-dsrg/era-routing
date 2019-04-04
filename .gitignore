@@ -151,3 +151,15 @@ tags.lock
 
 # Sublime
 *.sublime-workspace
+
+# Ignore the compile commands file
+compile_commands.json
+
+# Ignore swap files
+*.swp
+
+# Ignore build directory
+build/
+
+# MacOs
+.DS_Store
