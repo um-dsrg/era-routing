@@ -114,37 +114,6 @@ GraphManager::FindOptimalSolution (std::string& solverConfig)
     }
 }
 
-void
-GraphManager::GenerateAckRoutes ()
-{
-  lemon::Dijkstra<LGraph, LArcDelay> dijkstraSolver(m_graph, m_linkDelay);
-
-  // Loop through all the flows
-  for (const auto& flow : *m_flows)
-  {
-    if (flow.protocol == FlowManager::Flow::Protocol::Ack)
-    {
-      LNode srcNode = m_graph.nodeFromId(flow.source);
-      LNode dstNode = m_graph.nodeFromId(flow.destination);
-
-      dijkstraSolver.run(srcNode, dstNode);
-
-      LArc currentArc;
-      std::vector<uint32_t> paths;
-
-      for (LNode currentNode = dstNode;
-           currentNode != srcNode;
-           currentNode = dijkstraSolver.predNode(currentNode))
-      {
-        currentArc = dijkstraSolver.predArc(currentNode);
-        paths.push_back(m_graph.id(currentArc));
-      }
-
-      m_ackRoutes.insert({flow.id, paths});
-    }
-  }
-}
-
 bool
 GraphManager::OptimalSolutionFound()
 {
@@ -299,16 +268,16 @@ GraphManager::AddBalanceConstraint (bool allowReducedFlowRate)
           if (flow.source == nodeId) // Source Node
             {
               if (allowReducedFlowRate)
-                m_lpSolver.addRow (nodeBalanceExpression <= flow.dataRate);
+                m_lpSolver.addRow (nodeBalanceExpression <= flow.allocatedDataRate);
               else
-                m_lpSolver.addRow (nodeBalanceExpression == flow.dataRate);
+                m_lpSolver.addRow (nodeBalanceExpression == flow.allocatedDataRate);
             }
           else if (flow.destination == nodeId) // Sink Node
             {
               if (allowReducedFlowRate)
-                m_lpSolver.addRow (nodeBalanceExpression >= -flow.dataRate);
+                m_lpSolver.addRow (nodeBalanceExpression >= -flow.allocatedDataRate);
               else
-                m_lpSolver.addRow (nodeBalanceExpression == -flow.dataRate);
+                m_lpSolver.addRow (nodeBalanceExpression == -flow.allocatedDataRate);
             }
           else // Intermediate node
             {
@@ -437,13 +406,13 @@ GraphManager::UpdateFlowDataRates ()
                                                                   outgoingL)]);
         }
 
-      flow.dataRate = allocatedDataRate;
+      flow.allocatedDataRate = allocatedDataRate;
 
 #ifdef DEBUG
       std::cout << "Flow ID: " << flow.id << " Requested flow rate: " <<
                 flow.requestedDataRate << std::endl;
-      std::cout << "Flow ID: " << flow.id << " Received flow rate: " <<
-                flow.dataRate << std::endl;
+      std::cout << "Flow ID: " << flow.id << " Allocated flow rate: " <<
+                flow.allocatedDataRate << std::endl;
 #endif
     }
 }
@@ -526,20 +495,11 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
       flowElement->SetAttribute ("Id", (*flow).id);
       flowElement->SetAttribute ("SourceNode", (*flow).source);
       flowElement->SetAttribute ("DestinationNode", (*flow).destination);
-
-      if ((*flow).protocol == FlowManager::Flow::Protocol::Tcp)
-        {
-          flowElement->SetAttribute ("SrcPortNumber", (*flow).srcPortNumber);
-          flowElement->SetAttribute ("DstPortNumber", (*flow).dstPortNumber);
-        }
-      else
-        {
-          flowElement->SetAttribute ("PortNumber", (*flow).dstPortNumber);
-        }
-
-      flowElement->SetAttribute ("DataRate", (*flow).dataRate);
+      
       flowElement->SetAttribute ("RequestedDataRate",
                                  (*flow).requestedDataRate);
+      flowElement->SetAttribute ("AllocatedDataRate", (*flow).allocatedDataRate);
+      
       flowElement->SetAttribute ("PacketSize", (*flow).packetSize);
       flowElement->SetAttribute ("NumOfPackets", (*flow).numOfPackets);
       flowElement->SetAttribute ("Protocol",
@@ -547,38 +507,25 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
       flowElement->SetAttribute ("StartTime", (*flow).startTime);
       flowElement->SetAttribute ("EndTime", (*flow).endTime);
 
-      if ((*flow).protocol == FlowManager::Flow::Protocol::Ack)
+      // Looping through the optimal solution
+      for (lemon::SmartDigraph::ArcIt link (m_graph);
+          link != lemon::INVALID;
+          ++link)
       {
-        auto& ackRoute = m_ackRoutes.at((*flow).id);
-        for (const uint32_t& arcId : ackRoute)
-        {
-            XMLElement* linkElement = xmlDoc.NewElement ("Link");
-            linkElement->SetAttribute ("Id", arcId);
-            linkElement->SetAttribute ("FlowRate", (*flow).requestedDataRate);
-            flowElement->InsertFirstChild (linkElement);
-        }
-      }
-      else
-      {
-        // Looping through the optimal solution
-        for (lemon::SmartDigraph::ArcIt link (m_graph);
-            link != lemon::INVALID;
-            ++link)
-        {
-          double flowRatio =
-            m_lpSolver.primal (m_optimalFlowRatio[std::make_pair ((*flow).id,
-                  link)]);
+        double flowRatio =
+          m_lpSolver.primal (m_optimalFlowRatio[std::make_pair ((*flow).id,
+                link)]);
 
-          if (flowRatio > 0)
-          {
-            // Add link element
-            XMLElement* linkElement = xmlDoc.NewElement ("Link");
-            linkElement->SetAttribute ("Id", m_graph.id (link));
-            linkElement->SetAttribute ("FlowRate", flowRatio);
-            flowElement->InsertFirstChild (linkElement);
-          }
+        if (flowRatio > 0)
+        {
+          // Add link element
+          XMLElement* linkElement = xmlDoc.NewElement ("Link");
+          linkElement->SetAttribute ("Id", m_graph.id (link));
+          linkElement->SetAttribute ("FlowRate", flowRatio);
+          flowElement->InsertFirstChild (linkElement);
         }
       }
+      
       optimalSolutionElement->InsertFirstChild (flowElement);
     }
 
@@ -607,48 +554,30 @@ GraphManager::LogIncomingFlow (tinyxml2::XMLDocument& xmlDoc)
   // Loop through all the flows
   for (const FlowManager::Flow& flow : *m_flows) 
   {
-    if (flow.protocol == FlowManager::Flow::Protocol::Ack)
-    { 
-      auto& route = m_ackRoutes.at(flow.id);
-      for (const auto& linkId : route)
-      {
-        uint32_t incomingNode =
-          m_graph.id(m_graph.target(m_graph.arcFromId(linkId)));
+    for (lemon::SmartDigraph::ArcIt link (m_graph);
+        link != lemon::INVALID;
+        ++link)
+    {
+      uint32_t destinationId = m_graph.id (m_graph.target (link));
+      double flowValue = 
+        m_lpSolver.primal (m_optimalFlowRatio[std::make_pair (flow.id,
+              link)]);
 
+      bool flowFound (false);
+      for (auto& flowPair : incomingFlow[destinationId])
+      {
+        if (flow.id == flowPair.Id)
+        {
+          flowPair.flowValue += flowValue;
+          flowFound = true;
+        }
+      }
+      if (!flowFound)
+      {
         FlowPair currentPair;
         currentPair.Id = flow.id;
-        currentPair.flowValue = flow.requestedDataRate;
-
-        incomingFlow[incomingNode].push_back (currentPair);
-      }
-    }
-    else 
-    {
-      for (lemon::SmartDigraph::ArcIt link (m_graph);
-          link != lemon::INVALID;
-          ++link)
-      {
-        uint32_t destinationId = m_graph.id (m_graph.target (link));
-        double flowValue = 
-          m_lpSolver.primal (m_optimalFlowRatio[std::make_pair (flow.id,
-                link)]);
-
-        bool flowFound (false);
-        for (auto& flowPair : incomingFlow[destinationId])
-        {
-          if (flow.id == flowPair.Id)
-          {
-            flowPair.flowValue += flowValue;
-            flowFound = true;
-          }
-        }
-        if (!flowFound)
-        {
-          FlowPair currentPair;
-          currentPair.Id = flow.id;
-          currentPair.flowValue = flowValue;
-          incomingFlow[destinationId].push_back (currentPair);
-        }
+        currentPair.flowValue = flowValue;
+        incomingFlow[destinationId].push_back (currentPair);
       }
     }
   }

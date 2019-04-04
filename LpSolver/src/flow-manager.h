@@ -13,47 +13,33 @@ public:
   struct Flow
   {
     // Default constructor that sets everything to 0.
-    Flow () : id (0), source (0), destination(0), dstPortNumber(0),
-              srcPortNumber(0), dataRate(0.0), requestedDataRate(0.0),
-              packetSize(0), numOfPackets(0), protocol(Protocol::Inv),
-              startTime(0), endTime(0), tcpFlowId(0)
+    Flow () : id (0), source (0), destination(0), allocatedDataRate(0.0),
+              requestedDataRate(0.0), packetSize(0), numOfPackets(0),
+              protocol(Protocol::Inv), startTime(0), endTime(0)
     {}
 
-    enum Protocol { Tcp = 'T', Ack = 'A', Udp = 'U', Inv='X'};
+    enum Protocol { Tcp = 'T', Udp = 'U', Inv='X'};
 
     uint32_t id;
     uint32_t source;
     uint32_t destination;
-    uint32_t dstPortNumber;
-    uint32_t srcPortNumber; // So for this is only used for TCP flows
-    double dataRate; // The allocated data rate
+    double allocatedDataRate; // The allocated data rate
     double requestedDataRate; // The requested data rate
     uint32_t packetSize;
     uint32_t numOfPackets;
     Protocol protocol;
     uint32_t startTime;
     uint32_t endTime;
-    // This is the flow ID of the TCP data stream. This is only used by ACK
-    // flows to determine to which flow this ACK flow belongs to.
-    uint32_t tcpFlowId; 
 
     friend std::ostream& operator<< (std::ostream& output, Flow& flow)
     {
       output << "Id: " << flow.id << " Source: " << flow.source
              << " Destination: " << flow.destination << "\n"
-             << "Dst Port Number: " << flow.dstPortNumber;
-
-      if (flow.srcPortNumber != 0)
-        output << "Src Port Number: " << flow.srcPortNumber;
-
-      output << " Data Rate: " << flow.dataRate << "Mbps\n"
+             << " Data Rate: " << flow.allocatedDataRate << "Mbps\n"
              << "Packet Size: " << flow.packetSize << "bytes Num Of Packets: "
              << flow.numOfPackets << " Protocol: " << flow.protocol << "\n"
              << "Start Time: " << flow.startTime << "s End Time: "
              << flow.endTime << "s\n";
-
-      if (flow.protocol == Protocol::Ack)
-        output << "TCP Data Flow ID: " << flow.tcpFlowId;
 
       return output;
     }

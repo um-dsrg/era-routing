@@ -39,11 +39,6 @@ public:
    */
   bool OptimalSolutionFound ();
 
-  /**
-   * Generate the routes for the ACK flows using the Dijkstra algorithm
-   */
-  void GenerateAckRoutes();
-
   void AddLogsInXmlFile (tinyxml2::XMLDocument& xmlDoc);
 private:
   // Linear Programming Functions /////////////////////////////////////////////
