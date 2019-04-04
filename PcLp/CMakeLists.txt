@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(path-constrained-mcfp-solver)
+project(PcLp)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall")
@@ -10,7 +10,7 @@ include_directories("${Boost_INCLUDE_DIR}" "$ENV{HOME}/libraries/lemon/include")
 
 link_directories($ENV{HOME}/libraries/lemon/lib)
 
-add_executable(pc_mcfp_solver
+add_executable(pclp
                src/link.cc
                src/path.cc
                src/flow.cc
@@ -19,5 +19,5 @@ add_executable(pc_mcfp_solver
                src/xml_handler.cc
                src/main.cc)
 
-target_link_libraries(pc_mcfp_solver emon glpk tinyxml2 pthread
+target_link_libraries(pclp emon glpk tinyxml2 pthread
 		      ${Boost_LIBRARIES})
