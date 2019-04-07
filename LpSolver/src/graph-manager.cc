@@ -31,7 +31,7 @@ GraphManager::ParseGraph (const std::string &lgfPath)
       arcMap ("delay", m_linkDelay).
       run ();
 
-#ifdef DEBUG
+#ifdef MY_DEBUG
       std::cout << "Graph parsed successfully" << std::endl;
 #endif
     }
@@ -92,7 +92,7 @@ GraphManager::FindOptimalSolution (std::string& solverConfig)
           }
 
           // Update the flow data rates based on the Maximal flow solution.
-          UpdateFlowDataRates (); 
+          UpdateFlowDataRates ();
         }
 
       if (solverConfig == "mc" || solverConfig == "mfmc")
@@ -144,7 +144,7 @@ GraphManager::FindMaximumFlowSolution ()
   // Add Capacity Constraint
   AddCapacityConstraint ();
 
-  // The balance constraint when finding the maximal solution will allow flows 
+  // The balance constraint when finding the maximal solution will allow flows
   // to receive data rates smaller than what they have requested.
   AddBalanceConstraint (true);
 
@@ -200,7 +200,7 @@ GraphManager::AddFlows ()
                ++link)
             {
               // Add an LP variable that will store the fraction of the
-              // flow(represented by flow.id) that will pass on the Link 
+              // flow(represented by flow.id) that will pass on the Link
               // represented by link.
               lemon::Lp::Col fractionOfFlow = m_lpSolver.addCol();
 
@@ -408,7 +408,7 @@ GraphManager::UpdateFlowDataRates ()
 
       flow.allocatedDataRate = allocatedDataRate;
 
-#ifdef DEBUG
+#ifdef MY_DEBUG
       std::cout << "Flow ID: " << flow.id << " Requested flow rate: " <<
                 flow.requestedDataRate << std::endl;
       std::cout << "Flow ID: " << flow.id << " Allocated flow rate: " <<
@@ -436,7 +436,7 @@ GraphManager::SolveLpProblem (Timing& timing)
   if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
     {
       m_optimalSolutionFound = true;
-#ifdef DEBUG
+#ifdef MY_DEBUG
       std::cout << "Optimal Solution FOUND.\n"
                 << "Solver took: " << timing.realTime << "ms (Real Time)"
                 << "Solver took: " << timing.cpuTime << "ms (CPU Time)"
@@ -446,7 +446,7 @@ GraphManager::SolveLpProblem (Timing& timing)
   else
     {
       m_optimalSolutionFound = false;
-#ifdef DEBUG
+#ifdef MY_DEBUG
       std::cout << "Optimal Solution NOT FOUND.\n"
                 << "Solver took: " << timing.realTime << "ms (Real Time)"
                 << "Solver took: " << timing.cpuTime << "ms (CPU Time)"
@@ -495,11 +495,11 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
       flowElement->SetAttribute ("Id", (*flow).id);
       flowElement->SetAttribute ("SourceNode", (*flow).source);
       flowElement->SetAttribute ("DestinationNode", (*flow).destination);
-      
+
       flowElement->SetAttribute ("RequestedDataRate",
                                  (*flow).requestedDataRate);
       flowElement->SetAttribute ("AllocatedDataRate", (*flow).allocatedDataRate);
-      
+
       flowElement->SetAttribute ("PacketSize", (*flow).packetSize);
       flowElement->SetAttribute ("NumOfPackets", (*flow).numOfPackets);
       flowElement->SetAttribute ("Protocol",
@@ -525,11 +525,11 @@ GraphManager::LogOptimalSolution (tinyxml2::XMLDocument& xmlDoc)
           flowElement->InsertFirstChild (linkElement);
         }
       }
-      
+
       optimalSolutionElement->InsertFirstChild (flowElement);
     }
 
-  XMLComment* unitsComment = 
+  XMLComment* unitsComment =
     xmlDoc.NewComment ("DataRate (Mbps), PacketSize (bytes),"
                        "Protocol (U=UDP,T=TCP), Time (Seconds)."
                        "\nUnless Specified the port number refers "
@@ -552,14 +552,14 @@ GraphManager::LogIncomingFlow (tinyxml2::XMLDocument& xmlDoc)
   std::map<uint32_t, std::vector<FlowPair>> incomingFlow;
 
   // Loop through all the flows
-  for (const FlowManager::Flow& flow : *m_flows) 
+  for (const FlowManager::Flow& flow : *m_flows)
   {
     for (lemon::SmartDigraph::ArcIt link (m_graph);
         link != lemon::INVALID;
         ++link)
     {
       uint32_t destinationId = m_graph.id (m_graph.target (link));
-      double flowValue = 
+      double flowValue =
         m_lpSolver.primal (m_optimalFlowRatio[std::make_pair (flow.id,
               link)]);
 

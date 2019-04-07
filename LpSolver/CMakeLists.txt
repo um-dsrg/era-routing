@@ -3,6 +3,7 @@ project(lp-solver)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DMY_DEBUG")
 
 if(APPLE)  # MacOS specific instructions
   link_directories("/usr/local/lib")

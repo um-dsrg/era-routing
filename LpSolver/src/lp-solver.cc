@@ -10,9 +10,9 @@ namespace po = boost::program_options;
 
 int main (int argc, const char *argv[])
 {
-    std::string solverConfiguration {""};
-    std::string lgfPath {""};
-    std::string xmlLogPath {""};
+  std::string solverConfiguration {""};
+  std::string lgfPath {""};
+  std::string xmlLogPath {""};
 
   try
   {

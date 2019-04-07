@@ -20,7 +20,7 @@ FlowManager::LoadFlowsFromFile(const std::string& lgfPath)
   try
     {
       lgfFile.open(lgfPath, std::ifstream::in); // Open the file as Read Only
-#ifdef DEBUG
+#ifdef MY_DEBUG
       std::cout << "Loading flows from: " << lgfPath << std::endl;
       std::cout << "--------------------" << std::endl;
 #endif
@@ -132,7 +132,7 @@ FlowManager::ParseFlow (std::string& line)
       flow.endTime = std::stoul(parsedValue);
 
       // Outputting the flow values in debug builds only.
-#ifdef DEBUG
+#ifdef MY_DEBUG
       std::cout << flow << std::endl;
 #endif
 

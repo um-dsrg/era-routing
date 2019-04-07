@@ -33,13 +33,16 @@ public:
 
     friend std::ostream& operator<< (std::ostream& output, Flow& flow)
     {
-      output << "Id: " << flow.id << " Source: " << flow.source
+      output << "Id: " << flow.id
+             << " Source: " << flow.source
              << " Destination: " << flow.destination << "\n"
-             << " Data Rate: " << flow.allocatedDataRate << "Mbps\n"
-             << "Packet Size: " << flow.packetSize << "bytes Num Of Packets: "
-             << flow.numOfPackets << " Protocol: " << flow.protocol << "\n"
-             << "Start Time: " << flow.startTime << "s End Time: "
-             << flow.endTime << "s\n";
+             << "Requested Data Rate: " << flow.requestedDataRate << "Mbps\n"
+             << "Allocated Data Rate: " << flow.allocatedDataRate << "Mbps\n"
+             << "Packet Size: " << flow.packetSize << "bytes "
+             << "Num Of Packets: " << flow.numOfPackets
+             << " Protocol: " << flow.protocol << "\n"
+             << "Start Time: " << flow.startTime << "s "
+             << "End Time: " << flow.endTime << "s\n";
 
       return output;
     }
@@ -52,7 +55,7 @@ public:
   std::vector<Flow>* GetFlows ();
 
   /**
-   *  \brief Load the Flows from the file given and stores them in the vector 
+   *  \brief Load the Flows from the file given and stores them in the vector
    *         flows
    *
    *  Load and parse the flows in the given LGF file. The flows are stored in
