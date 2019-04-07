@@ -105,6 +105,7 @@ FlowManager::ParseFlow (std::string& line)
       // Get Data Rate
       flowSs >> parsedValue;
       flow.requestedDataRate = std::stod (parsedValue);
+      flow.allocatedDataRate = flow.requestedDataRate;
 
       // Get Packet size
       flowSs >> parsedValue;
