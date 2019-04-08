@@ -7,3 +7,5 @@ build/
 # MacOS
 .DS_Store
 
+# Visual Studio Code
+.vscode/ipch
