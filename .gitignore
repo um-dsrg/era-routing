@@ -141,7 +141,7 @@ venv.bak/
 *.app
 
 # Ns3 Folder
-Ns3/
+/Ns3
 
 # # # General # # #
 .DS_Store
