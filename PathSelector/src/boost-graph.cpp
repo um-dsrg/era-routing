@@ -210,7 +210,7 @@ id_t BoostGraph::GetNodeId(const BoostGraph::node_t& node) const {
  @param node The boost graph node.
  @return The node type.
  */
-char BoostGraph::GetNodeType(const node_t node) const {
+char BoostGraph::GetNodeType(node_t node) const {
     return boost::get(&NodeDetails::type, m_graph, node);
 }
 
@@ -239,7 +239,7 @@ BoostGraph::node_t BoostGraph::GetDestinationNode(const link_t& link) const {
 
  @param value1 The first value to compare.
  @param value2 The second value to compare.
- @param accuracy The accuracty used during the comparison. Default: 1e-9.
+ @param accuracy The accuracy used during the comparison. Default: 1e-9.
  @return True: The numbers are equal at the given accuracy.
          False: The numbers are not equal at the given accuracy.
  */

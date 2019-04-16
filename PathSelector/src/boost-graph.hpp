@@ -43,7 +43,7 @@ public:
     std::pair<graph_t::edge_iterator, graph_t::edge_iterator> GetLinkIterators() const;
 
     id_t GetNodeId(const node_t& node) const;
-    char GetNodeType(const node_t node) const;
+    char GetNodeType(node_t node) const;
     node_t GetSourceNode(const link_t& link) const;
     node_t GetDestinationNode(const link_t& link) const;
 
