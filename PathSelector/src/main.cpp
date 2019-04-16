@@ -15,6 +15,9 @@ int main(int argc, const char * argv[]) {
     bool includeAllKEqualCostPaths {false};
     bool verbose {false};
 
+    bool kShortestPath {false};
+    bool edgeDisjoint {false};
+
     try {
         po::options_description cmdLineParams("Allowed options");
         cmdLineParams.add_options()
@@ -32,6 +35,10 @@ int main(int argc, const char * argv[]) {
                        "When set, all the paths with the same cost as the kth path will be "
                        "included. Irrelevant of this setting, flows with k=1 will only have "
                        "one path to simulate OSPF")
+                      ("kShortestPath", po::bool_switch(&kShortestPath),
+                       "When set use the KSP algorithm to find paths")
+                      ("edgeDisjoint", po::bool_switch(&edgeDisjoint),
+                       "When set use the edge disjoint algorithm to find paths")
                       ("verbose,v", po::bool_switch(&verbose),
                        "Enable verbose output.");
 
@@ -53,7 +60,15 @@ int main(int argc, const char * argv[]) {
         BoostGraph boostGraph (lemonGraph);
 
         Flow::flowContainer_t flows {ParseFlows(inputFile, perFlowK, globalK)};
-        boostGraph.FindKShortestPaths(flows, includeAllKEqualCostPaths);
+
+        if (kShortestPath) {
+            boostGraph.FindKShortestPaths(flows, includeAllKEqualCostPaths);
+        } else if (edgeDisjoint) {
+            boostGraph.FindKEdgeDisjointPaths(flows);
+        } else {
+            throw std::runtime_error("No path selection algorithm chosen");
+        }
+
         boostGraph.AddAckPaths(flows);
         boostGraph.AddShortestPathAck(flows);
 

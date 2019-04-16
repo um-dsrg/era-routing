@@ -1,6 +1,7 @@
 #include <list>
 #include <math.h>
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/graph/copy.hpp>
 
 #include "yen_ksp.hpp"
 #include "boost-graph.hpp"
@@ -325,6 +326,57 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
         }
 
         AddDataPaths(flow, kShortestPaths);
+    }
+}
+
+/**
+ * @brief Add the first K edge disjoint paths
+ *
+ * TODO Make this better
+ *
+ * @param[in, out] flows The flow set that will be updated with the given path set.
+ */
+void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
+    for (auto& flowPair : flows) {
+        auto& flow {flowPair.second};
+
+        graph_t tempGraph;
+        boost::copy_graph(m_graph, tempGraph);
+
+        pathContainer_t edgeDisjointPaths;
+
+        for (auto i = 0; i < flow.k; ++i) {
+
+            auto &srcNode{m_nodeMap.at(flow.sourceId)};
+            auto &dstNode{m_nodeMap.at(flow.destinationId)};
+
+            auto path = pathContainer_t{boost::yen_ksp(m_graph, srcNode, dstNode,
+                                                       /* Link weight attribute */
+                                                       boost::get(&LinkDetails::cost, m_graph),
+                                                       boost::get(boost::vertex_index_t(), m_graph), 1)};
+
+            if (path.empty()) {
+                break; // No more paths found. Exit the loop
+            }
+
+            // Remove all the edges of the found path
+            for (const auto& pathPair: path) {
+                const auto& pathLinks {pathPair.second};
+
+                for (const auto& link: pathLinks) {
+                    boost::remove_edge(link, tempGraph);
+                }
+            }
+
+            // Insert the path
+            edgeDisjointPaths.push_back(path.front());
+        }
+
+        if (edgeDisjointPaths.empty()) {
+            throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
+        }
+
+        AddDataPaths(flow, edgeDisjointPaths);
     }
 }
 
