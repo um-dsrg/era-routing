@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(ksp)
+project(PathSelector)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,7 +19,7 @@ include_directories("${Boost_INCLUDE_DIR}" "$ENV{HOME}/libraries/lemon/include")
 
 link_directories($ENV{HOME}/libraries/lemon/lib)
 
-add_executable(ksp
+add_executable(pathSelector
                src/custom_dijkstra_call.hpp
                src/yen_ksp.hpp
                src/definitions.hpp
@@ -34,4 +34,4 @@ add_executable(ksp
                src/main.cpp)
 
 # Link with the libraries
-target_link_libraries(ksp emon tinyxml2 ${Boost_LIBRARIES})
+target_link_libraries(pathSelector emon tinyxml2 ${Boost_LIBRARIES})
