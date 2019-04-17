@@ -330,53 +330,83 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
 }
 
 /**
- * @brief Add the first K edge disjoint paths
- *
- * TODO Make this better
- *
- * @param[in, out] flows The flow set that will be updated with the given path set.
+ * @brief Find the first K edge disjoint paths for each flow.
+ * @param[in,out] flows The flow set that will be updated with the found paths.
  */
 void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
     for (auto& flowPair : flows) {
         auto& flow {flowPair.second};
 
+        std::cout << "Finding the paths for flow " << flow.id << std::endl;
+
+        // Simpler solution, copy the graph - store only the link ids - and at the end loop and add data paths using the original graph.
         graph_t tempGraph;
         boost::copy_graph(m_graph, tempGraph);
 
-        pathContainer_t edgeDisjointPaths;
+        std::list<std::list<id_t>> edgeDisjointPathIds; // List of edge disjoint paths
 
-        for (auto i = 0; i < flow.k; ++i) {
+        for (uint32_t i = 0; i < flow.k; ++i) {
 
             auto &srcNode{m_nodeMap.at(flow.sourceId)};
             auto &dstNode{m_nodeMap.at(flow.destinationId)};
 
-            auto path = pathContainer_t{boost::yen_ksp(m_graph, srcNode, dstNode,
-                                                       /* Link weight attribute */
-                                                       boost::get(&LinkDetails::cost, m_graph),
-                                                       boost::get(boost::vertex_index_t(), m_graph), 1)};
+            auto foundPaths = pathContainer_t{boost::yen_ksp(tempGraph, srcNode, dstNode,
+                                              /* Link weight attribute */
+                                              boost::get(&LinkDetails::cost, tempGraph),
+                                              boost::get(boost::vertex_index_t(), tempGraph), 1)};
 
-            if (path.empty()) {
+            if (foundPaths.empty()) {
                 break; // No more paths found. Exit the loop
             }
 
-            // Remove all the edges of the found path
-            for (const auto& pathPair: path) {
-                const auto& pathLinks {pathPair.second};
-
-                for (const auto& link: pathLinks) {
-                    boost::remove_edge(link, tempGraph);
+            // Save the found paths
+            std::cout << "This is a new path" << std::endl;
+            std::cout << "----------" << std::endl;
+            std::list<id_t> pathLinks;
+            for(const auto& pathPair: foundPaths) {
+                for (const auto& link: pathPair.second) {
+                    pathLinks.emplace_back(boost::get(&LinkDetails::id, tempGraph, link));
+                    std::cout << "Link: " << boost::get(&LinkDetails::id, tempGraph, link) << std::endl;
                 }
             }
 
-            // Insert the path
-            edgeDisjointPaths.push_back(path.front());
+            edgeDisjointPathIds.push_back(pathLinks);
+
+            // Remove all the edges of the found path
+            for (const auto& pathPair: foundPaths) {
+                const auto& pathLinks {pathPair.second};
+
+                for (const auto& link: pathLinks) {
+                    auto srcNode = boost::source(link, tempGraph);
+                    auto dstNode = boost::target(link, tempGraph);
+
+                    auto srcNodeType = boost::get(&NodeDetails::type, tempGraph, srcNode);
+                    auto dstNodeType = boost::get(&NodeDetails::type, tempGraph, dstNode);
+
+                    if (srcNodeType == 'S' && dstNodeType == 'S') {
+                        // Only remove edges that are between switches
+                        std::cout << "Removing link " << boost::get(&LinkDetails::id, tempGraph, link) << std::endl;
+                        boost::remove_edge(link, tempGraph);
+                    }
+                }
+            }
         }
 
-        if (edgeDisjointPaths.empty()) {
+        if (edgeDisjointPathIds.empty()) {
             throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
         }
 
-        AddDataPaths(flow, edgeDisjointPaths);
+        // Save the paths to the flow
+        for (const auto& path: edgeDisjointPathIds) {
+            Path dataPath(/* assign a path id to this path */ true);
+            dataPath.cost = 100; // TODO: This needs to be updated
+
+            for (const auto& linkId : path) {
+                dataPath.AddLink(linkId);
+            }
+
+            flow.AddDataPath(dataPath);
+        }
     }
 }
 
