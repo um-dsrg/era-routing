@@ -54,11 +54,11 @@ std::ostream& operator<< (std::ostream& output, const Path& path) {
     output << "  Path ID: " << path.id << "\n"
            << "  Path Cost: " << path.cost << "\n"
            << "  Links: ";
-    
+
     for (const auto& link : path.m_links) {
         output << link << " ";
     }
-    
+
     return output;
 }
 
@@ -149,7 +149,7 @@ void Flow::Parse(const std::string &line, bool perFlowK, uint32_t globalK) {
 
         char parsedProtocol;
         flowSs >> parsedProtocol;
-        
+
         if (parsedProtocol == 'T') {
             protocol = Protocol::Tcp;
         } else if (parsedProtocol == 'U') {
@@ -157,7 +157,7 @@ void Flow::Parse(const std::string &line, bool perFlowK, uint32_t globalK) {
         } else {
             throw std::invalid_argument ("Unknown protocol type");
         }
-        
+
         flowSs >> startTime >> endTime;
 
         if (perFlowK) {
@@ -225,30 +225,30 @@ void SetFileCursorToFlowsSection(std::ifstream& file) {
     std::string line;
     std::string flowSectionString ("@flows");
     bool flowsSectionFound (false);
-    
+
     int lineNumber (1);
     while (std::getline (file, line)) {
         lineNumber++;
-        
+
         // Ignore any comments after the @flows section
         if (flowsSectionFound && line[0] != '#') {
             break; // Line found
         }
-        
+
         // Ignore any trailing white space in the file
         if (flowSectionString.compare(0, flowSectionString.length(), line,
                                       0, flowSectionString.length()) == 0) {
             flowsSectionFound = true;
         }
     }
-    
+
     if (!flowsSectionFound) {
         throw std::invalid_argument ("Flow section not found");
     }
-    
+
     // Move to the beginning of the file
     file.seekg(std::ios::beg);
-    
+
     // Move one line up to where the flow definitions begins
     for (int i = 1; i < (lineNumber - 1); i++) {
         file.ignore(std::numeric_limits<std::streamsize>::max(),'\n'); // Extract and ignore a line
@@ -265,18 +265,18 @@ void SetFileCursorToFlowsSection(std::ifstream& file) {
  */
 Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uint32_t globalK) {
     Flow::flowContainer_t flows;
-    
+
     try {
         std::ifstream lgfFile;
         lgfFile.exceptions(std::ifstream::badbit); // Enable exceptions if error occurs during file read
         lgfFile.open(lgfPath, std::ifstream::in);  // Open file as Read Only
         SetFileCursorToFlowsSection(lgfFile);      // Set the file cursor to the flows section
-        
+
         LOG_MSG("File read successfully. Loading flows from " + lgfPath);
-        
+
         std::string line;
         while (std::getline(lgfFile, line)) {
-            if (!line.empty()) {
+            if (!line.empty() && line[0] != '#') {
                 Flow flow(line, perFlowK, globalK);
                 auto ret = flows.emplace(flow.id, flow);
                 if (!ret.second) {
@@ -290,7 +290,7 @@ Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uin
         << e.what()  << std::endl;
         throw;
     }
-    
+
     return flows;
 }
 
