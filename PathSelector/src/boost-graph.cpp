@@ -337,7 +337,7 @@ void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
     for (auto& flowPair : flows) {
         auto& flow {flowPair.second};
 
-        std::cout << "Finding the paths for flow " << flow.id << std::endl;
+        LOG_MSG("Finding the paths for flow " << flow.id);
 
         // Simpler solution, copy the graph - store only the link ids - and at the end loop and add data paths using the original graph.
         graph_t tempGraph;
@@ -360,13 +360,12 @@ void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
             }
 
             // Save the found paths
-            std::cout << "This is a new path" << std::endl;
-            std::cout << "----------" << std::endl;
+            LOG_MSG("New Path\n----------");
             std::list<id_t> pathLinks;
             for(const auto& pathPair: foundPaths) {
                 for (const auto& link: pathPair.second) {
                     pathLinks.emplace_back(boost::get(&LinkDetails::id, tempGraph, link));
-                    std::cout << "Link: " << boost::get(&LinkDetails::id, tempGraph, link) << std::endl;
+                    LOG_MSG("Link: " << boost::get(&LinkDetails::id, tempGraph, link));
                 }
             }
 
@@ -385,7 +384,7 @@ void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
 
                     if (srcNodeType == 'S' && dstNodeType == 'S') {
                         // Only remove edges that are between switches
-                        std::cout << "Removing link " << boost::get(&LinkDetails::id, tempGraph, link) << std::endl;
+                        LOG_MSG("Removing link " << boost::get(&LinkDetails::id, tempGraph, link));
                         boost::remove_edge(link, tempGraph);
                     }
                 }
@@ -399,12 +398,14 @@ void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
         // Save the paths to the flow
         for (const auto& path: edgeDisjointPathIds) {
             Path dataPath(/* assign a path id to this path */ true);
-            dataPath.cost = 100; // TODO: This needs to be updated
+            auto pathCost = 0.0;
 
             for (const auto& linkId : path) {
+                pathCost += boost::get(&LinkDetails::cost, m_graph, GetLink(linkId));
                 dataPath.AddLink(linkId);
             }
 
+            dataPath.cost = pathCost;
             flow.AddDataPath(dataPath);
         }
     }
@@ -444,6 +445,8 @@ void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
         if (flow.protocol == Protocol::Udp) { // No ack paths necessary for UDP flows
             continue;
         }
+
+        LOG_MSG("Add ACK paths for Flow: " << flow.id);
 
         for (const auto& path : flow.GetDataPaths()) {
             Path ackPath(/* do not assign a path id to this path */ false);
