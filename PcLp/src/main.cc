@@ -45,7 +45,14 @@ int main (int argc, const char *argv[])
       parseKspData(rootNode, links, paths, flows);
 
       LpSolver lpSolver (links, paths, flows);
-      lpSolver.solve();
+
+      auto optimalSolutionFound = bool{lpSolver.solve()};
+
+      if (!optimalSolutionFound)
+        {
+          std::cerr << "Optimal Solution NOT found" << std::endl;
+          return EXIT_FAILURE;
+        }
 
       // Save the results in the XML file!
       xmlHandler.saveResults(links, paths, flows, lpSolver, resultXmlPath);
