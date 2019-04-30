@@ -19,9 +19,11 @@ id_t Path::globalPathId = 0;
 
  @param setPathId When set the path is assigned an id.
  */
-Path::Path(bool setPathId) {
-    if (setPathId) {
-        id = globalPathId++;
+Path::Path (bool setPathId)
+{
+  if (setPathId)
+    {
+      id = globalPathId++;
     }
 }
 
@@ -30,8 +32,10 @@ Path::Path(bool setPathId) {
 
  @param linkId The link id.
  */
-void Path::AddLink(id_t linkId) {
-    m_links.emplace_back(linkId);
+void
+Path::AddLink (id_t linkId)
+{
+  m_links.emplace_back (linkId);
 }
 
 /**
@@ -39,8 +43,10 @@ void Path::AddLink(id_t linkId) {
 
  @return The path links.
  */
-const std::list<id_t>& Path::GetLinks() const {
-    return m_links;
+const std::list<id_t> &
+Path::GetLinks () const
+{
+  return m_links;
 }
 
 /**
@@ -50,16 +56,19 @@ const std::list<id_t>& Path::GetLinks() const {
  @param path The path instance to be described.
  @return The output stream.
  */
-std::ostream& operator<< (std::ostream& output, const Path& path) {
-    output << "  Path ID: " << path.id << "\n"
-           << "  Path Cost: " << path.cost << "\n"
-           << "  Links: ";
+std::ostream &
+operator<< (std::ostream &output, const Path &path)
+{
+  output << "  Path ID: " << path.id << "\n"
+         << "  Path Cost: " << path.cost << "\n"
+         << "  Links: ";
 
-    for (const auto& link : path.m_links) {
-        output << link << " ";
+  for (const auto &link : path.m_links)
+    {
+      output << link << " ";
     }
 
-    return output;
+  return output;
 }
 
 /**
@@ -74,9 +83,10 @@ std::ostream& operator<< (std::ostream& output, const Path& path) {
                  per flow basis.
  @param globalK  The global K value that will be used if perFlowK is not set.
  */
-Flow::Flow(const std::string &line, bool perFlowK, uint32_t globalK) :
-m_ackShortestPath(/* Path id is not required */ false) {
-  Parse(line, perFlowK, globalK);
+Flow::Flow (const std::string &line, bool perFlowK, uint32_t globalK)
+    : m_ackShortestPath (/* Path id is not required */ false)
+{
+  Parse (line, perFlowK, globalK);
 }
 
 /**
@@ -84,8 +94,10 @@ m_ackShortestPath(/* Path id is not required */ false) {
 
  @return Returns a reference to the list of data paths of the flow.
  */
-const std::list<Path>& Flow::GetDataPaths () const {
-    return m_dataPaths;
+const std::list<Path> &
+Flow::GetDataPaths () const
+{
+  return m_dataPaths;
 }
 
 /**
@@ -93,8 +105,10 @@ const std::list<Path>& Flow::GetDataPaths () const {
 
  @return Returns a reference to the list of acknowledgement paths of the flow.
  */
-const std::list<Path>& Flow::GetAckPaths() const {
-    return m_ackPaths;
+const std::list<Path> &
+Flow::GetAckPaths () const
+{
+  return m_ackPaths;
 }
 
 /**
@@ -102,8 +116,10 @@ const std::list<Path>& Flow::GetAckPaths() const {
 
  @return The acknowledgement path.
  */
-const Path& Flow::GetAckShortestPath() const {
-    return m_ackShortestPath;
+const Path &
+Flow::GetAckShortestPath () const
+{
+  return m_ackShortestPath;
 }
 
 /**
@@ -111,8 +127,10 @@ const Path& Flow::GetAckShortestPath() const {
 
  @param path The data path to add in the flow.
  */
-void Flow::AddDataPath (const Path& path) {
-    m_dataPaths.emplace_back(path);
+void
+Flow::AddDataPath (const Path &path)
+{
+  m_dataPaths.emplace_back (path);
 }
 
 /**
@@ -120,8 +138,10 @@ void Flow::AddDataPath (const Path& path) {
 
  @param path The ACK path to add in the flow.
  */
-void Flow::AddAckPath(const Path &path) {
-    m_ackPaths.emplace_back(path);
+void
+Flow::AddAckPath (const Path &path)
+{
+  m_ackPaths.emplace_back (path);
 }
 
 /**
@@ -129,8 +149,10 @@ void Flow::AddAckPath(const Path &path) {
 
  @param path The shortest ACK path.
  */
-void Flow::AddAckShortestPath(const Path &path) {
-    m_ackShortestPath = path;
+void
+Flow::AddAckShortestPath (const Path &path)
+{
+  m_ackShortestPath = path;
 }
 
 /**
@@ -141,38 +163,50 @@ void Flow::AddAckShortestPath(const Path &path) {
  @param globalK The value of the global K value if the \p perFlowK flag
                 is not set.
  */
-void Flow::Parse(const std::string &line, bool perFlowK, uint32_t globalK) {
-    std::istringstream flowSs (line, std::istringstream::in);
-    try {
-        flowSs >> id >> sourceId >> destinationId >> dataRate >> packetSize
-               >> numOfPackets;
+void
+Flow::Parse (const std::string &line, bool perFlowK, uint32_t globalK)
+{
+  std::istringstream flowSs (line, std::istringstream::in);
+  try
+    {
+      flowSs >> id >> sourceId >> destinationId >> dataRate >> packetSize >> numOfPackets;
 
-        char parsedProtocol;
-        flowSs >> parsedProtocol;
+      char parsedProtocol;
+      flowSs >> parsedProtocol;
 
-        if (parsedProtocol == 'T') {
-            protocol = Protocol::Tcp;
-        } else if (parsedProtocol == 'U') {
-            protocol = Protocol::Udp;
-        } else {
-            throw std::invalid_argument ("Unknown protocol type");
+      if (parsedProtocol == 'T')
+        {
+          protocol = Protocol::Tcp;
+        }
+      else if (parsedProtocol == 'U')
+        {
+          protocol = Protocol::Udp;
+        }
+      else
+        {
+          throw std::invalid_argument ("Unknown protocol type");
         }
 
-        flowSs >> startTime >> endTime;
+      flowSs >> startTime >> endTime;
 
-        if (perFlowK) {
-            flowSs >> k;
-        } else {
-            k = globalK;
+      if (perFlowK)
+        {
+          flowSs >> k;
         }
-    } catch (const std::invalid_argument& ia) {
-        std::cerr << "Error when converting flow values OR Invalid Protocol Type\n"
-                  << ia.what() << std::endl;
-        throw;
-    } catch (const std::out_of_range& oor) {
-        std::cerr << "Value out of range\n" << oor.what() << std::endl;
-        throw;
-    }
+      else
+        {
+          k = globalK;
+        }
+  } catch (const std::invalid_argument &ia)
+    {
+      std::cerr << "Error when converting flow values OR Invalid Protocol Type\n"
+                << ia.what () << std::endl;
+      throw;
+  } catch (const std::out_of_range &oor)
+    {
+      std::cerr << "Value out of range\n" << oor.what () << std::endl;
+      throw;
+  }
 }
 
 /**
@@ -182,37 +216,43 @@ void Flow::Parse(const std::string &line, bool perFlowK, uint32_t globalK) {
  @param flow The flow to describe.
  @return The output stream.
  */
-std::ostream& operator<< (std::ostream& output, const Flow& flow) {
-    output << "----------\n"
-    << "Id: " << flow.id << "\n"
-    << " Source: " <<  flow.sourceId << "\n"
-    << " Destination: " << flow.destinationId << "\n"
-    << " Data Rate: " << flow.dataRate << "Mbps\n"
-    << " Packet Size: " << flow.packetSize << "bytes\n"
-    << " Number of packets: " << flow.numOfPackets << "\n"
-    << " Protocol: " << static_cast<char>(flow.protocol) << "\n"
-    << " Start Time: " << flow.startTime << "s\n"
-    << " End Time: " << flow.endTime << "s\n"
-    << " K Value: " << flow.k << "\n"
-    << "----------\n";
+std::ostream &
+operator<< (std::ostream &output, const Flow &flow)
+{
+  output << "----------\n"
+         << "Id: " << flow.id << "\n"
+         << " Source: " << flow.sourceId << "\n"
+         << " Destination: " << flow.destinationId << "\n"
+         << " Data Rate: " << flow.dataRate << "Mbps\n"
+         << " Packet Size: " << flow.packetSize << "bytes\n"
+         << " Number of packets: " << flow.numOfPackets << "\n"
+         << " Protocol: " << static_cast<char> (flow.protocol) << "\n"
+         << " Start Time: " << flow.startTime << "s\n"
+         << " End Time: " << flow.endTime << "s\n"
+         << " K Value: " << flow.k << "\n"
+         << "----------\n";
 
-    if (!flow.m_dataPaths.empty()) {
-        output << "Data Paths\n"
-               << "----------\n";
-        for (const auto& path : flow.m_dataPaths) {
-            output << path << "\n----------\n";
+  if (!flow.m_dataPaths.empty ())
+    {
+      output << "Data Paths\n"
+             << "----------\n";
+      for (const auto &path : flow.m_dataPaths)
+        {
+          output << path << "\n----------\n";
         }
     }
 
-    if (!flow.m_ackPaths.empty()) {
-        output << "Ack Paths\n"
-               << "----------\n";
-        for (const auto& path : flow.m_ackPaths) {
-            output << path << "\n----------\n";
+  if (!flow.m_ackPaths.empty ())
+    {
+      output << "Ack Paths\n"
+             << "----------\n";
+      for (const auto &path : flow.m_ackPaths)
+        {
+          output << path << "\n----------\n";
         }
     }
 
-    return output;
+  return output;
 }
 
 /**
@@ -221,37 +261,44 @@ std::ostream& operator<< (std::ostream& output, const Flow& flow) {
 
  @param file Reference to the lgf file stream.
  */
-void SetFileCursorToFlowsSection(std::ifstream& file) {
-    std::string line;
-    std::string flowSectionString ("@flows");
-    bool flowsSectionFound (false);
+void
+SetFileCursorToFlowsSection (std::ifstream &file)
+{
+  std::string line;
+  std::string flowSectionString ("@flows");
+  bool flowsSectionFound (false);
 
-    int lineNumber (1);
-    while (std::getline (file, line)) {
-        lineNumber++;
+  int lineNumber (1);
+  while (std::getline (file, line))
+    {
+      lineNumber++;
 
-        // Ignore any comments after the @flows section
-        if (flowsSectionFound && line[0] != '#') {
-            break; // Line found
+      // Ignore any comments after the @flows section
+      if (flowsSectionFound && line[0] != '#')
+        {
+          break; // Line found
         }
 
-        // Ignore any trailing white space in the file
-        if (flowSectionString.compare(0, flowSectionString.length(), line,
-                                      0, flowSectionString.length()) == 0) {
-            flowsSectionFound = true;
+      // Ignore any trailing white space in the file
+      if (flowSectionString.compare (0, flowSectionString.length (), line, 0,
+                                     flowSectionString.length ()) == 0)
+        {
+          flowsSectionFound = true;
         }
     }
 
-    if (!flowsSectionFound) {
-        throw std::invalid_argument ("Flow section not found");
+  if (!flowsSectionFound)
+    {
+      throw std::invalid_argument ("Flow section not found");
     }
 
-    // Move to the beginning of the file
-    file.seekg(std::ios::beg);
+  // Move to the beginning of the file
+  file.seekg (std::ios::beg);
 
-    // Move one line up to where the flow definitions begins
-    for (int i = 1; i < (lineNumber - 1); i++) {
-        file.ignore(std::numeric_limits<std::streamsize>::max(),'\n'); // Extract and ignore a line
+  // Move one line up to where the flow definitions begins
+  for (int i = 1; i < (lineNumber - 1); i++)
+    {
+      file.ignore (std::numeric_limits<std::streamsize>::max (), '\n'); // Extract and ignore a line
     }
 }
 
@@ -263,35 +310,42 @@ void SetFileCursorToFlowsSection(std::ifstream& file) {
  @param globalK The globalK value if the perFlowK flag is not set.
  @return A container storing all the parsed flows.
  */
-Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uint32_t globalK) {
-    Flow::flowContainer_t flows;
+Flow::flowContainer_t
+ParseFlows (const std::string &lgfPath, bool perFlowK, uint32_t globalK)
+{
+  Flow::flowContainer_t flows;
 
-    try {
-        std::ifstream lgfFile;
-        lgfFile.exceptions(std::ifstream::badbit); // Enable exceptions if error occurs during file read
-        lgfFile.open(lgfPath, std::ifstream::in);  // Open file as Read Only
-        SetFileCursorToFlowsSection(lgfFile);      // Set the file cursor to the flows section
+  try
+    {
+      std::ifstream lgfFile;
+      lgfFile.exceptions (
+          std::ifstream::badbit); // Enable exceptions if error occurs during file read
+      lgfFile.open (lgfPath, std::ifstream::in); // Open file as Read Only
+      SetFileCursorToFlowsSection (lgfFile); // Set the file cursor to the flows section
 
-        LOG_MSG("File read successfully. Loading flows from " + lgfPath);
+      LOG_MSG ("File read successfully. Loading flows from " + lgfPath);
 
-        std::string line;
-        while (std::getline(lgfFile, line)) {
-            if (!line.empty() && line[0] != '#') {
-                Flow flow(line, perFlowK, globalK);
-                auto ret = flows.emplace(flow.id, flow);
-                if (!ret.second) {
-                    std::cerr << "ERROR: Trying to insert a duplicate flow. Flow Id: " << flow.id;
+      std::string line;
+      while (std::getline (lgfFile, line))
+        {
+          if (!line.empty () && line[0] != '#')
+            {
+              Flow flow (line, perFlowK, globalK);
+              auto ret = flows.emplace (flow.id, flow);
+              if (!ret.second)
+                {
+                  std::cerr << "ERROR: Trying to insert a duplicate flow. Flow Id: " << flow.id;
                 }
-                LOG_MSG(flow);
+              LOG_MSG (flow);
             }
         }
-    } catch (const std::ifstream::failure& e) {
-        std::cerr << "Loading the LGF file failed\n" << lgfPath << "\n"
-        << e.what()  << std::endl;
-        throw;
-    }
+  } catch (const std::ifstream::failure &e)
+    {
+      std::cerr << "Loading the LGF file failed\n" << lgfPath << "\n" << e.what () << std::endl;
+      throw;
+  }
 
-    return flows;
+  return flows;
 }
 
 /**
@@ -299,8 +353,11 @@ Flow::flowContainer_t ParseFlows (const std::string& lgfPath, bool perFlowK, uin
 
  @param flows The flow container.
  */
-void PrintFlows (const Flow::flowContainer_t& flows) {
-    for (const auto& flowPair : flows) {
-        std::cout << flowPair.second;
+void
+PrintFlows (const Flow::flowContainer_t &flows)
+{
+  for (const auto &flowPair : flows)
+    {
+      std::cout << flowPair.second;
     }
 }

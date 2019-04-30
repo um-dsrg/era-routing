@@ -11,8 +11,9 @@
 
  @param lemonGraph Instance of the LemonGraph object.
  */
-BoostGraph::BoostGraph (const LemonGraph& lemonGraph) {
-    GenerateBoostGraph(lemonGraph);
+BoostGraph::BoostGraph (const LemonGraph &lemonGraph)
+{
+  GenerateBoostGraph (lemonGraph);
 }
 
 /**
@@ -20,10 +21,12 @@ BoostGraph::BoostGraph (const LemonGraph& lemonGraph) {
 
  @param lemonGraph Instance of the LemonGraph object.
  */
-void BoostGraph::GenerateBoostGraph(const LemonGraph& lemonGraph) {
-    GenerateBoostNodes(lemonGraph);
-    GenerateBoostLinks(lemonGraph);
-    LOG_MSG("LEMON Graph converted to BOOST Graph successfully");
+void
+BoostGraph::GenerateBoostGraph (const LemonGraph &lemonGraph)
+{
+  GenerateBoostNodes (lemonGraph);
+  GenerateBoostLinks (lemonGraph);
+  LOG_MSG ("LEMON Graph converted to BOOST Graph successfully");
 }
 
 /**
@@ -31,21 +34,25 @@ void BoostGraph::GenerateBoostGraph(const LemonGraph& lemonGraph) {
 
  @param lemonGraph Instance of the LemonGraph object.
  */
-void BoostGraph::GenerateBoostNodes(const LemonGraph& lemonGraph) {
-    LOG_MSG("Building nodes...");
-    for (auto lemonNode = lemonGraph.GetNodeIt(); lemonNode != lemon::INVALID; ++lemonNode) {
-        auto nodeId {lemonGraph.GetNodeId(lemonNode)};
-        auto nodeType {lemonGraph.GetNodeType(lemonNode)};
+void
+BoostGraph::GenerateBoostNodes (const LemonGraph &lemonGraph)
+{
+  LOG_MSG ("Building nodes...");
+  for (auto lemonNode = lemonGraph.GetNodeIt (); lemonNode != lemon::INVALID; ++lemonNode)
+    {
+      auto nodeId{lemonGraph.GetNodeId (lemonNode)};
+      auto nodeType{lemonGraph.GetNodeType (lemonNode)};
 
-        auto boostNode {boost::add_vertex({nodeId, nodeType}, m_graph)};
-        auto ret = m_nodeMap.emplace(nodeId, boostNode);
-        if (!ret.second) {
-            throw std::runtime_error("Trying to insert a duplicate node. Node Id: " +
-                                     std::to_string(nodeId) + "\n");
+      auto boostNode{boost::add_vertex ({nodeId, nodeType}, m_graph)};
+      auto ret = m_nodeMap.emplace (nodeId, boostNode);
+      if (!ret.second)
+        {
+          throw std::runtime_error (
+              "Trying to insert a duplicate node. Node Id: " + std::to_string (nodeId) + "\n");
         }
 
-        LOG_MSG("Added node " << boost::get(&NodeDetails::id, m_graph, boostNode) <<
-                " Type " << boost::get(&NodeDetails::type, m_graph, boostNode));
+      LOG_MSG ("Added node " << boost::get (&NodeDetails::id, m_graph, boostNode) << " Type "
+                             << boost::get (&NodeDetails::type, m_graph, boostNode));
     }
 }
 
@@ -54,42 +61,48 @@ void BoostGraph::GenerateBoostNodes(const LemonGraph& lemonGraph) {
 
  @param lemonGraph Instance of the LemonGraph object.
  */
-void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
-    LOG_MSG("Building links...");
-    for (auto lemonLink = lemonGraph.GetLinkIt(); lemonLink != lemon::INVALID; ++lemonLink) {
-        auto srcNodeId = lemonGraph.GetNodeId(lemonGraph.GetSourceNode(lemonLink));
-        auto dstNodeId = lemonGraph.GetNodeId(lemonGraph.GetDestinationNode(lemonLink));
+void
+BoostGraph::GenerateBoostLinks (const LemonGraph &lemonGraph)
+{
+  LOG_MSG ("Building links...");
+  for (auto lemonLink = lemonGraph.GetLinkIt (); lemonLink != lemon::INVALID; ++lemonLink)
+    {
+      auto srcNodeId = lemonGraph.GetNodeId (lemonGraph.GetSourceNode (lemonLink));
+      auto dstNodeId = lemonGraph.GetNodeId (lemonGraph.GetDestinationNode (lemonLink));
 
-        auto linkId = lemonGraph.GetLinkId(lemonLink);
-        auto linkCost = lemonGraph.GetLinkCost(lemonLink);
-        auto linkCapacity = lemonGraph.GetLinkCapacity(lemonLink);
+      auto linkId = lemonGraph.GetLinkId (lemonLink);
+      auto linkCost = lemonGraph.GetLinkCost (lemonLink);
+      auto linkCapacity = lemonGraph.GetLinkCapacity (lemonLink);
 
-        link_t boostLink;
-        bool linkAdded {false};
-        std::tie(boostLink, linkAdded) = boost::add_edge(m_nodeMap.at(srcNodeId),
-                                                         m_nodeMap.at(dstNodeId),
-                                                         {linkId, linkCost, linkCapacity},
-                                                         m_graph);
+      link_t boostLink;
+      bool linkAdded{false};
+      std::tie (boostLink, linkAdded) =
+          boost::add_edge (m_nodeMap.at (srcNodeId), m_nodeMap.at (dstNodeId),
+                           {linkId, linkCost, linkCapacity}, m_graph);
 
-        if (!linkAdded) {
-            throw std::runtime_error("Link could not be added in Boost graph. Link Id: "
-                                     + std::to_string(linkId) + "\n");
+      if (!linkAdded)
+        {
+          throw std::runtime_error (
+              "Link could not be added in Boost graph. Link Id: " + std::to_string (linkId) + "\n");
         }
 
-        auto ret = m_linkMap.emplace(linkId, boostLink);
-        if (!ret.second) {
-            throw std::runtime_error("Failed to insert link " + std::to_string(linkId) + " in the link map");
+      auto ret = m_linkMap.emplace (linkId, boostLink);
+      if (!ret.second)
+        {
+          throw std::runtime_error ("Failed to insert link " + std::to_string (linkId) +
+                                    " in the link map");
         }
 
 #ifdef MY_DEBUG /* Debug only Logging */
-        auto srcNode {boost::source(boostLink, m_graph)};
-        auto dstNode {boost::target(boostLink, m_graph)};
+      auto srcNode{boost::source (boostLink, m_graph)};
+      auto dstNode{boost::target (boostLink, m_graph)};
 #endif
-        LOG_MSG("Added link " << boost::get(&LinkDetails::id, m_graph, boostLink) <<
-                " Cost " << boost::get(&LinkDetails::cost, m_graph, boostLink) <<
-                " Capacity " << boost::get(&LinkDetails::capacity, m_graph, boostLink) <<
-                " Source Node " << boost::get(&NodeDetails::id, m_graph, srcNode) <<
-                " Destination Node " << boost::get(&NodeDetails::id, m_graph, dstNode));
+      LOG_MSG ("Added link " << boost::get (&LinkDetails::id, m_graph, boostLink) << " Cost "
+                             << boost::get (&LinkDetails::cost, m_graph, boostLink) << " Capacity "
+                             << boost::get (&LinkDetails::capacity, m_graph, boostLink)
+                             << " Source Node " << boost::get (&NodeDetails::id, m_graph, srcNode)
+                             << " Destination Node "
+                             << boost::get (&NodeDetails::id, m_graph, dstNode));
     }
 }
 
@@ -99,13 +112,17 @@ void BoostGraph::GenerateBoostLinks(const LemonGraph& lemonGraph) {
  @param linkId The link id.
  @return The boost graph link.
  */
-BoostGraph::link_t BoostGraph::GetLink(id_t linkId) const {
-    try {
-        return m_linkMap.at(linkId);
-    } catch (const std::out_of_range& oor) {
-        std::cerr << "The link " << linkId << " was not found" << std::endl;
-        throw;
-    }
+BoostGraph::link_t
+BoostGraph::GetLink (id_t linkId) const
+{
+  try
+    {
+      return m_linkMap.at (linkId);
+  } catch (const std::out_of_range &oor)
+    {
+      std::cerr << "The link " << linkId << " was not found" << std::endl;
+      throw;
+  }
 }
 
 /**
@@ -114,8 +131,10 @@ BoostGraph::link_t BoostGraph::GetLink(id_t linkId) const {
  @param link The boost graph link.
  @return The link id.
  */
-id_t BoostGraph::GetLinkId(const BoostGraph::link_t& link) const {
-    return boost::get(&LinkDetails::id, m_graph, link);
+id_t
+BoostGraph::GetLinkId (const BoostGraph::link_t &link) const
+{
+  return boost::get (&LinkDetails::id, m_graph, link);
 }
 
 /**
@@ -124,8 +143,10 @@ id_t BoostGraph::GetLinkId(const BoostGraph::link_t& link) const {
  @param link The boost graph link.
  @return The link cost.
  */
-linkCost_t BoostGraph::GetLinkCost(const BoostGraph::link_t& link) const {
-    return boost::get(&LinkDetails::cost, m_graph, link);
+linkCost_t
+BoostGraph::GetLinkCost (const BoostGraph::link_t &link) const
+{
+  return boost::get (&LinkDetails::cost, m_graph, link);
 }
 
 /**
@@ -134,8 +155,10 @@ linkCost_t BoostGraph::GetLinkCost(const BoostGraph::link_t& link) const {
  @param link The boost graph link.
  @return The link capacity.
  */
-linkCapacity_t BoostGraph::GetLinkCapacity(const BoostGraph::link_t& link) const {
-    return boost::get(&LinkDetails::capacity, m_graph, link);
+linkCapacity_t
+BoostGraph::GetLinkCapacity (const BoostGraph::link_t &link) const
+{
+  return boost::get (&LinkDetails::capacity, m_graph, link);
 }
 
 /**
@@ -151,34 +174,37 @@ linkCapacity_t BoostGraph::GetLinkCapacity(const BoostGraph::link_t& link) const
  @return The link id of the opposite link. If the opposite link is not found, the
          returned link id is equal to that given.
  */
-std::list<id_t> BoostGraph::GetOppositeLink(id_t linkId) const {
-    auto link = GetLink(linkId);
-    auto linkCost {GetLinkCost(link)};
+std::list<id_t>
+BoostGraph::GetOppositeLink (id_t linkId) const
+{
+  auto link = GetLink (linkId);
+  auto linkCost{GetLinkCost (link)};
 
-    auto srcNode {boost::source(link, m_graph)};
-    auto dstNode {boost::target(link, m_graph)};
-    auto dstNodeId {GetNodeId(dstNode)};
+  auto srcNode{boost::source (link, m_graph)};
+  auto dstNode{boost::target (link, m_graph)};
+  auto dstNodeId{GetNodeId (dstNode)};
 
-    std::list<id_t> oppositeLinks;
-    auto incomingLinksIterators {boost::in_edges(srcNode, m_graph)};
+  std::list<id_t> oppositeLinks;
+  auto incomingLinksIterators{boost::in_edges (srcNode, m_graph)};
 
-    for (auto incomingLinkIt = incomingLinksIterators.first;
-         incomingLinkIt != incomingLinksIterators.second;
-         ++incomingLinkIt)
+  for (auto incomingLinkIt = incomingLinksIterators.first;
+       incomingLinkIt != incomingLinksIterators.second; ++incomingLinkIt)
     {
-        auto incomingLinkSrcNodeId = GetNodeId(boost::source(*incomingLinkIt, m_graph));
-        auto incomingLinkCost = GetLinkCost(*incomingLinkIt);
+      auto incomingLinkSrcNodeId = GetNodeId (boost::source (*incomingLinkIt, m_graph));
+      auto incomingLinkCost = GetLinkCost (*incomingLinkIt);
 
-        if ((incomingLinkSrcNodeId == dstNodeId) && (linkCost == incomingLinkCost)) {
-            oppositeLinks.emplace_back(GetLinkId(*incomingLinkIt));
+      if ((incomingLinkSrcNodeId == dstNodeId) && (linkCost == incomingLinkCost))
+        {
+          oppositeLinks.emplace_back (GetLinkId (*incomingLinkIt));
         }
     }
 
-    if (oppositeLinks.empty()) {
-        std::cout << "Warning: Link " << linkId << " has no opposite link" << std::endl;
+  if (oppositeLinks.empty ())
+    {
+      std::cout << "Warning: Link " << linkId << " has no opposite link" << std::endl;
     }
 
-    return oppositeLinks;
+  return oppositeLinks;
 }
 
 /**
@@ -186,9 +212,10 @@ std::list<id_t> BoostGraph::GetOppositeLink(id_t linkId) const {
 
  @return Iterator over the boost graph links.
  */
-std::pair<BoostGraph::graph_t::edge_iterator,
-          BoostGraph::graph_t::edge_iterator> BoostGraph::GetLinkIterators() const {
-    return boost::edges(m_graph);
+std::pair<BoostGraph::graph_t::edge_iterator, BoostGraph::graph_t::edge_iterator>
+BoostGraph::GetLinkIterators () const
+{
+  return boost::edges (m_graph);
 }
 
 /**
@@ -197,8 +224,10 @@ std::pair<BoostGraph::graph_t::edge_iterator,
  @param node The boost graph node.
  @return The node id.
  */
-id_t BoostGraph::GetNodeId(const BoostGraph::node_t& node) const {
-    return boost::get(&NodeDetails::id, m_graph, node);
+id_t
+BoostGraph::GetNodeId (const BoostGraph::node_t &node) const
+{
+  return boost::get (&NodeDetails::id, m_graph, node);
 }
 
 /**
@@ -211,8 +240,10 @@ id_t BoostGraph::GetNodeId(const BoostGraph::node_t& node) const {
  @param node The boost graph node.
  @return The node type.
  */
-char BoostGraph::GetNodeType(node_t node) const {
-    return boost::get(&NodeDetails::type, m_graph, node);
+char
+BoostGraph::GetNodeType (node_t node) const
+{
+  return boost::get (&NodeDetails::type, m_graph, node);
 }
 
 /**
@@ -221,8 +252,10 @@ char BoostGraph::GetNodeType(node_t node) const {
  @param link The boost graph link.
  @return The source node of the given link.
  */
-BoostGraph::node_t BoostGraph::GetSourceNode(const link_t& link) const {
-    return boost::source(link, m_graph);
+BoostGraph::node_t
+BoostGraph::GetSourceNode (const link_t &link) const
+{
+  return boost::source (link, m_graph);
 }
 
 /**
@@ -231,8 +264,10 @@ BoostGraph::node_t BoostGraph::GetSourceNode(const link_t& link) const {
  @param link The boost graph link.
  @return The destination node of the given link.
  */
-BoostGraph::node_t BoostGraph::GetDestinationNode(const link_t& link) const {
-    return boost::target(link, m_graph);
+BoostGraph::node_t
+BoostGraph::GetDestinationNode (const link_t &link) const
+{
+  return boost::target (link, m_graph);
 }
 
 /**
@@ -244,8 +279,10 @@ BoostGraph::node_t BoostGraph::GetDestinationNode(const link_t& link) const {
  @return True: The numbers are equal at the given accuracy.
          False: The numbers are not equal at the given accuracy.
  */
-bool numbersAreClose(double value1, double value2, double accuracy=1e-9) {
-    return (std::fabs (value1 - value2) < accuracy);
+bool
+numbersAreClose (double value1, double value2, double accuracy = 1e-9)
+{
+  return (std::fabs (value1 - value2) < accuracy);
 }
 
 /**
@@ -262,70 +299,89 @@ bool numbersAreClose(double value1, double value2, double accuracy=1e-9) {
                                   include all the paths with cost equal to the kth
                                   path.
  */
-void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAllKEqualCostPaths) {
-    for (auto& flowPair : flows) {
-        auto& flow {flowPair.second};
+void
+BoostGraph::FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEqualCostPaths)
+{
+  for (auto &flowPair : flows)
+    {
+      auto &flow{flowPair.second};
 
-        auto k = flow.k;
-        auto& srcNode {m_nodeMap.at(flow.sourceId)};
-        auto& dstNode {m_nodeMap.at(flow.destinationId)};
+      auto k = flow.k;
+      auto &srcNode{m_nodeMap.at (flow.sourceId)};
+      auto &dstNode{m_nodeMap.at (flow.destinationId)};
 
-        auto kShortestPaths = pathContainer_t{boost::yen_ksp(m_graph, srcNode, dstNode,
-                                                             /* Link weight attribute */
-                                                             boost::get(&LinkDetails::cost, m_graph),
-                                                             boost::get(boost::vertex_index_t(), m_graph), k)};
+      auto kShortestPaths =
+          pathContainer_t{boost::yen_ksp (m_graph, srcNode, dstNode,
+                                          /* Link weight attribute */
+                                          boost::get (&LinkDetails::cost, m_graph),
+                                          boost::get (boost::vertex_index_t (), m_graph), k)};
 
-        if (kShortestPaths.empty()) {
-            throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
-        } else if ( k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size() == k)) {
-            /**
-             Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is enabled, and if the
-             number of found paths is equal to k; thus, we need more paths to determine whether all paths have been
-             included.
+      if (kShortestPaths.empty ())
+        {
+          throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
+        }
+      else if (k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size () == k))
+        {
+          /**
+             Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is
+             enabled, and if the number of found paths is equal to k; thus, we need more paths to
+             determine whether all paths have been included.
              */
-            auto kthPathCost {kShortestPaths.back().first};
-            auto allEqualCostPathsFound = bool{false};
-            auto extendedK = uint32_t{k};
+          auto kthPathCost{kShortestPaths.back ().first};
+          auto allEqualCostPathsFound = bool{false};
+          auto extendedK = uint32_t{k};
 
-            /**
-             The number of paths found in the previous run. This variable will be used to stop the algorithm
-             when all the paths for a particular flow have been found.
+          /**
+             The number of paths found in the previous run. This variable will be used to stop the
+             algorithm when all the paths for a particular flow have been found.
              */
-            auto prevNumPathsFound {kShortestPaths.size()};
+          auto prevNumPathsFound{kShortestPaths.size ()};
 
-            while (allEqualCostPathsFound == false) {
-                extendedK = boost::numeric_cast<uint32_t>(std::ceil(extendedK * 1.5));
-                kShortestPaths = boost::yen_ksp(m_graph, srcNode, dstNode,
-                                                boost::get(&LinkDetails::cost, m_graph),
-                                                boost::get(boost::vertex_index_t(), m_graph), extendedK);
+          while (allEqualCostPathsFound == false)
+            {
+              extendedK = boost::numeric_cast<uint32_t> (std::ceil (extendedK * 1.5));
+              kShortestPaths = boost::yen_ksp (
+                  m_graph, srcNode, dstNode, boost::get (&LinkDetails::cost, m_graph),
+                  boost::get (boost::vertex_index_t (), m_graph), extendedK);
 
-                if (numbersAreClose(kShortestPaths.back().first, kthPathCost) && prevNumPathsFound != kShortestPaths.size()) {
-                    /**
-                     * This if condition will be true when the last path's cost is equal to the K shortest path and
-                     * the number of paths found in the previous run and this run are different. If both of those conditions
-                     * are satisfied, the K value needs to be increased further to make sure that all the paths are being
-                     * taken into consideration.
-                     * Note that if the number of paths returned in the previous run and this run are equal than this particular
-                     * flow has no more paths to offer and the loop should be terminated.
+              if (numbersAreClose (kShortestPaths.back ().first, kthPathCost) &&
+                  prevNumPathsFound != kShortestPaths.size ())
+                {
+                  /**
+                     * This if condition will be true when the last path's cost is equal to the K
+                     * shortest path and the number of paths found in the previous run and this run
+                     * are different. If both of those conditions are satisfied, the K value needs to
+                     * be increased further to make sure that all the paths are being taken into
+                     * consideration.
+                     * Note that if the number of paths returned in the previous run and this run
+                     * are equal than this particular flow has no more paths to offer and the loop
+                     * should be terminated.
                      */
-                    prevNumPathsFound = kShortestPaths.size();
-                    continue;
-                } else {
-                    allEqualCostPathsFound = true;
-                    // Keep all the paths with cost lower than or equal to the kthPathCost
-                    kShortestPaths.remove_if([kthPathCost](const std::pair<linkCost_t,
-                                                           std::list<BoostGraph::link_t>>& path) -> bool {
-                        if (path.first < kthPathCost || numbersAreClose(path.first, kthPathCost)) {
+                  prevNumPathsFound = kShortestPaths.size ();
+                  continue;
+                }
+              else
+                {
+                  allEqualCostPathsFound = true;
+                  // Keep all the paths with cost lower than or equal to the kthPathCost
+                  kShortestPaths.remove_if (
+                      [kthPathCost](
+                          const std::pair<linkCost_t, std::list<BoostGraph::link_t>> &path)
+                          -> bool {
+                        if (path.first < kthPathCost || numbersAreClose (path.first, kthPathCost))
+                          {
                             return false;
-                        } else {
+                          }
+                        else
+                          {
                             return true;
-                        }
-                    });
+                          }
+                      });
                 }
             }
         }
 
-        AddDataPaths(flow, kShortestPaths);
+      AddDataPaths (flow, kShortestPaths);
     }
 }
 
@@ -333,80 +389,95 @@ void BoostGraph::FindKShortestPaths(Flow::flowContainer_t& flows, bool includeAl
  * @brief Find the first K edge disjoint paths for each flow.
  * @param[in,out] flows The flow set that will be updated with the found paths.
  */
-void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
-    for (auto& flowPair : flows) {
-        auto& flow {flowPair.second};
+void
+BoostGraph::FindKEdgeDisjointPaths (Flow::flowContainer_t &flows)
+{
+  for (auto &flowPair : flows)
+    {
+      auto &flow{flowPair.second};
 
-        LOG_MSG("Finding the paths for flow " << flow.id);
+      LOG_MSG ("Finding the paths for flow " << flow.id);
 
-        // Simpler solution, copy the graph - store only the link ids - and at the end loop and add data paths using the original graph.
-        graph_t tempGraph;
-        boost::copy_graph(m_graph, tempGraph);
+      // Simpler solution, copy the graph - store only the link ids - and at the end loop and add
+      // data paths using the original graph.
+      graph_t tempGraph;
+      boost::copy_graph (m_graph, tempGraph);
 
-        std::list<std::list<id_t>> edgeDisjointPathIds; // List of edge disjoint paths
+      std::list<std::list<id_t>> edgeDisjointPathIds; // List of edge disjoint paths
 
-        for (uint32_t i = 0; i < flow.k; ++i) {
+      for (uint32_t i = 0; i < flow.k; ++i)
+        {
 
-            auto &srcNode{m_nodeMap.at(flow.sourceId)};
-            auto &dstNode{m_nodeMap.at(flow.destinationId)};
+          auto &srcNode{m_nodeMap.at (flow.sourceId)};
+          auto &dstNode{m_nodeMap.at (flow.destinationId)};
 
-            auto foundPaths = pathContainer_t{boost::yen_ksp(tempGraph, srcNode, dstNode,
+          auto foundPaths =
+              pathContainer_t{boost::yen_ksp (tempGraph, srcNode, dstNode,
                                               /* Link weight attribute */
-                                              boost::get(&LinkDetails::cost, tempGraph),
-                                              boost::get(boost::vertex_index_t(), tempGraph), 1)};
+                                              boost::get (&LinkDetails::cost, tempGraph),
+                                              boost::get (boost::vertex_index_t (), tempGraph), 1)};
 
-            if (foundPaths.empty()) {
-                break; // No more paths found. Exit the loop
+          if (foundPaths.empty ())
+            {
+              break; // No more paths found. Exit the loop
             }
 
-            // Save the found paths
-            LOG_MSG("New Path\n----------");
-            std::list<id_t> pathLinks;
-            for(const auto& pathPair: foundPaths) {
-                for (const auto& link: pathPair.second) {
-                    pathLinks.emplace_back(boost::get(&LinkDetails::id, tempGraph, link));
-                    LOG_MSG("Link: " << boost::get(&LinkDetails::id, tempGraph, link));
+          // Save the found paths
+          LOG_MSG ("New Path\n----------");
+          std::list<id_t> pathLinks;
+          for (const auto &pathPair : foundPaths)
+            {
+              for (const auto &link : pathPair.second)
+                {
+                  pathLinks.emplace_back (boost::get (&LinkDetails::id, tempGraph, link));
+                  LOG_MSG ("Link: " << boost::get (&LinkDetails::id, tempGraph, link));
                 }
             }
 
-            edgeDisjointPathIds.push_back(pathLinks);
+          edgeDisjointPathIds.push_back (pathLinks);
 
-            // Remove all the edges of the found path
-            for (const auto& pathPair: foundPaths) {
-                const auto& pathLinks {pathPair.second};
+          // Remove all the edges of the found path
+          for (const auto &pathPair : foundPaths)
+            {
+              const auto &pathLinks{pathPair.second};
 
-                for (const auto& link: pathLinks) {
-                    auto srcNode = boost::source(link, tempGraph);
-                    auto dstNode = boost::target(link, tempGraph);
+              for (const auto &link : pathLinks)
+                {
+                  auto srcNode = boost::source (link, tempGraph);
+                  auto dstNode = boost::target (link, tempGraph);
 
-                    auto srcNodeType = boost::get(&NodeDetails::type, tempGraph, srcNode);
-                    auto dstNodeType = boost::get(&NodeDetails::type, tempGraph, dstNode);
+                  auto srcNodeType = boost::get (&NodeDetails::type, tempGraph, srcNode);
+                  auto dstNodeType = boost::get (&NodeDetails::type, tempGraph, dstNode);
 
-                    if (srcNodeType == 'S' && dstNodeType == 'S') {
-                        // Only remove edges that are between switches
-                        LOG_MSG("Removing link " << boost::get(&LinkDetails::id, tempGraph, link));
-                        boost::remove_edge(link, tempGraph);
+                  if (srcNodeType == 'S' && dstNodeType == 'S')
+                    {
+                      // Only remove edges that are between switches
+                      LOG_MSG ("Removing link " << boost::get (&LinkDetails::id, tempGraph, link));
+                      boost::remove_edge (link, tempGraph);
                     }
                 }
             }
         }
 
-        if (edgeDisjointPathIds.empty()) {
-            throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
+      if (edgeDisjointPathIds.empty ())
+        {
+          throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
         }
 
-        // Save the paths to the flow
-        for (const auto& path: edgeDisjointPathIds) {
-            Path dataPath(/* assign a path id to this path */ true);
-            auto pathCost = 0.0;
+      // Save the paths to the flow
+      for (const auto &path : edgeDisjointPathIds)
+        {
+          Path dataPath (/* assign a path id to this path */ true);
+          auto pathCost = 0.0;
 
-            for (const auto& linkId : path) {
-                pathCost += boost::get(&LinkDetails::cost, m_graph, GetLink(linkId));
-                dataPath.AddLink(linkId);
+          for (const auto &linkId : path)
+            {
+              pathCost += boost::get (&LinkDetails::cost, m_graph, GetLink (linkId));
+              dataPath.AddLink (linkId);
             }
 
-            dataPath.cost = pathCost;
-            flow.AddDataPath(dataPath);
+          dataPath.cost = pathCost;
+          flow.AddDataPath (dataPath);
         }
     }
 }
@@ -417,15 +488,19 @@ void BoostGraph::FindKEdgeDisjointPaths(Flow::flowContainer_t &flows) {
  @param flow The flow object to update.
  @param paths The paths to add to the flow.
  */
-void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& paths) {
-    for (const auto& path: paths) {
-        Path dataPath(/* assign a path id to this path */ true);
-        dataPath.cost = path.first;
+void
+BoostGraph::AddDataPaths (Flow &flow, const BoostGraph::pathContainer_t &paths)
+{
+  for (const auto &path : paths)
+    {
+      Path dataPath (/* assign a path id to this path */ true);
+      dataPath.cost = path.first;
 
-        for (const auto& link : path.second) {
-            dataPath.AddLink(boost::get(&LinkDetails::id, m_graph, link));
+      for (const auto &link : path.second)
+        {
+          dataPath.AddLink (boost::get (&LinkDetails::id, m_graph, link));
         }
-        flow.AddDataPath(dataPath);
+      flow.AddDataPath (dataPath);
     }
 }
 
@@ -438,41 +513,48 @@ void BoostGraph::AddDataPaths(Flow& flow, const BoostGraph::pathContainer_t& pat
 
  @param[in,out] flows The flow container.
  */
-void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
-    for (auto& flowPair : flows) {
-        auto& flow {flowPair.second};
+void
+BoostGraph::AddAckPaths (Flow::flowContainer_t &flows)
+{
+  for (auto &flowPair : flows)
+    {
+      auto &flow{flowPair.second};
 
-        if (flow.protocol == Protocol::Udp) { // No ack paths necessary for UDP flows
-            continue;
+      if (flow.protocol == Protocol::Udp)
+        { // No ack paths necessary for UDP flows
+          continue;
         }
 
-        LOG_MSG("Add ACK paths for Flow: " << flow.id);
+      LOG_MSG ("Add ACK paths for Flow: " << flow.id);
 
-        for (const auto& path : flow.GetDataPaths()) {
-            Path ackPath(/* do not assign a path id to this path */ false);
-            ackPath.id = path.id; // Set the Ack Path id to be identical to the Data path id
+      for (const auto &path : flow.GetDataPaths ())
+        {
+          Path ackPath (/* do not assign a path id to this path */ false);
+          ackPath.id = path.id; // Set the Ack Path id to be identical to the Data path id
 
-            for (const auto& link : path.GetLinks()) {
-                LOG_MSG("We are working on link " << link);
-                auto& dataLink = m_linkMap.at(link);
+          for (const auto &link : path.GetLinks ())
+            {
+              LOG_MSG ("We are working on link " << link);
+              auto &dataLink = m_linkMap.at (link);
 
-                auto dataSrcNode = boost::source(dataLink, m_graph);
-                auto dataDstNode = boost::target(dataLink, m_graph);
+              auto dataSrcNode = boost::source (dataLink, m_graph);
+              auto dataDstNode = boost::target (dataLink, m_graph);
 
-                bool ackLinkFound {false};
-                BoostGraph::link_t ackLink;
+              bool ackLinkFound{false};
+              BoostGraph::link_t ackLink;
 
-                // The source and destination nodes are reversed to find the opposite link
-                std::tie(ackLink, ackLinkFound) = boost::edge(dataDstNode, dataSrcNode, m_graph);
+              // The source and destination nodes are reversed to find the opposite link
+              std::tie (ackLink, ackLinkFound) = boost::edge (dataDstNode, dataSrcNode, m_graph);
 
-                if (!ackLinkFound) {
-                    throw std::runtime_error("The opposite link for link " + std::to_string(link) +
-                                             " has not been found");
+              if (!ackLinkFound)
+                {
+                  throw std::runtime_error ("The opposite link for link " + std::to_string (link) +
+                                            " has not been found");
                 }
-                ackPath.AddLink(boost::get(&LinkDetails::id, m_graph, ackLink));
+              ackPath.AddLink (boost::get (&LinkDetails::id, m_graph, ackLink));
             }
 
-            flow.AddAckPath(ackPath);
+          flow.AddAckPath (ackPath);
         }
     }
 }
@@ -485,30 +567,38 @@ void BoostGraph::AddAckPaths(Flow::flowContainer_t& flows) {
 
  @param[in,out] flows The flow container.
  */
-void BoostGraph::AddShortestPathAck(Flow::flowContainer_t &flows) {
-    for (auto& flowPair : flows) {
-        auto& flow {flowPair.second};
+void
+BoostGraph::AddShortestPathAck (Flow::flowContainer_t &flows)
+{
+  for (auto &flowPair : flows)
+    {
+      auto &flow{flowPair.second};
 
-        auto& srcNode {m_nodeMap.at(flow.sourceId)};
-        auto& dstNode {m_nodeMap.at(flow.destinationId)};
+      auto &srcNode{m_nodeMap.at (flow.sourceId)};
+      auto &dstNode{m_nodeMap.at (flow.destinationId)};
 
-        auto ackPathContainer = pathContainer_t{boost::yen_ksp(m_graph, dstNode, srcNode,
-                                                               /* Link weight attribute */
-                                                               boost::get(&LinkDetails::cost, m_graph),
-                                                               boost::get(boost::vertex_index_t(), m_graph), 1)};
+      auto ackPathContainer =
+          pathContainer_t{boost::yen_ksp (m_graph, dstNode, srcNode,
+                                          /* Link weight attribute */
+                                          boost::get (&LinkDetails::cost, m_graph),
+                                          boost::get (boost::vertex_index_t (), m_graph), 1)};
 
-        if (ackPathContainer.empty()) {
-            throw std::runtime_error("No paths were found for flow " + std::to_string(flow.id));
-        } else {
-            const auto& ackPathPair {ackPathContainer.front()};
-            Path ackPath(false);
-            ackPath.cost = ackPathPair.first;
+      if (ackPathContainer.empty ())
+        {
+          throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
+        }
+      else
+        {
+          const auto &ackPathPair{ackPathContainer.front ()};
+          Path ackPath (false);
+          ackPath.cost = ackPathPair.first;
 
-            for (const auto& link : ackPathPair.second) {
-                ackPath.AddLink(boost::get(&LinkDetails::id, m_graph, link));
+          for (const auto &link : ackPathPair.second)
+            {
+              ackPath.AddLink (boost::get (&LinkDetails::id, m_graph, link));
             }
 
-            flow.AddAckShortestPath(ackPath);
+          flow.AddAckShortestPath (ackPath);
         }
     }
 }

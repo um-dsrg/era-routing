@@ -8,7 +8,12 @@ using linkCost_t = double;
 using linkCapacity_t = double;
 
 #ifdef MY_DEBUG
-#define LOG_MSG(x) do { std::cerr << x << std::endl; } while (0)
+#define LOG_MSG(x)                 \
+  do                               \
+    {                              \
+      std::cerr << x << std::endl; \
+    }                              \
+  while (0)
 #else
 #define LOG_MSG(x)
 #endif
