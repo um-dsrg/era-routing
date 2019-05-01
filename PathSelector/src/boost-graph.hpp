@@ -2,6 +2,7 @@
 #define boostgraph_hpp
 
 #include <map>
+#include <set>
 #include <boost/graph/adjacency_list.hpp>
 
 #include "flow.hpp"
@@ -52,6 +53,7 @@ public:
 
   void FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEqualCostPaths);
   void FindKEdgeDisjointPaths (Flow::flowContainer_t &flows);
+  void FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows);
   void AddAckPaths (Flow::flowContainer_t &flows);
   void AddShortestPathAck (Flow::flowContainer_t &flows);
 
@@ -60,6 +62,7 @@ private:
   void GenerateBoostNodes (const LemonGraph &lemonGraph);
   void GenerateBoostLinks (const LemonGraph &lemonGraph);
 
+  std::set<id_t> GetLinksToRetain (const Flow &flow);
   void AddDataPaths (Flow &flow, const pathContainer_t &paths);
 
   graph_t m_graph; /**< The boost graph. */
