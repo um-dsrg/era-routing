@@ -556,7 +556,7 @@ BoostGraph::FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows)
                 {
                   auto linkId = id_t{boost::get (&LinkDetails::id, tempGraph, link)};
 
-                  if (linksToRetain.find (linkId) == linksToRetain.end ())
+                  if (linksToRetain.find (linkId) != linksToRetain.end ())
                     { // The link should not be deleted
                       LOG_MSG ("Link: " << linkId << " has been retained");
                     }
@@ -593,11 +593,11 @@ BoostGraph::FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows)
 std::set<id_t>
 BoostGraph::GetLinksToRetain (const Flow &flow)
 {
-  auto &srcNode{m_nodeMap.at (flow.sourceId)};
-  auto &dstNode{m_nodeMap.at (flow.destinationId)};
+  auto &flowSrcNode{m_nodeMap.at (flow.sourceId)};
+  auto &flowDstNode{m_nodeMap.at (flow.destinationId)};
 
   auto foundPaths = pathContainer_t{boost::yen_ksp (
-      m_graph, srcNode, dstNode,
+      m_graph, flowSrcNode, flowDstNode,
       /* Link weight attribute */
       boost::get (&LinkDetails::cost, m_graph), boost::get (boost::vertex_index_t (), m_graph), 1)};
 
@@ -617,13 +617,29 @@ BoostGraph::GetLinksToRetain (const Flow &flow)
   for (const auto &link : shortestPath)
     {
       auto srcNode{GetSourceNode (link)};
+      // The number of outgoing links from a node excluding those connected to a terminal
+      auto numOutgoingLinks = uint32_t{0};
 
-      if (boost::out_degree (srcNode, m_graph) <= 1)
+      using outEdgeIt = graph_t::out_edge_iterator;
+      outEdgeIt ei, eiEnd;
+      for (boost::tie (ei, eiEnd) = boost::out_edges (srcNode, m_graph); ei != eiEnd; ++ei)
+        {
+          if (GetNodeType (GetDestinationNode (*ei)) == 'T')
+            continue;
+          else
+            numOutgoingLinks++;
+        }
+      LOG_MSG ("  Node: " << GetNodeId (srcNode) << " has " << numOutgoingLinks
+                          << " outgoing link(s)");
+
+      if (numOutgoingLinks <= 1)
         {
           auto linkId{GetLinkId (link)};
           LOG_MSG ("  Link: " << linkId << " retained");
           linksToRetain.emplace (linkId);
         }
+      else
+        break;
     }
   LOG_MSG ("Forward search for Flow: " << flow.id << " complete");
 
@@ -634,13 +650,29 @@ BoostGraph::GetLinksToRetain (const Flow &flow)
     {
       const auto &link = *linkIt;
       auto dstNode{GetDestinationNode (link)};
+      // The number of incoming links from a node excluding those connected with a terminal
+      auto numIncomingLinks = uint32_t{0};
 
-      if (boost::in_degree (dstNode, m_graph) <= 1)
+      using inEdgeIt = graph_t::in_edge_iterator;
+      inEdgeIt ei, eiEnd;
+      for (boost::tie (ei, eiEnd) = boost::in_edges (dstNode, m_graph); ei != eiEnd; ++ei)
+        {
+          if (GetNodeType (GetSourceNode (*ei)) == 'T')
+            continue;
+          else
+            numIncomingLinks++;
+        }
+      LOG_MSG ("  Node: " << GetNodeId (dstNode) << " has " << numIncomingLinks
+                          << " incoming link(s)");
+
+      if (numIncomingLinks <= 1)
         {
           auto linkId{GetLinkId (link)};
           LOG_MSG ("  Link: " << linkId << " retained");
           linksToRetain.emplace (linkId);
         }
+      else
+        break;
     }
   LOG_MSG ("Backward search for Flow: " << flow.id << " complete");
 
