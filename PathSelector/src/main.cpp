@@ -76,6 +76,9 @@ main (int argc, const char *argv[])
         }
       else if (relaxedEdgeDisjoint)
         {
+          if (includeAllKEqualCostPaths)
+            throw std::runtime_error ("The RelaxedKEdgeDisjoint does include equal cost paths");
+
           boostGraph.FindKRelaxedEdgeDisjointPaths (flows);
         }
       else
