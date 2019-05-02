@@ -544,6 +544,14 @@ BoostGraph::FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows)
                 }
             }
           LOG_MSG_NONEWLINE ("\n");
+
+          if (edgeDisjointPaths.back () == pathLinks)
+            {
+              LOG_MSG ("This path has been found already. All paths for Flow: "
+                       << flow.id << " have been found");
+              break;
+            }
+
           edgeDisjointPaths.push_back (pathLinks);
 
           /**
