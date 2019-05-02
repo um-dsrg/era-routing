@@ -19,6 +19,7 @@ main (int argc, const char *argv[])
 
   bool kShortestPath{false};
   bool edgeDisjoint{false};
+  bool relaxedEdgeDisjoint{false};
 
   try
     {
@@ -40,6 +41,8 @@ main (int argc, const char *argv[])
                                         "When set use the KSP algorithm to find paths") (
           "edgeDisjoint", po::bool_switch (&edgeDisjoint),
           "When set use the edge disjoint algorithm to find paths") (
+          "relaxedEdgeDisjoint", po::bool_switch (&relaxedEdgeDisjoint),
+          "When set, use the relaxed edge disjoint algorithm.") (
           "verbose,v", po::bool_switch (&verbose), "Enable verbose output.");
 
       po::variables_map vm;
@@ -70,6 +73,13 @@ main (int argc, const char *argv[])
       else if (edgeDisjoint)
         {
           boostGraph.FindKEdgeDisjointPaths (flows);
+        }
+      else if (relaxedEdgeDisjoint)
+        {
+          if (includeAllKEqualCostPaths)
+            throw std::runtime_error ("The RelaxedKEdgeDisjoint does include equal cost paths");
+
+          boostGraph.FindKRelaxedEdgeDisjointPaths (flows);
         }
       else
         {

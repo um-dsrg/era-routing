@@ -18,4 +18,15 @@ using linkCapacity_t = double;
 #define LOG_MSG(x)
 #endif
 
+#ifdef MY_DEBUG
+#define LOG_MSG_NONEWLINE(x)  \
+  do                         \
+    {                        \
+      std::cerr << x;        \
+    }                        \
+  while (0)
+#else
+#define LOG_MSG_NONEWLINE(x)
+#endif
+
 #endif /* definitions_hpp */

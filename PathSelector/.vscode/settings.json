@@ -5,5 +5,6 @@
   "editor.tabSize": 2,
   "editor.formatOnSave": true,
   "editor.formatOnType": false,
-  "editor.detectIndentation": false
+  "editor.detectIndentation": false,
+  "C_Cpp.clang_format_style": "file"
 }
