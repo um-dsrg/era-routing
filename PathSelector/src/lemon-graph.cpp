@@ -147,7 +147,7 @@ LemonGraph::LoadGraphFromFile (const std::string &lgfPath)
       LOG_MSG ("Graph parsed successfully");
   } catch (const lemon::Exception &e)
     {
-      throw std::runtime_error ("Error parsing the LGS graph.\nLGF Location: " + lgfPath +
+      throw std::runtime_error ("Error parsing the LGF graph.\nLGF Location: " + lgfPath +
                                 "\nError: " + e.what ());
   }
 }
