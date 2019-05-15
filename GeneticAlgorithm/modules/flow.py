@@ -21,6 +21,7 @@ class _Path:
                                                                   self.cost,
                                                                   self.links))
 
+
 class Flow:
     """Class representing a flow.
 
@@ -67,15 +68,6 @@ class Flow:
         self.protocol = str(flow_element.get('Protocol'))
         self.start_time = int(flow_element.get('StartTime'))
         self.end_time = int(flow_element.get('EndTime'))
-
-        if self.protocol == 'T':
-            self.src_port = int(flow_element.get('SrcPortNumber'))
-            self.dst_port = int(flow_element.get('DstPortNumber'))
-        else:
-            self.dst_port = int(flow_element.get('PortNumber'))
-
-        if self.protocol == 'A':
-            self.tcp_flow_id = int(flow_element.get('TcpFlowId'))
 
         # Create paths
         for path_element in flow_element.findall('Paths/Path'):
