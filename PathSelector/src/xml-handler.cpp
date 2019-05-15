@@ -132,7 +132,7 @@ XmlHandler::CreateFlowElement (const Flow &flow)
   flowElement->SetAttribute ("DestinationNode", flow.destinationId);
   flowElement->SetAttribute ("RequestedDataRate", flow.dataRate);
   flowElement->SetAttribute ("PacketSize", boost::numeric_cast<uint32_t> (flow.packetSize));
-  flowElement->SetAttribute ("NumOfPakcets", boost::numeric_cast<uint32_t> (flow.numOfPackets));
+  flowElement->SetAttribute ("NumOfPackets", boost::numeric_cast<uint32_t> (flow.numOfPackets));
   std::string flowProtocol{static_cast<char> (flow.protocol)};
   flowElement->SetAttribute ("Protocol", flowProtocol.c_str ());
   flowElement->SetAttribute ("StartTime", boost::numeric_cast<uint32_t> (flow.startTime));
