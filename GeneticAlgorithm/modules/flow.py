@@ -62,7 +62,7 @@ class Flow:
         self.id = int(flow_element.get('Id'))
         self.src_node = int(flow_element.get('SourceNode'))
         self.dst_node = int(flow_element.get('DestinationNode'))
-        self.requested_rate = float(flow_element.get('DataRate'))
+        self.requested_rate = float(flow_element.get('RequestedDataRate'))
         self.pkt_size = int(flow_element.get('PacketSize'))
         self.num_packets = int(flow_element.get('NumOfPackets'))
         self.protocol = str(flow_element.get('Protocol'))
