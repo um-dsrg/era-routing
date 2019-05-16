@@ -1,5 +1,6 @@
 import math
 import operator
+import statistics
 from typing import Dict
 
 import numpy as np
@@ -164,3 +165,26 @@ class Network:
     def _get_network_flow_upper_bound(flows: dict):
         """Return the total data rate requested."""
         return math.ceil(sum([flow.requested_rate for flow in flows.values()]))
+
+    def _get_path_std_dev_upper_bound(self, flows: dict) -> float:
+        """Return the largest value the path standard deviation objective can return"""
+        std_dev_upper_bound = 0.0
+
+        for flow_id, flow in flows.items():
+            path_costs = list()  # Retrieve the cost of each path
+            for path in flow.paths.values():
+                path_costs.append(path.cost)
+
+            # Find the largest and smallest path cost
+            min_path_cost = min(path_costs)
+            max_path_cost = max(path_costs)
+            path_max_std_dev = statistics.pstdev([min_path_cost, max_path_cost])
+
+            std_dev_upper_bound += path_max_std_dev
+
+            # Just put a string in the parenthesis
+            self.log_info('Flow: {} | Path Costs: {} | Min: {} | Max: {} | Max Std Dev: {} | Tot Std Dev: {}'
+                          .format(flow_id, path_costs, min_path_cost, max_path_cost, path_max_std_dev,
+                                  std_dev_upper_bound))
+
+        return std_dev_upper_bound
