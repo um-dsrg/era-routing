@@ -521,6 +521,36 @@ class GaOperators:
 
         return metric_value
 
+    def _calculate_path_standard_deviation_metric(self, chromosome) -> float:
+        """ Calculate the path cost standard deviation for a given chromosome.
+
+        The path standard deviation metric is a measure of the delay difference
+        between the paths that a flow is transmitting on.  This metric is
+        useful, because if we are transmitting on paths with a very large delay
+        difference, then this will have a negative impact on the delay and
+        MSTCP receiver buffer size.  Therefore, the aim of this metric is to
+        minimise the variation (hence, why we are using the standard deviation)
+        in the cost (delay) of the paths used for transmission to minimise the
+        negative impact on delay and MSTCP receiver buffer size.
+
+        :param chromosome: The chromosome to be evaluated
+        :return: The path standard deviation metric.
+        """
+        metric_value = 0.0
+
+        for flow in self.flows.values():
+            # Get the list of paths that are being used/allocated any data rate
+            used_paths = [path_id for path_id in flow.get_path_ids() if chromosome[path_id] > 0]
+
+            # Get the cost of the used paths
+            path_costs = [flow.paths[path_id].cost for path_id in used_paths]
+
+            # Calculate the path cost standard deviation and add it to the metric value
+            flow_path_std_dev = statistics.pstdev(path_costs)
+            metric_value += flow_path_std_dev
+
+        return metric_value
+
     @staticmethod
     def _normalise_value(value, max_value):
         """Normalise the value to have a range between 0 and 1.
