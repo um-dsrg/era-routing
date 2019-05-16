@@ -109,11 +109,11 @@ def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
 def main():
     """Main function that sets up and runs the Genetic Algorithm."""
     parameters = Parameters()
+    logger = Logger(parameters)
     objectives = Objectives(parameters.objectives)
     ksp_xml = XmlHandler(parameters.ksp_xml_file)
     flows = Flow.parse_flows(ksp_xml.get_root())
-    network = Network(ksp_xml.get_root(), flows, objectives)
-    logger = Logger(parameters)
+    network = Network(ksp_xml.get_root(), flows, objectives, logger.log_info)
 
     ga_stats = GaStatistics(parameters.num_generations)
     ga_operators = GaOperators(flows, network, parameters, objectives,

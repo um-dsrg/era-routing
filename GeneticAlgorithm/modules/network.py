@@ -30,13 +30,13 @@ class Network:
                     [0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1] # Path 3, Flow 1
     """
 
-    def __init__(self, ksp_xml_file_root, flows, objectives):
-        # type: (Any, Dict[int, Flow], Objectives)
+    def __init__(self, ksp_xml_file_root, flows: Dict[int, Flow], objectives, log_info):
         """Initialise the network object from the given xml file.
 
         :param ksp_xml_file_root: The root element of the KSP xml file.
         :param flows: The flow set used.
         :param objectives: The objectives for this optimisation.
+        :param log_info: Pointer to ta function that will insert a log entry in the information log file
         """
         self.links = dict()  # type: Dict[int, Link]
         self._generate_link_details(ksp_xml_file_root)
@@ -54,6 +54,8 @@ class Network:
         self.obj_bound_values = [bound_function(flows)
                                  for bound_function
                                  in obj_bound_fns]
+
+        self.log_info = log_info
 
     def get_link_capacity(self, link_id):
         """Return the capacity for the link with id link_id"""
@@ -135,7 +137,7 @@ class Network:
     def _get_network_paths_upper_bound(self, flows: Dict[int, Flow]):
         """Returns the total number of paths in the network.
 
-        *Note* The parameter for flows is required such taht the bound
+        *Note* The parameter for flows is required such that the bound
         calculation functions all have the same signature.
         """
         return self.get_num_paths()
