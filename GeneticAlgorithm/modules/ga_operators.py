@@ -100,8 +100,8 @@ class GaOperators:
                              for metric_value, obj_bound
                              in zip(metric_values, obj_bounds)]
 
-        self.log_info('Obj bounds: {}\nNormalised Metrics: {}'
-                      .format(obj_bounds, normalised_values))
+        self.log_info('Obj bounds: {}'.format(obj_bounds))
+        self.log_info('Normalised Metrics: {}' .format(normalised_values))
 
         return tuple(normalised_values)
 
