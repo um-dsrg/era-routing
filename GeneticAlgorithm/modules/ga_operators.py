@@ -538,6 +538,8 @@ class GaOperators:
         """
         metric_value = 0.0
 
+        self.log_info('Calculating the path standard deviation metric for chromosome:\n  {}'.format(chromosome))
+
         for flow in self.flows.values():
             # Get the list of paths that are being used/allocated any data rate
             used_paths = [path_id for path_id in flow.get_path_ids() if chromosome[path_id] > 0]
@@ -549,6 +551,9 @@ class GaOperators:
             flow_path_std_dev = statistics.pstdev(path_costs)
             metric_value += flow_path_std_dev
 
+            self.log_info('  Flow: {} | Used Paths: {} | Path Costs: {} | Flow Path Std Dev: {} | '
+                          'Objective Value: {}'
+                          .format(chromosome, flow.id, used_paths, path_costs, flow_path_std_dev, metric_value))
         return metric_value
 
     @staticmethod
