@@ -93,8 +93,7 @@ class GaOperators:
         """
         metric_values = [metric_function(chromosome)
                          for metric_function in self.metric_functions]
-        self.log_info('Chromosme: {}\nMetrics: {}'
-                      .format(chromosome, metric_values))
+        self.log_info('Chromosome: {} | Metrics: {}'.format(chromosome, metric_values))
 
         obj_bounds = self.network.obj_bound_values
         normalised_values = [self._normalise_value(metric_value, obj_bound)
@@ -538,7 +537,7 @@ class GaOperators:
         """
         metric_value = 0.0
 
-        self.log_info('Calculating the path standard deviation metric for chromosome:\n  {}'.format(chromosome))
+        self.log_info('Calculating the path standard deviation metric for chromosome: {}'.format(chromosome))
 
         for flow in self.flows.values():
             # Get the list of paths that are being used/allocated any data rate
@@ -553,7 +552,7 @@ class GaOperators:
 
             metric_value += flow_path_std_dev
 
-            self.log_info('  Flow: {} | Used Paths: {} | Path Costs: {} | Flow Path Std Dev: {} | '
+            self.log_info('Flow: {} | Used Paths: {} | Path Costs: {} | Flow Path Std Dev: {} | '
                           'Objective Value: {}'
                           .format(flow.id, used_paths, path_costs, flow_path_std_dev, metric_value))
 

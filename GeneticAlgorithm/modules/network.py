@@ -45,6 +45,8 @@ class Network:
         self.network_matrix = self._create_network_matrix(flows)
         self._generate_network_matrix(flows)
 
+        self.log_info = log_info
+
         # Store the name of the objectives and calculate their upper
         # bounds
         self.obj_names = objectives.get_obj_names()
@@ -55,8 +57,6 @@ class Network:
         self.obj_bound_values = [bound_function(flows)
                                  for bound_function
                                  in obj_bound_fns]
-
-        self.log_info = log_info
 
     def get_link_capacity(self, link_id):
         """Return the capacity for the link with id link_id"""
@@ -182,7 +182,6 @@ class Network:
 
             std_dev_upper_bound += path_max_std_dev
 
-            # Just put a string in the parenthesis
             self.log_info('Flow: {} | Path Costs: {} | Min: {} | Max: {} | Max Std Dev: {} | Tot Std Dev: {}'
                           .format(flow_id, path_costs, min_path_cost, max_path_cost, path_max_std_dev,
                                   std_dev_upper_bound))

@@ -47,8 +47,7 @@ class Logger:
     def _setup_info_logger(self, log_directory: str, log_capacity=1000000):
         """Setup the information logger"""
         handler = logging.FileHandler(log_directory + '/info.log', mode='w')
-        formatter = logging.Formatter('%(levelname)s %(asctime)s - '
-                                      '%(funcName)s - %(message)s',
+        formatter = logging.Formatter('%(levelname)s %(asctime)s - %(message)s',
                                       '%d-%m-%Y %H:%M:%S')
         handler.setFormatter(formatter)
         mem_handler = logging.handlers.MemoryHandler(log_capacity,
