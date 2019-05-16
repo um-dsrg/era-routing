@@ -547,13 +547,16 @@ class GaOperators:
             # Get the cost of the used paths
             path_costs = [flow.paths[path_id].cost for path_id in used_paths]
 
-            # Calculate the path cost standard deviation and add it to the metric value
-            flow_path_std_dev = statistics.pstdev(path_costs)
+            # Calculate the path cost standard deviation. If only one path is
+            # used the standard deviation is equal to 0.
+            flow_path_std_dev = statistics.pstdev(path_costs) if len(path_costs) > 1 else 0.0
+
             metric_value += flow_path_std_dev
 
             self.log_info('  Flow: {} | Used Paths: {} | Path Costs: {} | Flow Path Std Dev: {} | '
                           'Objective Value: {}'
-                          .format(chromosome, flow.id, used_paths, path_costs, flow_path_std_dev, metric_value))
+                          .format(flow.id, used_paths, path_costs, flow_path_std_dev, metric_value))
+
         return metric_value
 
     @staticmethod
