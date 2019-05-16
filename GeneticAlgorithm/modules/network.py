@@ -182,7 +182,8 @@ class Network:
 
             std_dev_upper_bound += path_max_std_dev
 
-            self.log_info('Flow: {} | Path Costs: {} | Min: {} | Max: {} | Max Std Dev: {} | Tot Std Dev: {}'
+            self.log_info('_get_path_std_dev_upper_bound - '
+                          'Flow: {} | Path Costs: {} | Min: {} | Max: {} | Max Std Dev: {} | Tot Std Dev: {}'
                           .format(flow_id, path_costs, min_path_cost, max_path_cost, path_max_std_dev,
                                   std_dev_upper_bound))
 
