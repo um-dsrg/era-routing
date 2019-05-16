@@ -570,6 +570,11 @@ class GaOperators:
 
         :return: The normalised value.
         """
+
+        # If both the maximum value, and the value itself are zero, then return zero
+        if math.isclose(value, 0, abs_tol=ACCURACY_VALUE) and math.isclose(max_value, 0, abs_tol=ACCURACY_VALUE):
+            return 0.0
+
         normalised_value = value/max_value
 
         # Round very small numbers to 0
