@@ -1,10 +1,10 @@
 """
 Module that contains all the genetic algorithm operators.
-mutation.
 """
 import math
-import operator
 import random
+import operator
+import statistics
 from collections import OrderedDict
 
 import numpy as np
