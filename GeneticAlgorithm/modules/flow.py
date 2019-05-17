@@ -64,7 +64,15 @@ class Flow:
         self.dst_node = int(flow_element.get('DestinationNode'))
         self.requested_rate = float(flow_element.get('RequestedDataRate'))
         self.pkt_size = int(flow_element.get('PacketSize'))
-        self.num_packets = int(flow_element.get('NumOfPackets'))
+
+        # NOTE This is required because there was a spelling mistake in the
+        # path generator attribute name. This has been fixed but some files
+        # still carry the incorrect attribute name.
+        if 'NumOfPackets' in flow_element.attrib:
+            self.num_packets = int(flow_element.get('NumOfPackets'))
+        else:
+            self.num_packets = int(flow_element.get('NumOfPakcets'))
+
         self.protocol = str(flow_element.get('Protocol'))
         self.start_time = int(flow_element.get('StartTime'))
         self.end_time = int(flow_element.get('EndTime'))
