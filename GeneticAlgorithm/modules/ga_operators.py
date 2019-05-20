@@ -190,17 +190,16 @@ class GaOperators:
         # List the number paths that can be used including 0
         path_options = list(range(num_paths + 1, 0, -1))
         total = sum(path_options)
-        path_weights = [val/total for val in path_options]
+        path_weights = [val / total for val in path_options]
 
-        num_paths_mutate = np.random.choice(list(range(0, num_paths+1)), 1,
-                                            p=path_weights)[0]
+        num_paths_mutate = np.random.choice(list(range(0, num_paths + 1)), 1, p=path_weights)[0]
 
         if num_paths_mutate == 0:  # No paths are used
             return chromosome
 
         paths_to_mutate = random.sample(flow.get_paths(), num_paths_mutate)
 
-        return self._max_flow_min_cost(flow, paths_to_mutate, chromosome)
+        return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
 
     def _min_cost_mutation(self, flow, chromosome):
         # type: (Flow, Any)
@@ -226,9 +225,9 @@ class GaOperators:
                 paths_to_mutate.append(path)
 
         if paths_to_mutate:
-            return self._max_flow_min_cost(flow, paths_to_mutate, chromosome)
-        else:  # Return the chromosome as is if no paths are to be used
-            return chromosome
+            return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
+        # else Return the chromosome as is if no paths are to be used
+        return chromosome
 
     def _max_flow_mutation(self, flow, chromosome):
         # type: (Flow, Any)
@@ -239,17 +238,15 @@ class GaOperators:
 
         :return: The mutated chromosome.
         """
-        return self._max_flow_min_cost(flow, flow.get_paths(), chromosome)
+        return self._assign_data_rate_on_paths(flow, flow.get_paths(), chromosome)
 
-    def _max_flow_min_cost(self, flow, paths_to_use, chromosome):
-        # type: (Flow, List[Path], Any)
-        """Assign the flow path usage to maximise flow at minimum cost using
-        the given paths.
+    def _assign_data_rate_on_paths(self, flow, paths_to_use, chromosome):
+        """Assign data rate on the give path set for a particular flow
 
-        Use the Maximum Flow Minimum Cost paradigm to assign as much data as
-        possible over the paths with the minimum cost from the given path set.
-        The current network usage is taken into consideration such that no
-        links are over provisioned.
+        The function will try to maximise flow assignment on the given path set.
+        The order in which paths are selected is randomised. The current network
+        usage is taken into consideration such that no links are over
+        provisioned.
 
         :param flow:         The flow that will be routed.
         :param paths_to_use: List of paths to use.
@@ -257,8 +254,7 @@ class GaOperators:
 
         :return: The updated chromosome.
         """
-        act_net_mat = (np.array(chromosome)[:, np.newaxis]
-                       * self.network.network_matrix)
+        act_net_mat = (np.array(chromosome)[:, np.newaxis] * self.network.network_matrix)
 
         # Get all the links the paths use and store their remaining capacity
         link_remaining_capacity = dict()  # Key: Link Id | Value: Capacity
@@ -267,20 +263,18 @@ class GaOperators:
                 if link_id not in link_remaining_capacity:
                     link_capacity = self.network.get_link_capacity(link_id)
                     link_usage = np.sum(act_net_mat[:, link_id])
-                    link_remaining_capacity[link_id] = (link_capacity -
-                                                        link_usage)
+                    link_remaining_capacity[link_id] = (link_capacity - link_usage)
 
         remaining_data_rate = flow.requested_rate
 
-        # Loop through paths sorted by cost
-        for path in sorted(paths_to_use,
-                           key=operator.attrgetter('cost')):
-            min_remaining_capacity = min([link_remaining_capacity[link_id]
-                                          for link_id in path.links])
+        # Loop through the shuffled paths and assign data rate accordingly
+        random.shuffle(paths_to_use)
+        for path in paths_to_use:
+            min_remaining_capacity = min([link_remaining_capacity[link_id] for link_id in path.links])
 
             if remaining_data_rate < min_remaining_capacity:
                 chromosome[path.id] = remaining_data_rate
-                return chromosome
+                break
             else:
                 chromosome[path.id] = min_remaining_capacity
                 remaining_data_rate -= min_remaining_capacity
@@ -577,7 +571,7 @@ class GaOperators:
         if math.isclose(value, 0, abs_tol=ACCURACY_VALUE) and math.isclose(max_value, 0, abs_tol=ACCURACY_VALUE):
             return 0.0
 
-        normalised_value = value/max_value
+        normalised_value = value / max_value
 
         # Round very small numbers to 0
         if math.isclose(normalised_value, 0, abs_tol=ACCURACY_VALUE):
