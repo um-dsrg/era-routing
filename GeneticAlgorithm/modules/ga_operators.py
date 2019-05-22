@@ -239,7 +239,7 @@ class GaOperators:
 
         :return: The mutated chromosome.
         """
-        self.log_info('_min_path_std_dev_mutation - Mutating flow: {} | Paths: {}'.format(flow.id, flow.get_paths()))
+        self.log_info('_min_path_std_dev_mutation - Mutating Flow: {} | Paths: {}'.format(flow.id, flow.get_paths()))
 
         paths_to_mutate = list()
 
@@ -258,9 +258,9 @@ class GaOperators:
             if path.id == base_path.id:  # The base path must always be included
                 paths_to_mutate.append(path)
             else:
-                p_choose_path = 1 - (abs(base_path.cost - path.cost) / largest_cost_difference + 1)
-                self.log_info('_min_path_std_dev_mutation - Probability to choose path: {} is : {}'
-                              .format(path.id, p_choose_path))
+                p_choose_path = 1 - (abs(base_path.cost - path.cost) / float(largest_cost_difference + 1))
+                self.log_info('_min_path_std_dev_mutation - Probability to choose path: {} cost {} is : {}'
+                              .format(path.id, path.cost, p_choose_path))
 
                 random_number = random.random()
                 if random_number < p_choose_path:
