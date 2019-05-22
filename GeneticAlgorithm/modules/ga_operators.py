@@ -153,10 +153,12 @@ class GaOperators:
                 chromosome[path_id] = 0
 
             rand_num = random.random()
-            if rand_num < 0.33:  # Minimise the number of paths
+            if rand_num < 0.25:  # Minimise the number of paths
                 chromosome = self._min_path_mutation(flow, chromosome)
-            elif rand_num < 0.66:  # Minimise the cost
+            elif rand_num < 0.50:  # Minimise the cost
                 chromosome = self._min_cost_mutation(flow, chromosome)
+            elif rand_num < 0.75:  # Minimise the path standard deviation
+                chromosome = self._min_path_std_dev_mutation(flow, chromosome)
             else:  # Maximise the flow
                 chromosome = self._max_flow_mutation(flow, chromosome)
 
@@ -228,6 +230,45 @@ class GaOperators:
             return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
         # else Return the chromosome as is if no paths are to be used
         return chromosome
+
+    def _min_path_std_dev_mutation(self, flow, chromosome):
+        """Mutate the flow path usage to minimise the path standard deviation.
+
+        :param flow:       The flow that will be mutated.
+        :param chromosome: The chromosome to be mutated.
+
+        :return: The mutated chromosome.
+        """
+        self.log_info('_min_path_std_dev_mutation - Mutating flow: {} | Paths: {}'.format(flow.id, flow.get_paths()))
+
+        paths_to_mutate = list()
+
+        # Choose a path at random to use as the base path. All comparisons will
+        # be made against this path.
+        base_path = random.choice(flow.get_paths())
+
+        # Find the largest gap between the chosen path and all the other paths
+        largest_cost_difference = max([abs(path.cost - base_path.cost)
+                                      for path in flow.get_paths() if path.id != base_path.id])
+
+        self.log_info('_min_path_std_dev_mutation - Base Path: {} | Largest Cost Difference: {}'
+                      .format(base_path, largest_cost_difference))
+
+        for path in flow.get_paths():
+            if path.id == base_path.id:  # The base path must always be included
+                paths_to_mutate.append(path)
+            else:
+                p_choose_path = 1 - (abs(base_path.cost - path.cost) / largest_cost_difference + 1)
+                self.log_info('_min_path_std_dev_mutation - Probability to choose path: {} is : {}'
+                              .format(path.id, p_choose_path))
+
+                random_number = random.random()
+                if random_number < p_choose_path:
+                    self.log_info('_min_path_std_dev_mutation - Random Number: {} | Path {} added to mutation list'
+                                  .format(random_number, path.id))
+                    paths_to_mutate.append(path)
+
+        return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
 
     def _max_flow_mutation(self, flow, chromosome):
         # type: (Flow, Any)
