@@ -243,30 +243,37 @@ class GaOperators:
 
         paths_to_mutate = list()
 
-        # Choose a path at random to use as the base path. All comparisons will
-        # be made against this path.
-        base_path = random.choice(flow.get_paths())
+        flow_paths = flow.get_paths()
 
-        # Find the largest gap between the chosen path and all the other paths
-        largest_cost_difference = max([abs(path.cost - base_path.cost)
-                                      for path in flow.get_paths() if path.id != base_path.id])
+        if len(flow_paths) > 1:
+            # Choose a path at random to use as the base path. All comparisons will
+            # be made against this path.
+            base_path = random.choice(flow_paths)
 
-        self.log_info('_min_path_std_dev_mutation - Base Path: {} | Largest Cost Difference: {}'
-                      .format(base_path, largest_cost_difference))
+            # Find the largest gap between the chosen path and all the other paths
+            largest_cost_difference = max([abs(path.cost - base_path.cost)
+                                          for path in flow_paths if path.id != base_path.id])
 
-        for path in flow.get_paths():
-            if path.id == base_path.id:  # The base path must always be included
-                paths_to_mutate.append(path)
-            else:
-                p_choose_path = 1 - (abs(base_path.cost - path.cost) / float(largest_cost_difference + 1))
-                self.log_info('_min_path_std_dev_mutation - Probability to choose path: {} cost {} is : {}'
-                              .format(path.id, path.cost, p_choose_path))
+            self.log_info('_min_path_std_dev_mutation - Base Path: {} | Largest Cost Difference: {}'
+                          .format(base_path, largest_cost_difference))
 
-                random_number = random.random()
-                if random_number < p_choose_path:
-                    self.log_info('_min_path_std_dev_mutation - Random Number: {} | Path {} added to mutation list'
-                                  .format(random_number, path.id))
+            for path in flow_paths:
+                if path.id == base_path.id:  # The base path must always be included
                     paths_to_mutate.append(path)
+                else:
+                    p_choose_path = 1 - (abs(base_path.cost - path.cost) / float(largest_cost_difference + 1))
+                    self.log_info('_min_path_std_dev_mutation - Probability to choose path: {} cost {} is : {}'
+                                  .format(path.id, path.cost, p_choose_path))
+
+                    random_number = random.random()
+                    if random_number < p_choose_path:
+                        self.log_info('_min_path_std_dev_mutation - Random Number: {} | Path {} added to mutation list'
+                                      .format(random_number, path.id))
+                        paths_to_mutate.append(path)
+        else:
+            paths_to_mutate.append(flow_paths[0])  # Add the only path available to that flow
+            self.log_info('_min_path_std_dev_mutation - Path {} added to mutation list because it is the only path'
+                                      .format(paths_to_mutate[0].id))
 
         return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
 
