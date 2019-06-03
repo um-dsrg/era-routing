@@ -28,7 +28,6 @@ from modules.xml_handler import XmlHandler
 
 
 def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
-    # type: (Parameters, Logger, GaStatistics, GaResults, XmlHandler, Any)
     """Run the NSGA-II algorithm.
 
     Run the NSGA-II algorithm for the specified number of generations and store
@@ -68,9 +67,7 @@ def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
         offspring = [toolbox.clone(ind) for ind in offspring]
 
         # Apply crossover and mutation to the offspring population
-        offspring = algorithms.varAnd(offspring, toolbox,
-                                      parameters.prob_crossover,
-                                      parameters.prob_mutation)
+        offspring = algorithms.varAnd(offspring, toolbox, parameters.prob_crossover, parameters.prob_mutation)
 
         # Evaluate individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -79,8 +76,7 @@ def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
             ind.fitness.values = fit
 
         # Select the best individuals from the current population and offspring
-        population = tools.selNSGA2(population + offspring,
-                                    parameters.pop_size)
+        population = tools.selNSGA2(population + offspring, parameters.pop_size)
 
         # Log the current generation duration
         ga_timing.log_generation_end(gen)
@@ -90,8 +86,7 @@ def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
 
         if gen % parameters.xml_save_frequency == 0:
             # Append the current results to the XML result file
-            logger.log_status('Appending the results. Generation: {}'
-                              .format(gen))
+            logger.log_status('Appending the results. Generation: {}'.format(gen))
             ga_results.append_to_xml(result_xml.get_root())
             ga_stats.append_to_xml(result_xml.get_root())
             result_xml.save_xml_file()
@@ -116,19 +111,16 @@ def main():
     network = Network(ksp_xml.get_root(), flows, objectives, logger.log_info)
 
     ga_stats = GaStatistics(parameters.num_generations)
-    ga_operators = GaOperators(flows, network, parameters, objectives,
-                               ga_stats, logger.log_info)
+    ga_operators = GaOperators(flows, network, parameters, objectives, ga_stats, logger.log_info)
 
     # # # Configure the GA objectives # # #
-    creator.create('MaxFlowMinCost', base.Fitness,
-                   weights=objectives.get_obj_weights())
+    creator.create('MaxFlowMinCost', base.Fitness, weights=objectives.get_obj_weights())
     creator.create('Chromosome', list, fitness=creator.MaxFlowMinCost)
 
     # # # Configure the GA operators # # #
     toolbox = base.Toolbox()
     toolbox.register('indices', ga_operators.generate_chromosome)
-    toolbox.register('individual', tools.initIterate, creator.Chromosome,
-                     toolbox.indices)
+    toolbox.register('individual', tools.initIterate, creator.Chromosome, toolbox.indices)
     toolbox.register('population', tools.initRepeat, list, toolbox.individual)
     toolbox.register('evaluate', ga_operators.evaluate_chromosome)
     toolbox.register('mate', ga_operators.mate_chromosomes)
@@ -143,8 +135,7 @@ def main():
 
     # # # Run the NSGA-II Algorithm # # #
     ga_results = GaResults(parameters, objectives)
-    run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml,
-                 toolbox)
+    run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox)
 
     logger.log_status('Simulation complete.')
 
