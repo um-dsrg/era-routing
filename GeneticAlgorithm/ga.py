@@ -15,13 +15,13 @@ in the ga_helper::Network class.
 """
 from deap import algorithms, base, creator, tools
 
-from modules.objectives import Objectives
 from modules.flow import Flow
 from modules.ga_operators import GaOperators
 from modules.ga_results import GaResults
 from modules.ga_statistics import GaStatistics
 from modules.logger import Logger
 from modules.network import Network
+from modules.objectives import Objectives
 from modules.parameters import Parameters
 from modules.timings import GaTimings
 from modules.xml_handler import XmlHandler
@@ -69,14 +69,23 @@ def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
         # Apply crossover and mutation to the offspring population
         offspring = algorithms.varAnd(offspring, toolbox, parameters.prob_crossover, parameters.prob_mutation)
 
+        # Store which mutation operations were carried out
+        off_mut_type_counter = ga_stats.count_mutation_operations(offspring)
+
         # Evaluate individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitness_values = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitness_values):
             ind.fitness.values = fit
 
+        # Reset the population's mutation operators
+        ga_stats.reset_mutation_operations(population)
+
         # Select the best individuals from the current population and offspring
         population = tools.selNSGA2(population + offspring, parameters.pop_size)
+
+        # Log the mutation operations that survived after selection
+        ga_stats.log_survived_mutation(population, off_mut_type_counter)
 
         # Log the current generation duration
         ga_timing.log_generation_end(gen)

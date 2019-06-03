@@ -3,14 +3,12 @@ Module that contains all the genetic algorithm operators.
 """
 import math
 import random
-import operator
 import statistics
-from collections import OrderedDict
 
 import numpy as np
 
 from modules.definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
-from modules.ga_statistics import OpType
+from modules.ga_statistics import OpType, MutationType
 
 
 class GaOperators:
@@ -32,11 +30,11 @@ class GaOperators:
         :param log_info:   Pointer to a function that will insert a log entry
                            in the information log file.
         """
-        self.flows = flows                     # type: Dict[int, Flow]
-        self.network = network                 # type: Network
+        self.flows = flows  # type: Dict[int, Flow]
+        self.network = network  # type: Network
         self.current_operation = OpType.NO_OP  # type: OpType
-        self.ga_stats = ga_stats               # type: GaStatistics
-        self.log_info = log_info               # Information log file
+        self.ga_stats = ga_stats  # type: GaStatistics
+        self.log_info = log_info  # Information log file
 
         self.mutation_fraction = parameters.mutation_fraction
         # Get a list of functions that will be used to calculate the metric for
@@ -101,7 +99,7 @@ class GaOperators:
                              in zip(metric_values, obj_bounds)]
 
         self.log_info('Obj bounds: {}'.format(obj_bounds))
-        self.log_info('Normalised Metrics: {}' .format(normalised_values))
+        self.log_info('Normalised Metrics: {}'.format(normalised_values))
 
         return tuple(normalised_values)
 
@@ -155,12 +153,16 @@ class GaOperators:
             rand_num = random.random()
             if rand_num < 0.25:  # Minimise the number of paths
                 chromosome = self._min_path_mutation(flow, chromosome)
+                chromosome.mutation_type = MutationType.MIN_PATH
             elif rand_num < 0.50:  # Minimise the cost
                 chromosome = self._min_cost_mutation(flow, chromosome)
+                chromosome.mutation_type = MutationType.MIN_COST
             elif rand_num < 0.75:  # Minimise the path standard deviation
                 chromosome = self._min_path_std_dev_mutation(flow, chromosome)
+                chromosome.mutation_type = MutationType.MIN_PATH_STD_DEV
             else:  # Maximise the flow
                 chromosome = self._max_flow_mutation(flow, chromosome)
+                chromosome.mutation_type = MutationType.MAX_FLOW
 
         # NOTE Always return a tuple
         return self._validate_chromosome(chromosome),
@@ -252,7 +254,7 @@ class GaOperators:
 
             # Find the largest gap between the chosen path and all the other paths
             largest_cost_difference = max([abs(path.cost - base_path.cost)
-                                          for path in flow_paths if path.id != base_path.id])
+                                           for path in flow_paths if path.id != base_path.id])
 
             self.log_info('_min_path_std_dev_mutation - Base Path: {} | Largest Cost Difference: {}'
                           .format(base_path, largest_cost_difference))
@@ -273,7 +275,7 @@ class GaOperators:
         else:
             paths_to_mutate.append(flow_paths[0])  # Add the only path available to that flow
             self.log_info('_min_path_std_dev_mutation - Path {} added to mutation list because it is the only path'
-                                      .format(paths_to_mutate[0].id))
+                          .format(paths_to_mutate[0].id))
 
         return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
 
