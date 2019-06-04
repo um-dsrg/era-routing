@@ -54,6 +54,8 @@ class MutationType(Enum):
             return 'Minimise Path Standard Deviation'
         elif self.name == 'MAX_FLOW':
             return 'Maximise Flow'
+        elif self.name == "NO_OP":
+            return "No Operation"
 
 
 class GaOpCounter:
