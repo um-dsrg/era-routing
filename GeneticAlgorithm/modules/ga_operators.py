@@ -167,6 +167,34 @@ class GaOperators:
         # NOTE Always return a tuple
         return self._validate_chromosome(chromosome),
 
+    def round_small_numbers(self, population: list) -> list:
+        """Rounds very small numbers to zero in a given population
+
+        Arguments:
+            population {list} -- The population to check for negative numbers
+
+        Raises:
+            AssertionError: Raised when a negative number is found
+
+        Returns:
+            list -- The new population with very small numbers rounded to zero
+        """
+        self.log_info("The popluation before rounding: {}".format(population))
+
+        for chromosome_index, chromosome in enumerate(population):
+            for gene_index, gene in enumerate(chromosome):
+                if gene != 0 and math.isclose(gene, 0, abs_tol=ACCURACY_ZERO_VALUE):
+                    population[chromosome_index][gene_index] = 0
+                    self.log_info("Chromosome {} Gene {} is rounded to 0 from {}"
+                                  .format(chromosome_index, gene_index, gene))
+                elif gene < 0:
+                    raise AssertionError("Chromosome {} Gene {} has a negative value of {}"
+                                         .format(chromosome_index, gene_index, gene))
+
+        self.log_info("The population after rounding: {}".format(population))
+
+        return population
+
     def _get_flows_to_mutate(self):
         # type: () -> List[Flow]
         """Return the flows to be mutated based on the mutation fraction."""
@@ -241,7 +269,8 @@ class GaOperators:
 
         :return: The mutated chromosome.
         """
-        self.log_info('_min_path_std_dev_mutation - Mutating Flow: {} | Paths: {}'.format(flow.id, flow.get_paths()))
+        self.log_info('_min_path_std_dev_mutation - Mutating Flow: {} | Paths: {}'
+                      .format(flow.id, flow.get_paths()))
 
         paths_to_mutate = list()
 
@@ -263,7 +292,8 @@ class GaOperators:
                 if path.id == base_path.id:  # The base path must always be included
                     paths_to_mutate.append(path)
                 else:
-                    p_choose_path = 1 - (abs(base_path.cost - path.cost) / float(largest_cost_difference + 1))
+                    p_choose_path = 1 - (abs(base_path.cost - path.cost) /
+                                         float(largest_cost_difference + 1))
                     self.log_info('_min_path_std_dev_mutation - Probability to choose path: {} cost {} is : {}'
                                   .format(path.id, path.cost, p_choose_path))
 
@@ -320,7 +350,8 @@ class GaOperators:
         # Loop through the shuffled paths and assign data rate accordingly
         random.shuffle(paths_to_use)
         for path in paths_to_use:
-            min_remaining_capacity = min([link_remaining_capacity[link_id] for link_id in path.links])
+            min_remaining_capacity = min([link_remaining_capacity[link_id]
+                                          for link_id in path.links])
 
             if remaining_data_rate < min_remaining_capacity:
                 chromosome[path.id] = remaining_data_rate
@@ -549,7 +580,8 @@ class GaOperators:
             if not path_delay_data:  # path_delay_data is empty
                 continue
 
-            lowest_delay_path = min([flow.get_path_cost(path_id) for path_id in flow.get_path_ids()])
+            lowest_delay_path = min([flow.get_path_cost(path_id)
+                                     for path_id in flow.get_path_ids()])
 
             # Calculate the delay distribution metric for the current flow
             flow_metric_value = 0

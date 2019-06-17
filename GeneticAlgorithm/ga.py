@@ -27,7 +27,7 @@ from modules.timings import GaTimings
 from modules.xml_handler import XmlHandler
 
 
-def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
+def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, toolbox):
     """Run the NSGA-II algorithm.
 
     Run the NSGA-II algorithm for the specified number of generations and store
@@ -38,6 +38,7 @@ def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
 
     # Generate the first population
     population = toolbox.population(n=parameters.pop_size)
+    population = ga_operators.round_small_numbers(population)
 
     # Evaluate individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
@@ -67,7 +68,10 @@ def run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox):
         offspring = [toolbox.clone(ind) for ind in offspring]
 
         # Apply crossover and mutation to the offspring population
-        offspring = algorithms.varAnd(offspring, toolbox, parameters.prob_crossover, parameters.prob_mutation)
+        offspring = algorithms.varAnd(offspring, toolbox, parameters.prob_crossover,
+                                      parameters.prob_mutation)
+
+        offspring = ga_operators.round_small_numbers(offspring)
 
         # Store which mutation operations were carried out
         off_mut_type_counter = ga_stats.count_mutation_operations(offspring)
@@ -144,7 +148,7 @@ def main():
 
     # # # Run the NSGA-II Algorithm # # #
     ga_results = GaResults(parameters, objectives)
-    run_nsga2_ga(parameters, logger, ga_stats, ga_results, result_xml, toolbox)
+    run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, toolbox)
 
     logger.log_status('Simulation complete.')
 
