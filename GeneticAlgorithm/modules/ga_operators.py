@@ -116,7 +116,7 @@ class GaOperators:
                  operator.
         """
         self.current_operation = OpType.CROSSOVER
-        self.ga_stats.log_operation(self.current_operation)
+        self.ga_stats.log_crossover_operation()
 
         random_split_ratio = random.random()  # Determine a random split ratio
 
@@ -128,6 +128,10 @@ class GaOperators:
                     temp = chromosome_1[path_id]
                     chromosome_1[path_id] = chromosome_2[path_id]
                     chromosome_2[path_id] = temp
+
+        # # # Crossover tracking # # #
+        chromosome_1.applied_crossover = True
+        chromosome_2.applied_crossover = True
 
         return (self._validate_link_capacity_constraint(chromosome_1),
                 self._validate_link_capacity_constraint(chromosome_2))
@@ -141,7 +145,6 @@ class GaOperators:
         :return: The mutated chromosome.
         """
         self.current_operation = OpType.MUTATION
-        self.ga_stats.log_operation(self.current_operation)
 
         # Get the flows that will be affected by this mutation
         flows_to_mutate = self._get_flows_to_mutate()
@@ -153,16 +156,18 @@ class GaOperators:
             rand_num = random.random()
             if rand_num < 0.25:  # Minimise the number of paths
                 chromosome = self._min_path_mutation(flow, chromosome)
-                chromosome.mutation_type = MutationType.MIN_PATH
+                chromosome.mutation_operation = MutationType.MIN_PATH
             elif rand_num < 0.50:  # Minimise the cost
                 chromosome = self._min_cost_mutation(flow, chromosome)
-                chromosome.mutation_type = MutationType.MIN_COST
+                chromosome.mutation_operation = MutationType.MIN_COST
             elif rand_num < 0.75:  # Minimise the path standard deviation
                 chromosome = self._min_path_std_dev_mutation(flow, chromosome)
-                chromosome.mutation_type = MutationType.MIN_PATH_STD_DEV
+                chromosome.mutation_operation = MutationType.MIN_PATH_STD_DEV
             else:  # Maximise the flow
                 chromosome = self._max_flow_mutation(flow, chromosome)
-                chromosome.mutation_type = MutationType.MAX_FLOW
+                chromosome.mutation_operation = MutationType.MAX_FLOW
+
+        self.ga_stats.log_mutation_operation(chromosome.mutation_operation)
 
         # NOTE Always return a tuple
         return self._validate_chromosome(chromosome),

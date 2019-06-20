@@ -20,12 +20,19 @@ class OpType(Enum):
         return 'Enum OpType(' + self.__str__() + ')'
 
     def __str__(self):
+        str_repr = ""
+
+        # TODO Try calling it using self.name() and see if we have a crash!
         if self.name == 'NO_OP':
-            return 'No Operation'
+            str_repr = 'No Operation'
         elif self.name == 'CROSSOVER':
-            return 'Crossover'
+            str_repr = 'Crossover'
         elif self.name == 'MUTATION':
-            return 'Mutation'
+            str_repr = 'Mutation'
+        else:
+            str_repr = "Undefined"
+
+        return str_repr
 
 
 @unique
@@ -46,16 +53,31 @@ class MutationType(Enum):
         return 'Enum MutationType(' + self.__str__() + ')'
 
     def __str__(self):
+        str_repr = ""
+
         if self.name == 'MIN_PATH':
-            return 'Minimise path usage'
+            str_repr = 'Minimise path usage'
         elif self.name == 'MIN_COST':
-            return 'Minimise Cost'
+            str_repr = 'Minimise Cost'
         elif self.name == 'MIN_PATH_STD_DEV':
-            return 'Minimise Path Standard Deviation'
+            str_repr = 'Minimise Path Standard Deviation'
         elif self.name == 'MAX_FLOW':
-            return 'Maximise Flow'
+            str_repr = 'Maximise Flow'
         elif self.name == "NO_OP":
-            return "No Operation"
+            str_repr = "No Operation"
+        else:
+            str_repr = "Undefined"
+
+        return str_repr
+
+
+class MutationOpCounter:
+    """Represent a counter associated with each mutation type"""
+
+    def __init__(self):
+        """Initialise all values to 0"""
+        self.num_survived = 0
+        self.num_carried_out = 0
 
 
 class GaOpCounter:
@@ -63,23 +85,22 @@ class GaOpCounter:
 
     def __init__(self):
         """Initialise all values to 0."""
-        self.n_crossover = 0
-        self.n_mutation = 0
+        # # # Crossover # # #
+        self.num_crossovers = 0  # The total number of crossovers performed
+
+        # The number of chromosomes that were selected for the next generation
+        # which had the crossover operator applied to them
+        self.num_survived_crossovers = 0
+
+        # # # Mutation # # #
+        self.mutation_counter = {mut_type: MutationOpCounter() for mut_type
+                                 in MutationType}  # type: Dict[MutationType, MutationOpCounter]
+
+        # # # Repairs # # #
         self.n_flow_repaired_crossover = 0
         self.n_link_repaired_crossover = 0
         self.n_flow_repaired_mutation = 0
         self.n_link_repaired_mutation = 0
-
-
-class MutationTypeCounter:
-
-    def __init__(self, mut_operator_name, mut_carried_out, mut_survived):
-        if mut_survived > mut_carried_out:
-            raise AssertionError("The number of survived mutations is bigger than the mutations carried out")
-
-        self.mutation_op_name = mut_operator_name
-        self.mutations_carried_out = mut_carried_out
-        self.mutations_survived = mut_survived
 
 
 class GaStatistics:
@@ -90,20 +111,26 @@ class GaStatistics:
     """
 
     def __init__(self, n_generations):
-        self.current_generation = 0  # Used to store statistics by generation
         self.xml_element = None
 
-        self.mutation_survival_counter = dict()
+        self.current_generation = 0  # Used to store statistics by generation
 
         # Key: Generation Number | Value: GaOpCounter instance
-        self.op_counter = \
-            {generation: GaOpCounter()
-             for generation
-             in range(1, n_generations + 1)}  # type: Dict[int, GaOpCounter]
+        self.op_counter = {generation: GaOpCounter() for generation
+                           in range(1, n_generations + 1)}  # type: Dict[int, GaOpCounter]
 
     def set_generation(self, generation):
         """Sets the current generation number."""
         self.current_generation = generation
+
+    def log_crossover_operation(self) -> None:
+        """Log a crossover operation"""
+        self.op_counter[self.current_generation].num_crossovers += 1
+
+    def log_mutation_operation(self, mutation_type: MutationType) -> None:
+        """Log a mutation operation"""
+        mutation_counter = self.op_counter[self.current_generation].mutation_counter
+        mutation_counter[mutation_type].num_carried_out += 1
 
     def log_operation(self, op_type: OpType):
         """Log an operation.
@@ -115,12 +142,8 @@ class GaStatistics:
 
         :param op_type: The operation: CROSSOVER or MUTATION
         """
-        if op_type == OpType.CROSSOVER:
-            self.op_counter[self.current_generation].n_crossover += 1
-        elif op_type == OpType.MUTATION:
-            self.op_counter[self.current_generation].n_mutation += 1
-        else:
-            raise AssertionError('Invalid Operation type {}'.format(op_type))
+        # TODO Once everything is working remove this function
+        raise NotImplementedError
 
     def log_flow_repair(self, op_type: OpType):
         """Log that a flow has been repaired.
@@ -128,11 +151,9 @@ class GaStatistics:
         :param op_type: The operation: CROSSOVER or MUTATION
         """
         if op_type == OpType.CROSSOVER:
-            self.op_counter[
-                self.current_generation].n_flow_repaired_crossover += 1
+            self.op_counter[self.current_generation].n_flow_repaired_crossover += 1
         elif op_type == OpType.MUTATION:
-            self.op_counter[
-                self.current_generation].n_flow_repaired_mutation += 1
+            self.op_counter[self.current_generation].n_flow_repaired_mutation += 1
         elif op_type == OpType.NO_OP:  # No counters need to be updated
             pass
         else:
@@ -144,11 +165,9 @@ class GaStatistics:
         :param op_type: The operation: CROSSOVER or MUTATION
         """
         if op_type == OpType.CROSSOVER:
-            self.op_counter[
-                self.current_generation].n_link_repaired_crossover += 1
+            self.op_counter[self.current_generation].n_link_repaired_crossover += 1
         elif op_type == OpType.MUTATION:
-            self.op_counter[
-                self.current_generation].n_link_repaired_mutation += 1
+            self.op_counter[self.current_generation].n_link_repaired_mutation += 1
         elif op_type == OpType.NO_OP:  # No counters need to be updated
             pass
         else:
@@ -156,7 +175,7 @@ class GaStatistics:
 
     def log_survived_mutation(self, population: list, off_mut_type_counter: dict) -> None:
         """
-        Log the mutation operators that survived. This function needs to be€
+        Log the mutation operators that survived. This function needs to be
         called after every generation to log the process on a per generation
         basis.
 
@@ -165,21 +184,28 @@ class GaStatistics:
                                      offspring.
         :return: None
         """
-        # The mutation counter for the population
-        pop_mut_type_counter = GaStatistics.count_mutation_operations(population)
+        # FIXME this function needs to be updated
+        return
+        # # The mutation counter for the population
+        # pop_mut_type_counter = GaStatistics.count_mutation_operations(population)
 
-        mutation_counters = list()
-        for mutation_operator, offspring_counter in off_mut_type_counter.items():
-            pop_counter = pop_mut_type_counter[mutation_operator]
-            mutation_counters.append(MutationTypeCounter(mutation_operator, offspring_counter, pop_counter))
+        # mutation_counters = list()
+        # for mutation_operator, offspring_counter in off_mut_type_counter.items():
+        #     pop_counter = pop_mut_type_counter[mutation_operator]
+        #     mutation_counters.append(MutationTypeCounter(
+        #         mutation_operator, offspring_counter, pop_counter))
 
-        self.mutation_survival_counter[self.current_generation] = mutation_counters
+        # self.mutation_survival_counter[self.current_generation] = mutation_counters
 
     @staticmethod
-    def reset_mutation_operations(population: list) -> None:
+    def reset_chromosome_counters(population: list) -> list:
+        """Give each chromosome Mutation and crossover tracking attributes"""
+
         for chromosome in population:
-            if hasattr(chromosome, "mutation_type"):
-                chromosome.mutation_type = MutationType.NO_OP
+            chromosome.mutation_operation = MutationType.NO_OP
+            chromosome.applied_crossover = False
+
+        return population
 
     @staticmethod
     def count_mutation_operations(population: list) -> dict:
@@ -199,54 +225,57 @@ class GaStatistics:
 
         :param xml_root: The root of the result XML file.
         """
-        if self.xml_element is None:
-            self.xml_element = etree.SubElement(xml_root, 'Statistics')
+        # FIXME Update this function
+        return
 
-        # Store the generations saved in the xml file to delete them once
-        # written on disk.
-        gen_to_delete = list()
+        # if self.xml_element is None:
+        #     self.xml_element = etree.SubElement(xml_root, 'Statistics')
 
-        for generation, counter in self.op_counter.items():
-            if generation <= self.current_generation:
-                gen_element = etree.Element('Generation')
-                gen_element.set('Id', str(generation))
+        # # Store the generations saved in the xml file to delete them once
+        # # written on disk.
+        # gen_to_delete = list()
 
-                # # # Crossover # # #
-                crossover_element = etree.SubElement(gen_element, 'Crossover')
-                crossover_element.set('n', str(counter.n_crossover))
+        # for generation, counter in self.op_counter.items():
+        #     if generation <= self.current_generation:
+        #         gen_element = etree.Element('Generation')
+        #         gen_element.set('Id', str(generation))
 
-                crossover_element.set('n_repaired_flows',
-                                      str(counter.n_flow_repaired_crossover))
+        #         # # # Crossover # # #
+        #         crossover_element = etree.SubElement(gen_element, 'Crossover')
+        #         crossover_element.set('n', str(counter.n_crossover))
 
-                crossover_element.set('n_repaired_links',
-                                      str(counter.n_link_repaired_crossover))
+        #         crossover_element.set('n_repaired_flows',
+        #                               str(counter.n_flow_repaired_crossover))
 
-                # # # Mutation # # #
-                mutation_element = etree.SubElement(gen_element, 'Mutation')
+        #         crossover_element.set('n_repaired_links',
+        #                               str(counter.n_link_repaired_crossover))
 
-                mutation_element.set('n', str(counter.n_mutation))
+        #         # # # Mutation # # #
+        #         mutation_element = etree.SubElement(gen_element, 'Mutation')
 
-                mutation_element.set('n_repaired_flows',
-                                     str(counter.n_flow_repaired_mutation))
+        #         mutation_element.set('n', str(counter.n_mutation))
 
-                mutation_element.set('n_repaired_links',
-                                     str(counter.n_link_repaired_mutation))
+        #         mutation_element.set('n_repaired_flows',
+        #                              str(counter.n_flow_repaired_mutation))
 
-                self.xml_element.append(gen_element)
-                gen_to_delete.append(generation)
+        #         mutation_element.set('n_repaired_links',
+        #                              str(counter.n_link_repaired_mutation))
 
-                # # # Mutation Operation Survival # # #
-                mutation_survival = etree.SubElement(gen_element, "MutationSurvival")
-                mutation_counters = self.mutation_survival_counter[generation]
-                for mut_counter in mutation_counters:
-                    if mut_counter.mutation_op_name == MutationType.NO_OP:
-                        continue  # Exclude the NO_OP from the results
+        #         self.xml_element.append(gen_element)
+        #         gen_to_delete.append(generation)
 
-                    operator_element = etree.SubElement(mutation_survival, "Operator")
-                    operator_element.set("Name", str(mut_counter.mutation_op_name.name))
-                    operator_element.set("Survived", str(mut_counter.mutations_survived))
-                    operator_element.set("Total", str(mut_counter.mutations_carried_out))
+        #         # # # Mutation Operation Survival # # #
+        #         mutation_survival = etree.SubElement(gen_element, "MutationSurvival")
+        #         mutation_counters = self.mutation_survival_counter[generation]
+        #         for mut_counter in mutation_counters:
+        #             if mut_counter.mutation_op_name == MutationType.NO_OP:
+        #                 continue  # Exclude the NO_OP from the results
 
-        # Delete the generations that have been stored in the XML file
-        for gen in gen_to_delete:
-            del self.op_counter[gen]
+        #             operator_element = etree.SubElement(mutation_survival, "Operator")
+        #             operator_element.set("Name", str(mut_counter.mutation_op_name.name))
+        #             operator_element.set("Survived", str(mut_counter.mutations_survived))
+        #             operator_element.set("Total", str(mut_counter.mutations_carried_out))
+
+        # # Delete the generations that have been stored in the XML file
+        # for gen in gen_to_delete:
+        #     del self.op_counter[gen]

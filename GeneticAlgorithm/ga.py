@@ -39,6 +39,7 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
     # Generate the first population
     population = toolbox.population(n=parameters.pop_size)
     population = ga_operators.round_small_numbers(population)
+    population = ga_stats.reset_chromosome_counters(population)
 
     # Evaluate individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
@@ -82,14 +83,15 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
         for ind, fit in zip(invalid_ind, fitness_values):
             ind.fitness.values = fit
 
-        # Reset the population's mutation operators
-        ga_stats.reset_mutation_operations(population)
-
         # Select the best individuals from the current population and offspring
         population = tools.selNSGA2(population + offspring, parameters.pop_size)
 
+        # TODO Update here to log survival of both crossover and mutation
         # Log the mutation operations that survived after selection
         ga_stats.log_survived_mutation(population, off_mut_type_counter)
+
+        # Reset the population chromosome counters
+        population = ga_stats.reset_chromosome_counters(population)
 
         # Log the current generation duration
         ga_timing.log_generation_end(gen)
