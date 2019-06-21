@@ -132,19 +132,6 @@ class GaStatistics:
         mutation_counter = self.op_counter[self.current_generation].mutation_counter
         mutation_counter[mutation_type].num_carried_out += 1
 
-    def log_operation(self, op_type: OpType):
-        """Log an operation.
-
-        The operation can be either a crossover or a mutation. The counter is
-        used to determine the number of repairs carried out compared to the
-        total number of crossover/mutations that occurred in the Genetic
-        Algorithm run.
-
-        :param op_type: The operation: CROSSOVER or MUTATION
-        """
-        # TODO Once everything is working remove this function
-        raise NotImplementedError
-
     def log_flow_repair(self, op_type: OpType):
         """Log that a flow has been repaired.
 
