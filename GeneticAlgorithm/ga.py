@@ -39,6 +39,7 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
     # Generate the first population
     population = toolbox.population(n=parameters.pop_size)
     population = ga_operators.round_small_numbers(population)
+    population = ga_stats.reset_chromosome_counters(population)
 
     # Evaluate individuals with an invalid fitness
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
@@ -55,7 +56,9 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
 
     # Start the evolution process
     for gen in range(1, parameters.num_generations + 1):
+        logger.log_info("Starting generation {}".format(gen))
         logger.log_status('Starting generation {}'.format(gen))
+
         ga_stats.set_generation(gen)
         ga_timing.log_generation_start()
 
@@ -73,23 +76,21 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
 
         offspring = ga_operators.round_small_numbers(offspring)
 
-        # Store which mutation operations were carried out
-        off_mut_type_counter = ga_stats.count_mutation_operations(offspring)
-
         # Evaluate individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitness_values = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitness_values):
             ind.fitness.values = fit
 
-        # Reset the population's mutation operators
-        ga_stats.reset_mutation_operations(population)
-
         # Select the best individuals from the current population and offspring
         population = tools.selNSGA2(population + offspring, parameters.pop_size)
 
-        # Log the mutation operations that survived after selection
-        ga_stats.log_survived_mutation(population, off_mut_type_counter)
+        # Log the chromosomes that were generated via crossover/mutation that
+        # survived to the next generation
+        ga_stats.log_survivors(population)
+
+        # Reset the population chromosome counters
+        population = ga_stats.reset_chromosome_counters(population)
 
         # Log the current generation duration
         ga_timing.log_generation_end(gen)
@@ -97,8 +98,7 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
         # Add the current population to the results
         ga_results.add_population(gen, population)
 
-        if gen % parameters.xml_save_frequency == 0:
-            # Append the current results to the XML result file
+        if gen % parameters.xml_save_frequency == 0:  # Append results to the result file
             logger.log_status('Appending the results. Generation: {}'.format(gen))
             ga_results.append_to_xml(result_xml.get_root())
             ga_stats.append_to_xml(result_xml.get_root())
