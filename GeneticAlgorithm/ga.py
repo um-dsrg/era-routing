@@ -74,9 +74,6 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
 
         offspring = ga_operators.round_small_numbers(offspring)
 
-        # Store which mutation operations were carried out
-        off_mut_type_counter = ga_stats.count_mutation_operations(offspring)
-
         # Evaluate individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitness_values = toolbox.map(toolbox.evaluate, invalid_ind)
@@ -86,9 +83,9 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
         # Select the best individuals from the current population and offspring
         population = tools.selNSGA2(population + offspring, parameters.pop_size)
 
-        # TODO Update here to log survival of both crossover and mutation
-        # Log the mutation operations that survived after selection
-        ga_stats.log_survived_mutation(population, off_mut_type_counter)
+        # Log the chromosomes that were generated via crossover/mutation that
+        # survived to the next generation
+        ga_stats.log_survivors(population)
 
         # Reset the population chromosome counters
         population = ga_stats.reset_chromosome_counters(population)
@@ -99,8 +96,7 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
         # Add the current population to the results
         ga_results.add_population(gen, population)
 
-        if gen % parameters.xml_save_frequency == 0:
-            # Append the current results to the XML result file
+        if gen % parameters.xml_save_frequency == 0:  # Append results to the result file
             logger.log_status('Appending the results. Generation: {}'.format(gen))
             ga_results.append_to_xml(result_xml.get_root())
             ga_stats.append_to_xml(result_xml.get_root())
