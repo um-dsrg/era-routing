@@ -119,6 +119,7 @@ class GaOperators:
         self.ga_stats.log_crossover_operation()
 
         random_split_ratio = random.random()  # Determine a random split ratio
+        self.log_info("Crossover with split ratio of {}".format(random_split_ratio))
 
         for flow in self.flows.values():
             if random.random() < random_split_ratio:  # Swap the flow usage
@@ -137,8 +138,7 @@ class GaOperators:
                 self._validate_link_capacity_constraint(chromosome_2))
 
     def mutate_chromosome(self, chromosome):
-        """Mutate the chromosome with 1/3 probability of favoring one of the
-        objectives.
+        """Perform the mutation operator on the chromosome
 
         :param chromosome: The chromosome to be mutated.
 
@@ -155,22 +155,24 @@ class GaOperators:
 
             rand_num = random.random()
             if rand_num < 0.25:  # Minimise the number of paths
+                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MIN_PATH))
                 chromosome = self._min_path_mutation(flow, chromosome)
                 chromosome.mutation_operation = MutationType.MIN_PATH
             elif rand_num < 0.50:  # Minimise the cost
+                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MIN_COST))
                 chromosome = self._min_cost_mutation(flow, chromosome)
                 chromosome.mutation_operation = MutationType.MIN_COST
             elif rand_num < 0.75:  # Minimise the path standard deviation
+                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MIN_PATH_STD_DEV))
                 chromosome = self._min_path_std_dev_mutation(flow, chromosome)
                 chromosome.mutation_operation = MutationType.MIN_PATH_STD_DEV
             else:  # Maximise the flow
+                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MAX_FLOW))
                 chromosome = self._max_flow_mutation(flow, chromosome)
                 chromosome.mutation_operation = MutationType.MAX_FLOW
 
         self.ga_stats.log_mutation_operation(chromosome.mutation_operation)
-
-        # NOTE Always return a tuple
-        return self._validate_chromosome(chromosome),
+        return self._validate_chromosome(chromosome),  # NOTE Always return a tuple
 
     def round_small_numbers(self, population: list) -> list:
         """Rounds very small numbers to zero in a given population
@@ -200,8 +202,7 @@ class GaOperators:
 
         return population
 
-    def _get_flows_to_mutate(self):
-        # type: () -> List[Flow]
+    def _get_flows_to_mutate(self) -> list:
         """Return the flows to be mutated based on the mutation fraction."""
         num_flows = len(self.flows)
         num_flows_to_mutate = math.ceil(self.mutation_fraction * num_flows)
@@ -209,7 +210,6 @@ class GaOperators:
         return random.sample(list(self.flows.values()), num_flows_to_mutate)
 
     def _min_path_mutation(self, flow, chromosome):
-        # type: (Flow, Any)
         """Mutate the flow path usage to minimise the number of paths used.
 
         The number of paths to choose diminishes linearly as the number of
@@ -239,7 +239,6 @@ class GaOperators:
         return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
 
     def _min_cost_mutation(self, flow, chromosome):
-        # type: (Flow, Any)
         """Mutate the flow path usage to minimise the cost.
 
         :param flow:       The flow that will be mutated.
@@ -315,7 +314,6 @@ class GaOperators:
         return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
 
     def _max_flow_mutation(self, flow, chromosome):
-        # type: (Flow, Any)
         """Mutate the flow path usage to maximise the allocated data rate.
 
         :param flow:       The flow that will be mutated.

@@ -56,7 +56,9 @@ def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_
 
     # Start the evolution process
     for gen in range(1, parameters.num_generations + 1):
+        logger.log_info("Starting generation {}".format(gen))
         logger.log_status('Starting generation {}'.format(gen))
+
         ga_stats.set_generation(gen)
         ga_timing.log_generation_start()
 
