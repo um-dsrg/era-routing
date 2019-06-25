@@ -217,9 +217,10 @@ class GaStatistics:
                 tot_num_survived_mutations = 0
 
                 for mut_type, mut_counter in counter.mutation_counter.items():
-                    operator_element = etree.SubElement(mutation_element, "Operator")
                     if mut_type == MutationType.NO_OP:
                         continue  # Exclude NO_OP from the results
+
+                    operator_element = etree.SubElement(mutation_element, "Operator")
 
                     tot_num_mutations += mut_counter.num_carried_out
                     tot_num_survived_mutations += mut_counter.num_survived
