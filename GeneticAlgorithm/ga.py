@@ -13,7 +13,7 @@ matrix is read from an XML path that contain the k shortest paths from each
 source to destination. More information about the network matrix can be found
 in the ga_helper::Network class.
 """
-from deap import algorithms, base, creator, tools
+from deap import base, creator, tools
 
 from modules.flow import Flow
 from modules.ga_operators import GaOperators
@@ -23,95 +23,8 @@ from modules.logger import Logger
 from modules.network import Network
 from modules.objectives import Objectives
 from modules.parameters import Parameters
-from modules.timings import GaTimings
 from modules.xml_handler import XmlHandler
-
-
-def run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, toolbox):
-    """Run the NSGA-II algorithm.
-
-    Run the NSGA-II algorithm for the specified number of generations and store
-    the results in an XML file.
-    """
-    ga_timing = GaTimings(parameters.num_generations, logger.log_status)
-    ga_timing.log_duration_start()  # Log the start time
-
-    # Generate the first population
-    population = toolbox.population(n=parameters.pop_size)
-    population = ga_operators.round_small_numbers(population)
-    population = ga_stats.reset_chromosome_counters(population)
-
-    # Evaluate individuals with an invalid fitness
-    invalid_ind = [ind for ind in population if not ind.fitness.valid]
-    fitness_values = toolbox.map(toolbox.evaluate, invalid_ind)
-    for ind, fit in zip(invalid_ind, fitness_values):
-        ind.fitness.values = fit
-
-    # Assign a crowding distance to the individuals. No selection is actually
-    # done in this step
-    population = tools.selNSGA2(population, parameters.pop_size)
-
-    # Store the initial population before evolution starts.
-    ga_results.add_population(0, population)
-
-    # Start the evolution process
-    for gen in range(1, parameters.num_generations + 1):
-        logger.log_info("Starting generation {}".format(gen))
-        logger.log_status('Starting generation {}'.format(gen))
-
-        ga_stats.set_generation(gen)
-        ga_timing.log_generation_start()
-
-        # Select individuals using tournament selection based on dominance and
-        # crowding distance that will be used for mating and mutation
-        # operations.
-        offspring = tools.selTournamentDCD(population, parameters.pop_size)
-
-        # Create a deep copy of the offspring
-        offspring = [toolbox.clone(ind) for ind in offspring]
-
-        # Apply crossover and mutation to the offspring population
-        offspring = algorithms.varAnd(offspring, toolbox, parameters.prob_crossover,
-                                      parameters.prob_mutation)
-
-        offspring = ga_operators.round_small_numbers(offspring)
-
-        # Evaluate individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitness_values = toolbox.map(toolbox.evaluate, invalid_ind)
-        for ind, fit in zip(invalid_ind, fitness_values):
-            ind.fitness.values = fit
-
-        # Select the best individuals from the current population and offspring
-        population = tools.selNSGA2(population + offspring, parameters.pop_size)
-
-        # Log the chromosomes that were generated via crossover/mutation that
-        # survived to the next generation
-        ga_stats.log_survivors(population)
-
-        # Reset the population chromosome counters
-        population = ga_stats.reset_chromosome_counters(population)
-
-        # Log the current generation duration
-        ga_timing.log_generation_end(gen)
-
-        # Add the current population to the results
-        ga_results.add_population(gen, population)
-
-        if gen % parameters.xml_save_frequency == 0:  # Append results to the result file
-            logger.log_status('Appending the results. Generation: {}'.format(gen))
-            ga_results.append_to_xml(result_xml.get_root())
-            ga_stats.append_to_xml(result_xml.get_root())
-            result_xml.save_xml_file()
-
-    ga_timing.log_duration_end()
-
-    # Call append again just in case the number of generations is not exactly
-    # divisible by the frequency parameter set by the user.
-    ga_results.append_to_xml(result_xml.get_root())
-    ga_stats.append_to_xml(result_xml.get_root())
-    ga_timing.add_to_xml(result_xml.get_root())
-    result_xml.save_xml_file()
+from modules.algorithms import spea2, nsga2, nsga3
 
 
 def main():
@@ -119,9 +32,9 @@ def main():
     parameters = Parameters()
     logger = Logger(parameters)
     objectives = Objectives(parameters.objectives)
-    ksp_xml = XmlHandler(parameters.ksp_xml_file)
-    flows = Flow.parse_flows(ksp_xml.get_root())
-    network = Network(ksp_xml.get_root(), flows, objectives, logger.log_info)
+    inputXml = XmlHandler(parameters.inputFile)
+    flows = Flow.parse_flows(inputXml.get_root())
+    network = Network(inputXml.get_root(), flows, objectives, logger.log_info)
 
     ga_stats = GaStatistics(parameters.num_generations)
     ga_operators = GaOperators(flows, network, parameters, objectives, ga_stats, logger.log_info)
@@ -141,16 +54,28 @@ def main():
 
     # # # Store the configuration parameters # # #
     logger.log_status('Saving Configuration parameters in XML file')
-    result_xml = XmlHandler(parameters.result_file, 'GeneticAlgorithm')
-    parameters.append_to_xml(result_xml.get_root())
-    network.append_to_xml(result_xml.get_root())
-    objectives.append_to_xml(result_xml.get_root())
+    resultXml = XmlHandler(parameters.outputFile, 'GeneticAlgorithm')
+    parameters.append_to_xml(resultXml.get_root())
+    network.append_to_xml(resultXml.get_root())
+    objectives.append_to_xml(resultXml.get_root())
 
-    # # # Run the NSGA-II Algorithm # # #
+    # # # Initialise the results container # # #
     ga_results = GaResults(parameters, objectives)
-    run_nsga2_ga(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, toolbox)
 
-    logger.log_status('Simulation complete.')
+    # # # Start the evolution process # # #
+    if parameters.algorithm == "spea2":
+        logger.log_status("Starting the evolution using the SPEA 2 algorithm")
+        spea2(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, toolbox)
+    elif parameters.algorithm == "nsga2":
+        logger.log_status("Starting the evolution using the NSGA-II algorithm")
+        nsga2(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, toolbox)
+    elif parameters.algorithm == "nsga3":
+        logger.log_status("Starting the evolution using the NSGA-III algorithm")
+        nsga3(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, toolbox)
+    else:
+        raise AssertionError("Unknown algorithm given. {}".format(parameters.algorithm))
+
+    logger.log_status("Evolution complete")
 
 
 if __name__ == "__main__":
