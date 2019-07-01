@@ -22,12 +22,13 @@ class Parameters:
     def _set_cmd_line_args():
         """Set the command line parser."""
         parser = argparse.ArgumentParser()
-        parser.add_argument('--ksp_xml_file', required=True,
-                            help='The path to the XML file containing the '
-                                 'required network information.')
-        parser.add_argument('--result_file', required=True,
-                            help='The full path where to store the XML '
-                                 'result file.')
+        parser.add_argument("-i", "--input", required=True,
+                            help='The location to the path selection result file')
+        parser.add_argument("-o", "--output", required=True,
+                            help='The location where to save the XML result file.')
+        parser.add_argument("--algorithm", type=str, required=True,
+                            help="The Evolutionary algorithm to run. Available options are: "
+                                 "spea2 | nsga2 | nsga3")
         parser.add_argument('--num_generations', type=int, required=True,
                             help='The number of generations the Genetic '
                                  'Algorithm will loop for.')
@@ -81,17 +82,20 @@ class Parameters:
         cmd_line_parser = self._set_cmd_line_args()
 
         # Verify that the file exists
-        assert os.path.isfile(cmd_line_parser.ksp_xml_file), \
-            'The ksp result file {0} ' \
-            'does not exist'.format(cmd_line_parser.ksp_xml_file)
-        self.ksp_xml_file = cmd_line_parser.ksp_xml_file
+        if os.path.isfile(cmd_line_parser.input) is False:
+            raise AssertionError("The input file does not exist: {}".format(cmd_line_parser.input))
+        self.inputFile = cmd_line_parser.input
 
-        # Verify that the path exists
-        result_dir = os.path.dirname(cmd_line_parser.result_file)
-        assert os.path.isdir(result_dir), \
-            'The path {0} used to store the result file in ' \
-            'does not exist'.format(result_dir)
-        self.result_file = cmd_line_parser.result_file
+        # Verify that the path where the result file will be stored exists
+        if os.path.isdir(os.path.dirname(cmd_line_parser.output)) is False:
+            raise AssertionError("The output directory does not exist: {}"
+                                 .format(os.path.dirname(cmd_line_parser.output)))
+        self.outputFile = cmd_line_parser.output
+
+        # Verify the algorithm is valid
+        self.algorithm = cmd_line_parser.algorithm.lower()
+        if self.algorithm not in ["spea2", "nsga2", "nsga3"]:
+            raise AssertionError("Unknown algorithm given: {}".format(self.algorithm))
 
         # Check the number of generations
         assert cmd_line_parser.num_generations > 0, \
