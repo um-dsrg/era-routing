@@ -1,4 +1,5 @@
 """Module that has objectives related functionality."""
+from typing import List
 from collections import namedtuple
 
 from lxml import etree
@@ -8,8 +9,7 @@ class Objectives:
     obj_properties = ['obj_name', 'obj_weight', 'fn_metric_calc', 'fn_obj_bound']
     Objective = namedtuple('Objective', obj_properties)
 
-    def __init__(self, objs):
-        # type: (List[str])
+    def __init__(self, objs: List[str]):
         """Initialise the objectives from a list of strings.
 
         :param objs: List of objectives in string format.
@@ -28,6 +28,10 @@ class Objectives:
             obj_element.set('fn_metric_calc', str(objective.fn_metric_calc))
             obj_element.set('fn_obj_bound', str(objective.fn_obj_bound))
 
+    def gen_num_objectives(self):
+        """Return the number of objectives"""
+        return len(self.objectives)
+
     def get_obj_weights(self):
         """Return a tuple of the max/min objective weights."""
         return tuple([objective.obj_weight for objective in self.objectives])
@@ -45,7 +49,6 @@ class Objectives:
         return [objective.fn_obj_bound for objective in self.objectives]
 
     def _parse_objectives(self, objectives):
-        #  type: (List[str])
         for objective in objectives:
             split_obj = objective.split(',')
             split_obj = [text.strip() for text in split_obj]

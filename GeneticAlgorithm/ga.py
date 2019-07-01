@@ -71,7 +71,8 @@ def main():
         nsga2(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, toolbox)
     elif parameters.algorithm == "nsga3":
         logger.log_status("Starting the evolution using the NSGA-III algorithm")
-        nsga3(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, toolbox)
+        nsga3(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, objectives,
+              toolbox)
     else:
         raise AssertionError("Unknown algorithm given. {}".format(parameters.algorithm))
 

@@ -43,6 +43,9 @@ class Parameters:
                                  'will be mutated. This variable dictates the '
                                  'number of genes that will be modified by a '
                                  'single mutation operator.')
+        parser.add_argument("--nsga3_p", type=int, required=False, default=0,
+                            help="The p value that will be used to calculate the number of "
+                                 "reference points to generate")
         parser.add_argument('--objectives', required=True, nargs='*', type=str,
                             help='List of objectives the Genetic Algorithm will '
                                  'work on. The objectives need to be given in '
@@ -96,6 +99,12 @@ class Parameters:
         self.algorithm = cmd_line_parser.algorithm.lower()
         if self.algorithm not in ["spea2", "nsga2", "nsga3"]:
             raise AssertionError("Unknown algorithm given: {}".format(self.algorithm))
+
+        # Ensure that nsga3_p is given when nsga3 is chosen
+        if self.algorithm == "nsga3" and cmd_line_parser.nsga3_p <= 0:
+            raise AssertionError("nsga_3 p value needs to be provided when using NSGA-III OR "
+                                 "invalid nsga_3 p value provided")
+        self.nsga3_p = cmd_line_parser.nsga3_p
 
         # Check the number of generations
         assert cmd_line_parser.num_generations > 0, \
