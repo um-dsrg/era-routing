@@ -51,9 +51,6 @@ def nsga2(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, to
         # operations.
         offspring = tools.selTournamentDCD(population, parameters.pop_size)
 
-        # Create a deep copy of the offspring
-        offspring = [toolbox.clone(ind) for ind in offspring]
-
         # Apply crossover and mutation to the offspring population
         offspring = algorithms.varAnd(offspring, toolbox, parameters.prob_crossover,
                                       parameters.prob_mutation)
