@@ -138,13 +138,10 @@ def nsga3(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, ob
         ga_stats.set_generation(gen)
         ga_timing.log_generation_start()
 
-        # FIXME: Update the below to use random selection
-        # offspring = tools.selTournamentDCD(population, parameters.pop_size)
-        # # Create a deep copy of the offspring
-        # offspring = [toolbox.clone(ind) for ind in offspring]
+        offspring = tools.selRandom(population, parameters.pop_size)
 
         # Apply crossover and mutation to the offspring population
-        offspring = algorithms.varAnd(population, toolbox, parameters.prob_crossover,
+        offspring = algorithms.varAnd(offspring, toolbox, parameters.prob_crossover,
                                       parameters.prob_mutation)
 
         offspring = ga_operators.round_small_numbers(offspring)
