@@ -118,6 +118,9 @@ class GaStatistics:
         self.op_counter = {generation: GaOpCounter() for generation
                            in range(1, n_generations + 1)}  # type: Dict[int, GaOpCounter]
 
+        self.nsga3_reference_points = None  # The list of reference points used by NSGA-3
+        self.nsga3_reference_points_saved = False  # True when ref points are saved in the xml file
+
     def set_generation(self, generation):
         """Sets the current generation number."""
         self.current_generation = generation
@@ -175,6 +178,10 @@ class GaStatistics:
             if chromosome.mutation_operation != MutationType.NO_OP:
                 op_counter.mutation_counter[chromosome.mutation_operation].num_survived += 1
 
+    def log_nsga3_reference_points(self, reference_points: list):
+        """Log the reference points used by the NSGA3 algorithm"""
+        self.nsga3_reference_points = reference_points
+
     @staticmethod
     def reset_chromosome_counters(population: list) -> list:
         """Give each chromosome Mutation and crossover tracking attributes"""
@@ -192,6 +199,20 @@ class GaStatistics:
         """
         if self.xml_element is None:
             self.xml_element = etree.SubElement(xml_root, 'Statistics')
+
+        if self.nsga3_reference_points_saved is False and self.nsga3_reference_points is not None:
+            reference_points_element = etree.Element("ReferencePoints")
+            reference_points_element.set("NumPoints", str(len(self.nsga3_reference_points)))
+
+            for reference_point in self.nsga3_reference_points:
+                reference_point_element = etree.SubElement(reference_points_element,
+                                                           "ReferencePoint")
+                reference_point_element.set("x", str(reference_point[0]))
+                reference_point_element.set("y", str(reference_point[1]))
+                reference_point_element.set("z", str(reference_point[2]))
+
+            self.xml_element.append(reference_points_element)
+            self.nsga3_reference_points_saved = True
 
         # Store the generations saved in the xml file to delete them once
         # written on disk.
