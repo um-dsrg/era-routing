@@ -11,8 +11,8 @@ class GaResults:
                               and the population (list of chromosomes) as the
                               Value.
     """
+
     def __init__(self, parameters, objectives):
-        # type: (Parameters, Objectives)
         """Initialise a GaResults object to allow storing the results per
         generation.
 

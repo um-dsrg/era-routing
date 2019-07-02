@@ -48,7 +48,7 @@ class GaTimings:
             remaining_gens = self.num_generations - gen_num
             estimated_time = prev_timings_avg * remaining_gens
             self.log_status('Estimated time remaining: {}'
-                            .format(secs_to_str(estimated_time)))
+                            .format(seconds_to_str(estimated_time)))
 
     def add_to_xml(self, xml_root):
         """Add the timing results to the XML file.
@@ -68,7 +68,7 @@ class GaTimings:
             gen_element.text = str(gen_duration)
 
 
-def secs_to_str(seconds: float):
+def seconds_to_str(seconds: float):
     """Converts seconds to days:hours:minutes:seconds format."""
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
