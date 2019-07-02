@@ -114,7 +114,6 @@ def nsga3(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, ob
     # Generate the reference points
     reference_points = tools.uniform_reference_points(objectives.gen_num_objectives(),
                                                       p=parameters.nsga3_p)
-    ga_stats.log_nsga3_reference_points(reference_points)
 
     if len(reference_points) > parameters.pop_size:
         raise AssertionError("The number of reference points is larger than the population size. "
@@ -122,6 +121,7 @@ def nsga3(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, ob
                              .format(len(reference_points), parameters.pop_size))
 
     logger.log_info("Number of reference points to be used: {}".format(len(reference_points)))
+    ga_stats.log_nsga3_reference_points(reference_points)
     nsga3_selector = tools.selNSGA3WithMemory(reference_points)
 
     # Start the evolution process
