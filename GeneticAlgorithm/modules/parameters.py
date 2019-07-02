@@ -28,7 +28,7 @@ class Parameters:
                             help='The location where to save the XML result file.')
         parser.add_argument("--algorithm", type=str, required=True,
                             help="The Evolutionary algorithm to run. Available options are: "
-                                 "spea2 | nsga2 | nsga3")
+                                 "nsga2 | nsga3")
         parser.add_argument('--num_generations', type=int, required=True,
                             help='The number of generations the Genetic '
                                  'Algorithm will loop for.')
@@ -97,7 +97,7 @@ class Parameters:
 
         # Verify the algorithm is valid
         self.algorithm = cmd_line_parser.algorithm.lower()
-        if self.algorithm not in ["spea2", "nsga2", "nsga3"]:
+        if self.algorithm not in ["nsga2", "nsga3"]:
             raise AssertionError("Unknown algorithm given: {}".format(self.algorithm))
 
         # Ensure that nsga3_p is given when nsga3 is chosen

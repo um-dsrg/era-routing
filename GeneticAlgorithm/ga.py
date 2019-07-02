@@ -24,7 +24,7 @@ from modules.network import Network
 from modules.objectives import Objectives
 from modules.parameters import Parameters
 from modules.xml_handler import XmlHandler
-from modules.algorithms import spea2, nsga2, nsga3
+from modules.algorithms import nsga2, nsga3
 
 
 def main():
@@ -63,10 +63,7 @@ def main():
     ga_results = GaResults(parameters, objectives)
 
     # # # Start the evolution process # # #
-    if parameters.algorithm == "spea2":
-        logger.log_status("Starting the evolution using the SPEA 2 algorithm")
-        spea2(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, toolbox)
-    elif parameters.algorithm == "nsga2":
+    if parameters.algorithm == "nsga2":
         logger.log_status("Starting the evolution using the NSGA-II algorithm")
         nsga2(parameters, logger, ga_operators, ga_stats, ga_results, resultXml, toolbox)
     elif parameters.algorithm == "nsga3":

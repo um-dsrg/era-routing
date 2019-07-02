@@ -4,13 +4,6 @@ from deap import algorithms, tools
 from modules.timings import GaTimings
 
 
-def spea2(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, toolbox):
-    """Implements the SPEA2 algorithm.
-
-    """
-    raise NotImplementedError("The SPEA2 algorithm is not implemented yet")
-
-
 def nsga2(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, toolbox):
     """Implements the NSGA-II algorithm.
 
