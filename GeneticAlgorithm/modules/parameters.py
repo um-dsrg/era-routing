@@ -2,7 +2,6 @@ import argparse
 import os
 
 from lxml import etree
-import modules.objectives as Objs
 
 
 class Parameters:
