@@ -122,7 +122,7 @@ def nsga3(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, ob
 
     logger.log_info("Number of reference points to be used: {}".format(len(reference_points)))
     ga_stats.log_nsga3_reference_points(reference_points)
-    nsga3_selector = tools.selNSGA3WithMemory(reference_points)
+    nsga3_selector = tools.selNSGA3WithMemory(reference_points, nd="standard")
 
     # Start the evolution process
     for gen in range(1, parameters.num_generations + 1):
