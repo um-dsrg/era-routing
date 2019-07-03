@@ -23,7 +23,11 @@ class GaResults:
         self.store_all_genes = parameters.store_genes
         self.num_generations = parameters.num_generations
         self.population_by_generation = dict()
-        self.xml_element = None
+        self.parent_population_by_gen = dict()
+        self.offspring_population_by_gen = dict()
+        # self.xml_element = None
+        self.population_xml_element = None
+        self.combined_population_xml_element = None
         self.obj_names = objectives.get_obj_names()
 
     def add_population(self, n_generation: int, population):
@@ -38,6 +42,27 @@ class GaResults:
         else:
             self.population_by_generation[n_generation] = population
 
+    def add_combined_population(self, n_generation: int,
+                                parent_pop: list, offspring_pop: list) -> None:
+        """Add the parent and offspring population to the result set
+
+        Arguments:
+            n_generation {int} -- The generation at which this population has
+                                  been generated
+            parent_pop {list} -- The parent population
+            offspring_pop {list} -- The offspring population
+
+        Raises:
+            RuntimeError: Raised when trying to insert a duplicate population
+        """
+        if (n_generation in self.parent_population_by_gen or
+                n_generation in self.offspring_population_by_gen):
+            raise RuntimeError(f"Inserting duplicate generation in combined population results. "
+                               "Generation number: {n_generation}")
+        else:
+            self.parent_population_by_gen[n_generation] = parent_pop
+            self.offspring_population_by_gen[n_generation] = offspring_pop
+
     def append_to_xml(self, xml_root):
         """Append the results to the xml result file.
 
@@ -46,8 +71,9 @@ class GaResults:
 
         :param xml_root: The root of the XML result file.
         """
-        if self.xml_element is None:
-            self.xml_element = etree.SubElement(xml_root, 'Population')
+        # # # Population # # #
+        if self.population_xml_element is None:
+            self.population_xml_element = etree.SubElement(xml_root, 'Population')
 
         for gen, population in sorted(self.population_by_generation.items()):
             gen_element = etree.Element('Generation')
@@ -67,5 +93,41 @@ class GaResults:
                         gene_element.set('path_id', str(idx))
                         gene_element.set('value', str(gene))
 
-            self.xml_element.append(gen_element)
+            self.population_xml_element.append(gen_element)
             self.population_by_generation = dict()  # Clear the dictionary
+
+        # # # Combined population # # #
+        if not (not self.parent_population_by_gen and not self.offspring_population_by_gen):
+
+            # Create the XML element
+            if self.combined_population_xml_element is None:
+                self.combined_population_xml_element = etree.SubElement(xml_root,
+                                                                        "CombinedPopulation")
+
+            for gen_number in sorted(self.parent_population_by_gen.keys()):
+                gen_element = etree.Element("Generation")
+                gen_element.set("number", str(gen_number))
+
+                # # # Save the parent population # # #
+                parent_population = self.parent_population_by_gen[gen_number]
+                parent_pop_element = etree.SubElement(gen_element, "Parent")
+
+                for chromosome in parent_population:
+                    chromo_element = etree.SubElement(parent_pop_element, "Chromosome")
+                    for obj_name, obj_value in zip(self.obj_names, chromosome.fitness.values):
+                        chromo_element.set(obj_name, str(obj_value))
+
+                self.combined_population_xml_element.append(parent_pop_element)
+                self.parent_population_by_gen = dict()  # Clear the dictionary
+
+                # # # Save the offspring population # # #
+                offspring_population = self.offspring_population_by_gen[gen_number]
+                offspring_pop_element = etree.SubElement(gen_element, "Offspring")
+
+                for chromosome in offspring_population:
+                    chromo_element = etree.SubElement(offspring_pop_element, "Chromosome")
+                    for obj_name, obj_value in zip(self.obj_names, chromosome.fitness.values):
+                        chromo_element.set(obj_name, str(obj_value))
+
+                self.combined_population_xml_element.append(offspring_pop_element)
+                self.offspring_population_by_gen = dict()  # Clear the dictionary
