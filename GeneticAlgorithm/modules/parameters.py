@@ -50,8 +50,7 @@ class Parameters:
                                  'work on. The objectives need to be given in '
                                  'this order: '
                                  'name, weight (maximise=1 / minimise=-1), '
-                                 'metric calculation funciton, '
-                                 'bound calculation function')
+                                 'metric calculation function, bound calculation function')
         parser.add_argument('--log_directory', type=str, required=False,
                             help='The path where to store the log files.')
         parser.add_argument('--status_log', action='store_true',
@@ -72,10 +71,14 @@ class Parameters:
                                  'population for all the generations. When '
                                  'this flag is disabled the genes; will only '
                                  'be stored for the final population.')
+        parser.add_argument("--saveParentOffspring", required=False, action="store_true",
+                            help="When set, both the parent and offspring population will be added "
+                                 "to the result file")
 
         parser.set_defaults(status_log=False)
         parser.set_defaults(info_log=False)
         parser.set_defaults(store_genes=False)
+        parser.set_defaults(saveParentOffspring=False)
 
         return parser.parse_args()
 
@@ -154,3 +157,4 @@ class Parameters:
 
         self.store_genes = cmd_line_parser.store_genes
         self.objectives = cmd_line_parser.objectives
+        self.saveParentOffspring = cmd_line_parser.saveParentOffspring

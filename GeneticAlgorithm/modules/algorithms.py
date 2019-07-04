@@ -56,6 +56,10 @@ def nsga2(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, to
         for ind, fit in zip(invalid_ind, fitness_values):
             ind.fitness.values = fit
 
+        if parameters.saveParentOffspring:
+            logger.log_info("Saving the Parent + Offspring population in the result file")
+            ga_results.add_combined_population(gen, population, offspring)
+
         # Select the best individuals from the current population and offspring
         population = tools.selNSGA2(population + offspring, parameters.pop_size)
 
@@ -145,6 +149,10 @@ def nsga3(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, ob
         fitness_values = toolbox.map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitness_values):
             ind.fitness.values = fit
+
+        if parameters.saveParentOffspring:
+            logger.log_info("Saving the Parent + Offspring population in the result file")
+            ga_results.add_combined_population(gen, population, offspring)
 
         # Select the best individuals from the current population and offspring
         population = nsga3_selector(population + offspring, parameters.pop_size)
