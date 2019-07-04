@@ -50,8 +50,7 @@ class Parameters:
                                  'work on. The objectives need to be given in '
                                  'this order: '
                                  'name, weight (maximise=1 / minimise=-1), '
-                                 'metric calculation funciton, '
-                                 'bound calculation function')
+                                 'metric calculation function, bound calculation function')
         parser.add_argument('--log_directory', type=str, required=False,
                             help='The path where to store the log files.')
         parser.add_argument('--status_log', action='store_true',
