@@ -1,3 +1,4 @@
+"""Contains the GaResults class"""
 from lxml import etree
 
 
@@ -18,7 +19,7 @@ class GaResults:
 
         :param parameters: The Parameters object used to access the genetic
                            algorithm configuration parameters.
-        :param objectives: Instance of the Ojbectives class.
+        :param objectives: Instance of the Objectives class.
         """
         self.store_all_genes = parameters.store_genes
         self.num_generations = parameters.num_generations
@@ -104,7 +105,7 @@ class GaResults:
                                                                         "CombinedPopulation")
 
             for gen_number in sorted(self.parent_population_by_gen.keys()):
-                gen_element = etree.Element("Generation")
+                gen_element = etree.SubElement(self.combined_population_xml_element, "Generation")
                 gen_element.set("number", str(gen_number))
 
                 # # # Save the parent population # # #
@@ -116,8 +117,7 @@ class GaResults:
                     for obj_name, obj_value in zip(self.obj_names, chromosome.fitness.values):
                         chromo_element.set(obj_name, str(obj_value))
 
-                self.combined_population_xml_element.append(parent_pop_element)
-                self.parent_population_by_gen = dict()  # Clear the dictionary
+                gen_element.append(parent_pop_element)
 
                 # # # Save the offspring population # # #
                 offspring_population = self.offspring_population_by_gen[gen_number]
@@ -128,5 +128,10 @@ class GaResults:
                     for obj_name, obj_value in zip(self.obj_names, chromosome.fitness.values):
                         chromo_element.set(obj_name, str(obj_value))
 
-                self.combined_population_xml_element.append(offspring_pop_element)
-                self.offspring_population_by_gen = dict()  # Clear the dictionary
+                gen_element.append(offspring_pop_element)
+
+                self.combined_population_xml_element.append(gen_element)
+
+            # Clear the dictionaries after saving them in result file
+            self.parent_population_by_gen = dict()
+            self.offspring_population_by_gen = dict()
