@@ -25,7 +25,6 @@ class GaResults:
         self.population_by_generation = dict()
         self.parent_population_by_gen = dict()
         self.offspring_population_by_gen = dict()
-        # self.xml_element = None
         self.population_xml_element = None
         self.combined_population_xml_element = None
         self.obj_names = objectives.get_obj_names()
