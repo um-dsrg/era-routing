@@ -31,10 +31,12 @@ private:
 
   void setMaxFlowObjective ();
   void setMinCostObjective ();
+  void setMaxPathDelayMetricObjective();
 
   bool solveLpProblem (Problem problem);
   bool solveMaxFlowProblem ();
   bool solveMinCostProblem ();
+  bool solveMaxPathDelayProblem ();
 
   linkContainer_t& m_links;
   pathContainer_t& m_paths;

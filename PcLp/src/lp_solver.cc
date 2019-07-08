@@ -6,6 +6,7 @@
  */
 
 #include <chrono>
+#include <algorithm>
 
 #include "lp_solver.h"
 
@@ -24,7 +25,8 @@ LpSolver::solve ()
 
   m_lpSolver.clear(); // Reset the LP solver
 
-  return solveMinCostProblem(); // Solve MinCost Problem
+  return solveMaxPathDelayProblem(); // Solve the MaxPathDelay problem
+  // return solveMinCostProblem(); // Solve MinCost Problem
 }
 
 void
@@ -99,6 +101,52 @@ LpSolver::setMinCostObjective ()
   m_lpSolver.obj(minCostObjective);
 }
 
+/**
+  * Retrieves the lowest cost of the path set for a given flow
+  */
+double
+getLowestPathCost(const std::vector<Path*>& flowPaths)
+{
+  std::vector<double> pathCost;
+
+  for (const auto& path: flowPaths)
+  {
+    pathCost.push_back(path->getCost());
+  }
+
+  return *std::min_element(std::begin(pathCost), std::end(pathCost));
+}
+
+void
+LpSolver::setMaxPathDelayMetricObjective()
+{
+  lemon::Lp::Expr maxPathDelayObjective;
+
+  for (const auto& flow: m_flows)
+  {
+    lemon::Lp::Expr flowMetricValue;
+
+    auto flowPaths = flow->getPaths();
+
+    auto lowestPathCost = getLowestPathCost(flowPaths);
+
+    for (const auto& path: flowPaths)
+    {
+      auto pathCost = path->getCost();
+      auto pathMultiplier = double{1 / ((pathCost - lowestPathCost) + 1)};
+
+      flowMetricValue += (pathMultiplier * path->getDataRateLpVar());
+    }
+
+    // Normalise the path objective such that each flow can have a value between
+    // 0 and 1
+    maxPathDelayObjective += (flowMetricValue / flow->getAllocatedDataRate());
+  }
+
+  m_lpSolver.max(); // Maximise the objective value
+  m_lpSolver.obj(maxPathDelayObjective);
+}
+
 bool
 LpSolver::solveLpProblem (Problem problem)
 {
@@ -136,5 +184,17 @@ LpSolver::solveMinCostProblem ()
   setLinkCapacityConstraint();
   setMinCostObjective();
 
+  return solveLpProblem(Problem::MinCost);
+}
+
+bool
+LpSolver::solveMaxPathDelayProblem ()
+{
+  assignLpVariablePerPath();
+  setFlowDataRateConstraint(/*allowReducedFlowRate*/ false);
+  setLinkCapacityConstraint();
+  setMaxPathDelayMetricObjective();
+
+  // TODO Update the below
   return solveLpProblem(Problem::MinCost);
 }
