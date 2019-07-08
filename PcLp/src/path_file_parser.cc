@@ -1,11 +1,4 @@
-/*
- * ksp_parser.cc
- *
- *  Created on: Nov 28, 2018
- *      Author: noel
- */
-
-#include "ksp_parser.h"
+#include "path_file_parser.h"
 
 using namespace tinyxml2;
 
@@ -18,7 +11,8 @@ parseLinks (tinyxml2::XMLNode* rootNode, linkContainer_t& links)
     {
       id_t linkId;
       linkElement->QueryAttribute("Id", &linkId);
-      auto ret = links.insert(std::make_pair(linkId, std::unique_ptr<Link> (std::make_unique<Link>(linkElement))));
+      auto ret = links.insert(std::make_pair(linkId,
+                                             std::unique_ptr<Link> (std::make_unique<Link>(linkElement))));
 
       if (ret.second == false)
         {
@@ -32,7 +26,8 @@ parseLinks (tinyxml2::XMLNode* rootNode, linkContainer_t& links)
 }
 
 void
-parseKspData (tinyxml2::XMLNode* rootNode, linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows)
+parsePathFile (tinyxml2::XMLNode* rootNode, linkContainer_t& links, pathContainer_t& paths,
+               flowContainer_t& flows)
 {
   parseLinks(rootNode, links);
   XMLElement* flowElement = rootNode->FirstChildElement("FlowDetails")->FirstChildElement("Flow");

@@ -19,10 +19,10 @@ add_executable(pclp
                src/link.cc
                src/path.cc
                src/flow.cc
-               src/ksp_parser.cc
+               src/path_file_parser.cc
                src/lp_solver.cc
                src/xml_handler.cc
                src/main.cc)
 
 target_link_libraries(pclp emon glpk tinyxml2 pthread
-		      ${Boost_LIBRARIES})
+                      ${Boost_LIBRARIES})
