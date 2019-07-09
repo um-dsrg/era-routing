@@ -89,7 +89,9 @@ SaveDuration (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver)
 {
   double maxFlowDuration {lpSolver.getMaxFlowDuration()};
   double minCostDuration {lpSolver.getMinCostDuration()};
-  double totalDuration {maxFlowDuration + minCostDuration};
+  double maxDelayDuration {lpSolver.getMaxDelayDuration()};
+
+  double totalDuration {maxFlowDuration + minCostDuration + maxDelayDuration};
 
   XMLElement* durationElement = xmlDoc.NewElement("Duration");
   durationElement->SetAttribute("totalDurationMs", totalDuration);
@@ -100,8 +102,12 @@ SaveDuration (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver)
   XMLElement* minCostElement = xmlDoc.NewElement("MinimiumCost");
   minCostElement->SetAttribute("DurationMs", minCostDuration);
 
+  XMLElement* maxDelayElement = xmlDoc.NewElement("MaximumDelayMetric");
+  maxDelayElement->SetAttribute("DurationMs", maxDelayDuration);
+
   durationElement->InsertEndChild(maxFlowElement);
   durationElement->InsertEndChild(minCostElement);
+  durationElement->InsertEndChild(maxDelayElement);
 
   rootElement->InsertEndChild(durationElement);
 }
