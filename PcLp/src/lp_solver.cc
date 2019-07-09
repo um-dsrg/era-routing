@@ -179,7 +179,7 @@ LpSolver::solveLpProblem (Problem problem)
       break;
   }
 
-  // TODO: m_lpSolver.primal() will give us the value of the objective
+  // NOTE: m_lpSolver.primal() will give us the value of the objective
   if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
     return true;
   else
