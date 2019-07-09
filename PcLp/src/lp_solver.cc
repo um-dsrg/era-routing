@@ -127,6 +127,12 @@ LpSolver::setMaxPathDelayMetricObjective()
 
   for (const auto& flow: m_flows)
   {
+    // No calculation required when a flow is allocated nothing. If we do not
+    // skip unallocated flows we would get an error due to a division by zero
+    // when normalising the objective value.
+    if (flow->getAllocatedDataRate() == 0)
+      continue;
+
     lemon::Lp::Expr flowMetricValue;
 
     auto flowPaths = flow->getPaths();
@@ -173,6 +179,7 @@ LpSolver::solveLpProblem (Problem problem)
       break;
   }
 
+  // TODO: m_lpSolver.primal() will give us the value of the objective
   if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
     return true;
   else
