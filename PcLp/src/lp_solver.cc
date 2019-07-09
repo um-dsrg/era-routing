@@ -29,6 +29,70 @@ LpSolver::solve ()
   // return solveMinCostProblem(); // Solve MinCost Problem
 }
 
+bool
+LpSolver::findMaxDelayMaxFlowLimit ()
+{
+  // Assign Lp Variable per path - BEGIN
+  for (std::unique_ptr<Path>& path: m_paths)
+  {
+    lemon::Lp::Col dataRateOnPath = m_lpSolver.addCol();
+    path->setDataRateLpVar(dataRateOnPath);
+
+    m_lpSolver.addRow(dataRateOnPath >= 0); // Ensure non-negative data rate assignment
+  }
+  // Assign Lp Variable per path - END
+
+  // Flow Data Rate Constraint - BEGIN
+  for (std::unique_ptr<Flow>& flow: m_flows)
+  {
+    lemon::Lp::Expr flowDataRateExpression;
+
+    for (Path* path: flow->getPaths())
+      flowDataRateExpression += path->getDataRateLpVar();
+
+    if (allowReducedFlowRate)
+      m_lpSolver.addRow(flowDataRateExpression <= flow->getRequestedDataRate());
+    else
+      m_lpSolver.addRow(flowDataRateExpression == flow->getAllocatedDataRate());
+  }
+  // Flow Data Rate Constraint - END
+
+  // Set Link Capacity Constraint - BEGIN
+  for (auto& linkTuple : m_links)
+  {
+    std::unique_ptr<Link>& link {linkTuple.second};
+
+    lemon::Lp::Expr linkCapacityExpression;
+    for (Path* path: link->getPaths())
+      {
+        linkCapacityExpression += path->getDataRateLpVar();
+      }
+
+    m_lpSolver.addRow(linkCapacityExpression <= link->getCapacity());
+  }
+  // Set Link Capacity Constraint - END
+
+  // MaxFlowObjective - BEGIN
+  lemon::Lp::Expr maxFlowObjective;
+
+  for (std::unique_ptr<Path>& path: m_paths)
+    {
+      maxFlowObjective += path->getDataRateLpVar();
+    }
+
+  m_lpSolver.max(); // Set solver the find the solution with the largest value
+  m_lpSolver.obj(maxFlowObjective);
+  // MaxFlowObjective - END
+
+  // NOTES - BEGIN
+  // The link capacity constraint may be tweaked as it relies on the paths. But
+  // will confirm later.
+  // NOTES - END
+
+  // FIXME: This needs to be updated
+  return solveLpProblem(Problem::MaxFlow);
+}
+
 void
 LpSolver::assignLpVariablePerPath ()
 {

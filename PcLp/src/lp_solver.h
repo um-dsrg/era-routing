@@ -25,6 +25,8 @@ public:
 
   bool solve ();
 
+  bool findMaxDelayMaxFlowLimit ();
+
 private:
   enum class Problem { MaxFlow, MinCost, MaxDelayMetric };
 
