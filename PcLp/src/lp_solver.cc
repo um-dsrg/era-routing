@@ -6,11 +6,12 @@
  */
 
 #include <chrono>
+#include <algorithm>
 
 #include "lp_solver.h"
 
 LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows) :
-  m_links (links), m_paths(paths), m_flows(flows), m_maxFlowDurationMs(0), m_minCostDurationMs (0)
+  m_links (links), m_paths(paths), m_flows(flows)
 {}
 
 bool
@@ -24,7 +25,8 @@ LpSolver::solve ()
 
   m_lpSolver.clear(); // Reset the LP solver
 
-  return solveMinCostProblem(); // Solve MinCost Problem
+  return solveMaxPathDelayProblem(); // Solve the MaxPathDelay problem
+  // return solveMinCostProblem(); // Solve MinCost Problem
 }
 
 void
@@ -99,6 +101,61 @@ LpSolver::setMinCostObjective ()
   m_lpSolver.obj(minCostObjective);
 }
 
+
+/**
+ * @brief Retrieve the lowest path cost from a given set of paths
+ *
+ * @param flowPaths The set of paths related to a flow
+ */
+double
+getLowestPathCost(const std::vector<Path*>& flowPaths)
+{
+  std::vector<double> pathCost;
+
+  for (const auto& path: flowPaths)
+  {
+    pathCost.push_back(path->getCost());
+  }
+
+  return *std::min_element(std::begin(pathCost), std::end(pathCost));
+}
+
+void
+LpSolver::setMaxPathDelayMetricObjective()
+{
+  lemon::Lp::Expr maxPathDelayObjective;
+
+  for (const auto& flow: m_flows)
+  {
+    // No calculation required when a flow is allocated nothing. If we do not
+    // skip unallocated flows we would get an error due to a division by zero
+    // when normalising the objective value.
+    if (flow->getAllocatedDataRate() == 0)
+      continue;
+
+    lemon::Lp::Expr flowMetricValue;
+
+    auto flowPaths = flow->getPaths();
+
+    auto lowestPathCost = getLowestPathCost(flowPaths);
+
+    for (const auto& path: flowPaths)
+    {
+      auto pathCost = path->getCost();
+      auto pathMultiplier = double{1 / ((pathCost - lowestPathCost) + 1)};
+
+      flowMetricValue += (pathMultiplier * path->getDataRateLpVar());
+    }
+
+    // Normalise the path objective such that each flow can have a value between
+    // 0 and 1
+    maxPathDelayObjective += (flowMetricValue / flow->getAllocatedDataRate());
+  }
+
+  m_lpSolver.max(); // Maximise the objective value
+  m_lpSolver.obj(maxPathDelayObjective);
+}
+
 bool
 LpSolver::solveLpProblem (Problem problem)
 {
@@ -106,11 +163,23 @@ LpSolver::solveLpProblem (Problem problem)
   m_lpSolver.solvePrimalExact();
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
-  if (problem == Problem::MaxFlow)
-    m_maxFlowDurationMs = std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count();
-  else if (problem == Problem::MinCost)
-    m_minCostDurationMs = std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count();
+  switch(problem)
+  {
+    case Problem::MaxFlow:
+      m_maxFlowDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>
+                            (end - start).count();
+      break;
+    case Problem::MinCost:
+      m_minCostDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>
+                            (end - start).count();
+      break;
+    case Problem::MaxDelayMetric:
+      m_maxDelayDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>
+                             (end - start).count();
+      break;
+  }
 
+  // NOTE: m_lpSolver.primal() will give us the value of the objective
   if (m_lpSolver.primalType() == lemon::Lp::OPTIMAL)
     return true;
   else
@@ -137,4 +206,15 @@ LpSolver::solveMinCostProblem ()
   setMinCostObjective();
 
   return solveLpProblem(Problem::MinCost);
+}
+
+bool
+LpSolver::solveMaxPathDelayProblem ()
+{
+  assignLpVariablePerPath();
+  setFlowDataRateConstraint(/*allowReducedFlowRate*/ false);
+  setLinkCapacityConstraint();
+  setMaxPathDelayMetricObjective();
+
+  return solveLpProblem(Problem::MaxDelayMetric);
 }
