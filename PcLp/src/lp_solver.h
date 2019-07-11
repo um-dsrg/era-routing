@@ -20,15 +20,15 @@ public:
 
 private:
   /* Problem solvers */
-  bool solveMaxFlowMinCost ();
-  bool solveMaxFlowFlowLimitedMinCost();
-  bool findMaxDelayMaxFlowLimit ();
+  bool MaxFlowMinCost ();
+  bool MaxFlowFlowLimitedMinCost();
+  bool MaxFlowMaxDelayMetric ();
 
   /* Problem definitions */
   std::pair<bool, double> solveMaxFlowProblem ();
   std::pair<bool, double> solveMinCostProblem (bool flowLimitedMinCost,
                                                double totalNetworkFlow = 0.0);
-  bool solveMaxPathDelayProblem ();
+  std::pair<bool, double> solveMaxPathDelayProblem ();
 
   /* Constraints */
   void assignLpVariablePerPath ();
@@ -40,6 +40,9 @@ private:
   void setMaxFlowObjective ();
   void setMinCostObjective ();
   void setMaxPathDelayMetricObjective();
+
+  /* Miscellaneous */
+  bool findMaxDelayMaxFlowLimit ();
 
   std::pair<bool, double> solveLpProblem (const std::string& optimisationProblem);
 

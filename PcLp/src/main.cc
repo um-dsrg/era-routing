@@ -28,7 +28,7 @@ main (int argc, const char *argv[])
                    "The path where to store the result file")
                   ("optimisationProblem", po::value<std::string>(&optimisationProblem)->required(),
                    "The name of the optimisation problem to run. Available names are:"
-                   "MaxFlow_MinCost | MaxFlow_FlowLimitedMinCost");
+                   "MaxFlow_MinCost | MaxFlow_FlowLimitedMinCost | MaxFlow_MaxDelay");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, cmdLineParams), vm);
