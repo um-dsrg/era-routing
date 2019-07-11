@@ -40,6 +40,7 @@ LpSolver::SolveProblem(const std::string& optimisationProblem)
   {
     std::cout << "Solving the Maximum Flow Minimum Cost problem with each flow's assigned data "
               << "rate set by Maximum Flow solution..." << std::endl;
+    optimalSolutionFound = solveMaxFlowFlowLimitedMinCost();
   }
   else
   {
