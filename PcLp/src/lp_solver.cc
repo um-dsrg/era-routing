@@ -1,14 +1,25 @@
-/*
- * lp_solver.cc
- *
- *  Created on: Nov 28, 2018
- *      Author: noel
- */
-
 #include <chrono>
 #include <algorithm>
 
 #include "lp_solver.h"
+
+/**
+ * @brief Retrieve the lowest path cost from a given set of paths
+ *
+ * @param flowPaths The set of paths related to a flow
+ */
+double
+getLowestPathCost(const std::vector<Path*>& flowPaths)
+{
+  std::vector<double> pathCost;
+
+  for (const auto& path: flowPaths)
+  {
+    pathCost.push_back(path->getCost());
+  }
+
+  return *std::min_element(std::begin(pathCost), std::end(pathCost));
+}
 
 LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows) :
   m_links (links), m_paths(paths), m_flows(flows)
@@ -27,6 +38,54 @@ LpSolver::solve ()
 
   return solveMaxPathDelayProblem(); // Solve the MaxPathDelay problem
   // return solveMinCostProblem(); // Solve MinCost Problem
+}
+
+bool
+LpSolver::findMaxDelayMaxFlowLimit ()
+{
+  // Assign an LP variable per path and set the Flow Data Rate constraint
+  for (const auto& flow: m_flows)
+  {
+    lemon::Lp::Expr flowDataRateExpression;
+
+    // Assign an LP data rate variable to each path
+    auto flowPaths = flow->getPaths();
+    auto lowestPathCost = getLowestPathCost(flowPaths);
+
+    for (auto& path: flowPaths)
+    {
+      lemon::Lp::Col dataRateOnPath = m_lpSolver.addCol();
+      path->setDataRateLpVar(dataRateOnPath);
+
+      // Allow data rate assignments to the lowest cost paths only
+      if (path->getCost() != lowestPathCost)
+        m_lpSolver.addRow(dataRateOnPath == 0);
+      else
+        m_lpSolver.addRow(dataRateOnPath >= 0); // Ensure non-negative data rate assignment
+
+      flowDataRateExpression += dataRateOnPath;
+    }
+
+    // The flow assigned data rate needs to be larger than zero BUT lower than
+    // the flow's requested data rate.
+    // The > 0 is not used because strict inequality is not supported by LP.
+    // Answer: https://stackoverflow.com/questions/55936995/constraint-error-with-greater-than-operator
+    m_lpSolver.addRow(flowDataRateExpression >= 0.000001);
+    m_lpSolver.addRow(flowDataRateExpression <= flow->getRequestedDataRate());
+  }
+
+  setLinkCapacityConstraint();
+  setMaxFlowObjective();
+
+  auto solutionFound = solveLpProblem(Problem::MaxFlow);
+
+  if (solutionFound)
+  {
+    for (std::unique_ptr<Flow>& flow: m_flows) // Update the flow data rates
+      flow->calculateAllocatedDataRate(m_lpSolver);
+  }
+
+  return solutionFound;
 }
 
 void
@@ -99,25 +158,6 @@ LpSolver::setMinCostObjective ()
 
   m_lpSolver.min(); // Set solver the find the solution with the smallest value
   m_lpSolver.obj(minCostObjective);
-}
-
-
-/**
- * @brief Retrieve the lowest path cost from a given set of paths
- *
- * @param flowPaths The set of paths related to a flow
- */
-double
-getLowestPathCost(const std::vector<Path*>& flowPaths)
-{
-  std::vector<double> pathCost;
-
-  for (const auto& path: flowPaths)
-  {
-    pathCost.push_back(path->getCost());
-  }
-
-  return *std::min_element(std::begin(pathCost), std::end(pathCost));
 }
 
 void

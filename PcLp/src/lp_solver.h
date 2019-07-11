@@ -1,12 +1,5 @@
-/*
- * lp_solver.h
- *
- *  Created on: Nov 28, 2018
- *      Author: noel
- */
-
-#ifndef SRC_LP_SOLVER_H_
-#define SRC_LP_SOLVER_H_
+#ifndef LP_SOLVER_H
+#define LP_SOLVER_H
 
 #include <lemon/lp.h>
 
@@ -24,6 +17,8 @@ public:
   double getMaxDelayDuration () const { return m_maxDelayDurationMs; }
 
   bool solve ();
+
+  bool findMaxDelayMaxFlowLimit ();
 
 private:
   enum class Problem { MaxFlow, MinCost, MaxDelayMetric };
@@ -52,4 +47,4 @@ private:
   lemon::GlpkLp m_lpSolver;
 };
 
-#endif /* SRC_LP_SOLVER_H_ */
+#endif /* LP_SOLVER_H */
