@@ -142,7 +142,7 @@ LpSolver::solveMinCostProblem (bool flowLimitedMinCost, double totalNetworkFlow)
   setFlowDataRateConstraint(!flowLimitedMinCost /* Allow reduced flow rate */);
   setLinkCapacityConstraint();
 
-  if (!flowLimitedMinCost)
+  if (flowLimitedMinCost == false)
     setTotalNetworkFlowConstraint(totalNetworkFlow);
 
   /* Objective */
@@ -156,7 +156,7 @@ LpSolver::solveMaxPathDelayProblem ()
 {
   /* Variable assignments + Constraints */
   assignLpVariablePerPath();
-  setFlowDataRateConstraint(true /* Allow reduced flow rate */);
+  setFlowDataRateConstraint(false /* Allow reduced flow rate */);
   setLinkCapacityConstraint();
 
   /* Objective */
@@ -281,7 +281,13 @@ LpSolver::setMaxPathDelayMetricObjective()
 
     // Normalise the path objective such that each flow can have a value between
     // 0 and 1
-    // FIXME: This is not directly related to what we want!
+
+    // NOTE: This is not a direct representation of what we want because we do
+    // not want to fix the flow values by those given by the MaxFlow solution,
+    // similar to what we have done with the minimum cost solution where only
+    // the global data rate has been fixed and not the individual flow
+    // allocation rate. It will have to do because Linear programming does not
+    // allow division.
     maxPathDelayObjective += (flowMetricValue / flow->getAllocatedDataRate());
   }
 
