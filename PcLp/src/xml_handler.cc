@@ -13,9 +13,11 @@
 using namespace tinyxml2;
 
 void InsertTimeStampInRootElement (XMLElement* rootElement);
+void SaveObjectives (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver);
 void SaveDuration (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver);
 void SaveLinkDetails (XMLDocument& xmlDoc, XMLElement* rootElement, linkContainer_t& links);
-void SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows, LpSolver& lpSolver);
+void SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows,
+                          LpSolver& lpSolver);
 
 XmlHandler::XmlHandler (std::string kspXmlPath)
 {
@@ -56,6 +58,9 @@ XmlHandler::saveResults (linkContainer_t& links, pathContainer_t& paths,
   // Insert time stamp
   InsertTimeStampInRootElement(rootElement);
 
+  // Save the objective values
+  SaveObjectives(xmlResFile, rootElement, lpSolver);
+
   // Save the solver duration
   SaveDuration(xmlResFile, rootElement, lpSolver);
 
@@ -85,30 +90,38 @@ InsertTimeStampInRootElement (XMLElement* rootElement)
 }
 
 void
+SaveObjectives (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver)
+{
+  XMLElement* objectivesElement = xmlDoc.NewElement("Objectives");
+
+  for (auto& [objectiveName, objectiveValue]: lpSolver.GetObjectiveValues())
+  {
+    XMLElement* objectiveElement = xmlDoc.NewElement("Objective");
+    objectiveElement->SetAttribute("Name", objectiveName.c_str());
+    objectiveElement->SetAttribute("Value", objectiveValue);
+    objectivesElement->InsertEndChild(objectiveElement);
+  }
+
+  rootElement->InsertEndChild(objectivesElement);
+}
+
+void
 SaveDuration (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver)
 {
-  double maxFlowDuration {lpSolver.getMaxFlowDuration()};
-  double minCostDuration {lpSolver.getMinCostDuration()};
-  double maxDelayDuration {lpSolver.getMaxDelayDuration()};
-
-  double totalDuration {maxFlowDuration + minCostDuration + maxDelayDuration};
-
+  auto totalDuration {0.0};
   XMLElement* durationElement = xmlDoc.NewElement("Duration");
-  durationElement->SetAttribute("totalDurationMs", totalDuration);
 
-  XMLElement* maxFlowElement = xmlDoc.NewElement("MaximumFlow");
-  maxFlowElement->SetAttribute("DurationMs", maxFlowDuration);
+  for (const auto& [optimisationProblemName, durationInMs]: lpSolver.GetTimings())
+  {
+    XMLElement* problemElement = xmlDoc.NewElement("OptimisationProblem");
+    problemElement->SetAttribute("Name", optimisationProblemName.c_str());
+    problemElement->SetAttribute("DurationMs", durationInMs);
+    durationElement->InsertEndChild(problemElement);
 
-  XMLElement* minCostElement = xmlDoc.NewElement("MinimiumCost");
-  minCostElement->SetAttribute("DurationMs", minCostDuration);
+    totalDuration += durationInMs;
+  }
 
-  XMLElement* maxDelayElement = xmlDoc.NewElement("MaximumDelayMetric");
-  maxDelayElement->SetAttribute("DurationMs", maxDelayDuration);
-
-  durationElement->InsertEndChild(maxFlowElement);
-  durationElement->InsertEndChild(minCostElement);
-  durationElement->InsertEndChild(maxDelayElement);
-
+  durationElement->SetAttribute("TotalDurationMs", totalDuration);
   rootElement->InsertEndChild(durationElement);
 }
 
@@ -130,7 +143,8 @@ SaveLinkDetails (XMLDocument& xmlDoc, XMLElement* rootElement, linkContainer_t& 
 }
 
 void
-SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows, LpSolver& lpSolver)
+SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows,
+                     LpSolver& lpSolver)
 {
   XMLElement* optSolnElement = xmlDoc.NewElement("OptimalSolution");
 
@@ -145,7 +159,7 @@ SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer
         {
           XMLElement* pathElement = xmlDoc.NewElement("Path");
           pathElement->SetAttribute("Id", path->getId());
-          pathElement->SetAttribute("DataRate", lpSolver.getLpColValue(path->getDataRateLpVar()));
+          pathElement->SetAttribute("DataRate", lpSolver.GetLpColValue(path->getDataRateLpVar()));
 
           for (Link* link: path->getLinks())
             {
@@ -160,32 +174,3 @@ SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer
     }
   rootElement->InsertEndChild(optSolnElement);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
