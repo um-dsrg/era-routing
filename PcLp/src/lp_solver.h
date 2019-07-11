@@ -42,8 +42,9 @@ private:
   void setMaxPathDelayMetricObjective();
 
   /* Miscellaneous */
-  bool findMaxDelayMaxFlowLimit ();
+  std::pair<bool, double> FindMaxDelayMaxFlowLimit ();
 
+  /* Lp Solver */
   std::pair<bool, double> solveLpProblem (const std::string& optimisationProblem);
 
   linkContainer_t& m_links;

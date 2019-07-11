@@ -311,8 +311,8 @@ LpSolver::solveLpProblem (const std::string& optimisationProblem)
   return std::make_pair(optimalSolutionFound, objectiveValue);
 }
 
-bool
-LpSolver::findMaxDelayMaxFlowLimit ()
+std::pair<bool, double>
+LpSolver::FindMaxDelayMaxFlowLimit ()
 {
   // Assign an LP variable per path and set the Flow Data Rate constraint
   for (const auto& flow: m_flows)
@@ -353,8 +353,10 @@ LpSolver::findMaxDelayMaxFlowLimit ()
   if (solutionFound)
   {
     for (std::unique_ptr<Flow>& flow: m_flows) // Update the flow data rates
+    {
       flow->calculateAllocatedDataRate(m_lpSolver);
+    }
   }
 
-  return solutionFound;
+  return std::make_pair(solutionFound, objectiveValue);
 }
