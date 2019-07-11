@@ -24,17 +24,21 @@ public:
 private:
   enum class Problem { MaxFlow, MinCost, MaxDelayMetric };
 
+  /* Problem solvers */
+  // FIXME: save the objective name value as a map that will be used by the XML result file.
   bool solveMaxFlowMinCost ();
+  bool solveMaxFlowFlowLimitedMinCost();
   bool findMaxDelayMaxFlowLimit ();
 
   /* Problem definitions */
   std::pair<bool, double> solveMaxFlowProblem ();
-  std::pair<bool, double> solveMinCostProblem (double totalNetworkFlow);
+  std::pair<bool, double> solveMinCostProblem (bool flowLimitedMinCost,
+                                               double totalNetworkFlow = 0.0);
   bool solveMaxPathDelayProblem ();
 
   /* Constraints */
   void assignLpVariablePerPath ();
-  void setFlowDataRateConstraint ();
+  void setFlowDataRateConstraint (bool allowReducedFlowRate);
   void setLinkCapacityConstraint ();
   void setTotalNetworkFlowConstraint (double totalNetworkFlow);
 
