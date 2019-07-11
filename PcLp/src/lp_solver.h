@@ -1,6 +1,8 @@
 #ifndef LP_SOLVER_H
 #define LP_SOLVER_H
 
+#include <utility>
+
 #include <lemon/lp.h>
 
 #include "definitions.h"
@@ -17,6 +19,7 @@ public:
   double getMaxDelayDuration () const { return m_maxDelayDurationMs; }
 
   bool solve ();
+  bool solveMaxFlowMinCost ();
 
   bool findMaxDelayMaxFlowLimit ();
 
@@ -24,16 +27,18 @@ private:
   enum class Problem { MaxFlow, MinCost, MaxDelayMetric };
 
   void assignLpVariablePerPath ();
-  void setFlowDataRateConstraint (bool allowReducedFlowRate);
+  void setFlowDataRateConstraint ();
   void setLinkCapacityConstraint ();
+  void setTotalNetworkFlowConstraint (double totalNetworkFlow);
 
   void setMaxFlowObjective ();
   void setMinCostObjective ();
   void setMaxPathDelayMetricObjective();
 
-  bool solveLpProblem (Problem problem);
-  bool solveMaxFlowProblem ();
-  bool solveMinCostProblem ();
+  std::pair<bool, double> solveLpProblem (Problem problem);
+
+  std::pair<bool, double> solveMaxFlowProblem ();
+  std::pair<bool, double> solveMinCostProblem (double totalNetworkFlow);
   bool solveMaxPathDelayProblem ();
 
   linkContainer_t& m_links;

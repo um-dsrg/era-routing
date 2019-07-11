@@ -48,8 +48,7 @@ main (int argc, const char *argv[])
 
     LpSolver lpSolver (links, paths, flows);
 
-    // auto optimalSolutionFound = bool{lpSolver.solve()};
-    auto optimalSolutionFound = bool{lpSolver.findMaxDelayMaxFlowLimit()};
+    auto optimalSolutionFound = lpSolver.solveMaxFlowMinCost();
 
     if (!optimalSolutionFound)
     {
