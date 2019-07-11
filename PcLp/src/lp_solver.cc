@@ -25,68 +25,76 @@ LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContaine
   m_links (links), m_paths(paths), m_flows(flows)
 {}
 
+
 bool
-LpSolver::solve ()
+LpSolver::SolveProblem(const std::string& optimisationProblem)
 {
-  return false;
-  // bool maxFlow = solveMaxFlowProblem(); // Solve MaxFlow Problem
-  // if (maxFlow == false) return false;
+  auto optimalSolutionFound {false};
 
-  // for (std::unique_ptr<Flow>& flow: m_flows) // Update the flow data rates
-  //   flow->calculateAllocatedDataRate(m_lpSolver);
+  if (optimisationProblem == "MaxFlow_MinCost")
+  {
+    std::cout << "Solving the Maximum Flow Minimum Cost problem..." << std::endl;
+    optimalSolutionFound = solveMaxFlowMinCost();
+  }
+  else if (optimisationProblem == "MaxFlow_FlowLimitedMinCost")
+  {
+    std::cout << "Solving the Maximum Flow Minimum Cost problem with each flow's assigned data rate"
+              << "set by Maximum Flow solution..." << std::endl;
+  }
+  else
+  {
+    throw std::runtime_error(optimisationProblem + " is not supported");
+  }
 
-  // m_lpSolver.clear(); // Reset the LP solver
-
-  // return solveMaxPathDelayProblem(); // Solve the MaxPathDelay problem
-  // return solveMinCostProblem(); // Solve MinCost Problem
+  return optimalSolutionFound;
 }
 
 bool
-LpSolver::findMaxDelayMaxFlowLimit ()
+LpSolver::solveMaxFlowMinCost ()
 {
-  // Assign an LP variable per path and set the Flow Data Rate constraint
-  for (const auto& flow: m_flows)
-  {
-    lemon::Lp::Expr flowDataRateExpression;
+  auto [maxFlowoptimalSolutionFound, maxNetworkFlow] = solveMaxFlowProblem();
 
-    // Assign an LP data rate variable to each path
-    auto flowPaths = flow->getPaths();
-    auto lowestPathCost = getLowestPathCost(flowPaths);
+  if (!maxFlowoptimalSolutionFound) return false;
 
-    for (auto& path: flowPaths)
-    {
-      lemon::Lp::Col dataRateOnPath = m_lpSolver.addCol();
-      path->setDataRateLpVar(dataRateOnPath);
+  m_lpSolver.clear(); // Reset the LP solver
 
-      // Allow data rate assignments to the lowest cost paths only
-      if (path->getCost() != lowestPathCost)
-        m_lpSolver.addRow(dataRateOnPath == 0);
-      else
-        m_lpSolver.addRow(dataRateOnPath >= 0); // Ensure non-negative data rate assignment
+  auto [minCostOptimalSolnFound, minNetworkCost] = solveMinCostProblem(maxNetworkFlow);
 
-      flowDataRateExpression += dataRateOnPath;
-    }
+  // TODO: Update the below to save the objective name + value as a map that will be used by the
+  // XML result file.
+  std::cout << "Maximum network flow: " << maxNetworkFlow << "Mbps" << std::endl;
+  std::cout << "Minimum cost: " << minNetworkCost << std::endl;
 
-    // The flow assigned data rate needs to be larger than zero BUT lower than
-    // the flow's requested data rate.
-    // The > 0 is not used because strict inequality is not supported by LP.
-    // Answer: https://stackoverflow.com/questions/55936995/constraint-error-with-greater-than-operator
-    m_lpSolver.addRow(flowDataRateExpression >= 0.000001);
-    m_lpSolver.addRow(flowDataRateExpression <= flow->getRequestedDataRate());
-  }
+  // NOTE: If every function does this, put it at the end of the SolveProblem function
+  // Update the flow data rates
+  for (std::unique_ptr<Flow>& flow: m_flows)
+    flow->calculateAllocatedDataRate(m_lpSolver);
 
+  return minCostOptimalSolnFound;
+}
+
+std::pair<bool, double>
+LpSolver::solveMaxFlowProblem ()
+{
+  assignLpVariablePerPath();
+  setFlowDataRateConstraint();
   setLinkCapacityConstraint();
   setMaxFlowObjective();
 
-  auto [solutionFound, objectiveValue] = solveLpProblem(Problem::MaxFlow);
+  return solveLpProblem(Problem::MaxFlow);
+}
 
-  if (solutionFound)
-  {
-    for (std::unique_ptr<Flow>& flow: m_flows) // Update the flow data rates
-      flow->calculateAllocatedDataRate(m_lpSolver);
-  }
+std::pair<bool, double>
+LpSolver::solveMinCostProblem (double totalNetworkFlow)
+{
+  assignLpVariablePerPath();
+  setFlowDataRateConstraint();
+  setLinkCapacityConstraint();
+  setTotalNetworkFlowConstraint(totalNetworkFlow);
 
-  return solutionFound;
+  setMinCostObjective();
+
+  return solveLpProblem(Problem::MinCost);
 }
 
 void
@@ -216,6 +224,7 @@ LpSolver::solveLpProblem (Problem problem)
   m_lpSolver.solvePrimalExact();
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
+  // FIXME: Update the below to use a map as well!
   switch(problem)
   {
     case Problem::MaxFlow:
@@ -238,51 +247,6 @@ LpSolver::solveLpProblem (Problem problem)
   return std::make_pair(optimalSolutionFound, objectiveValue);
 }
 
-std::pair<bool, double>
-LpSolver::solveMaxFlowProblem ()
-{
-  assignLpVariablePerPath();
-  setFlowDataRateConstraint();
-  setLinkCapacityConstraint();
-  setMaxFlowObjective();
-
-  return solveLpProblem(Problem::MaxFlow);
-}
-
-std::pair<bool, double>
-LpSolver::solveMinCostProblem (double totalNetworkFlow)
-{
-  assignLpVariablePerPath();
-  setFlowDataRateConstraint();
-  setLinkCapacityConstraint();
-  setTotalNetworkFlowConstraint(totalNetworkFlow);
-
-  setMinCostObjective();
-
-  return solveLpProblem(Problem::MinCost);
-}
-
-bool
-LpSolver::solveMaxFlowMinCost ()
-{
-  auto [maxFlowoptimalSolutionFound, maxNetworkFlow] = solveMaxFlowProblem();
-
-  if (!maxFlowoptimalSolutionFound) return false;
-
-  m_lpSolver.clear(); // Reset the LP solver
-
-  auto [minCostOptimalSolnFound, minNetworkCost] = solveMinCostProblem(maxNetworkFlow);
-
-  std::cout << "Maximum network flow: " << maxNetworkFlow << "Mbps" << std::endl;
-  std::cout << "Minimum cost: " << minNetworkCost << std::endl;
-
-  // Update the flow data rates
-  for (std::unique_ptr<Flow>& flow: m_flows)
-    flow->calculateAllocatedDataRate(m_lpSolver);
-
-  return minCostOptimalSolnFound;
-}
-
 bool
 LpSolver::solveMaxPathDelayProblem ()
 {
@@ -292,6 +256,54 @@ LpSolver::solveMaxPathDelayProblem ()
   setMaxPathDelayMetricObjective();
 
   auto [solutionFound, metricValue] = solveLpProblem(Problem::MaxDelayMetric);
+
+  return solutionFound;
+}
+
+bool
+LpSolver::findMaxDelayMaxFlowLimit ()
+{
+  // Assign an LP variable per path and set the Flow Data Rate constraint
+  for (const auto& flow: m_flows)
+  {
+    lemon::Lp::Expr flowDataRateExpression;
+
+    // Assign an LP data rate variable to each path
+    auto flowPaths = flow->getPaths();
+    auto lowestPathCost = getLowestPathCost(flowPaths);
+
+    for (auto& path: flowPaths)
+    {
+      lemon::Lp::Col dataRateOnPath = m_lpSolver.addCol();
+      path->setDataRateLpVar(dataRateOnPath);
+
+      // Allow data rate assignments to the lowest cost paths only
+      if (path->getCost() != lowestPathCost)
+        m_lpSolver.addRow(dataRateOnPath == 0);
+      else
+        m_lpSolver.addRow(dataRateOnPath >= 0); // Ensure non-negative data rate assignment
+
+      flowDataRateExpression += dataRateOnPath;
+    }
+
+    // The flow assigned data rate needs to be larger than zero BUT lower than
+    // the flow's requested data rate.
+    // The > 0 is not used because strict inequality is not supported by LP.
+    // Answer: https://stackoverflow.com/questions/55936995/constraint-error-with-greater-than-operator
+    m_lpSolver.addRow(flowDataRateExpression >= 0.000001);
+    m_lpSolver.addRow(flowDataRateExpression <= flow->getRequestedDataRate());
+  }
+
+  setLinkCapacityConstraint();
+  setMaxFlowObjective();
+
+  auto [solutionFound, objectiveValue] = solveLpProblem(Problem::MaxFlow);
+
+  if (solutionFound)
+  {
+    for (std::unique_ptr<Flow>& flow: m_flows) // Update the flow data rates
+      flow->calculateAllocatedDataRate(m_lpSolver);
+  }
 
   return solutionFound;
 }

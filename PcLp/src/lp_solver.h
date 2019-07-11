@@ -18,28 +18,32 @@ public:
   double getMinCostDuration () const { return m_minCostDurationMs; }
   double getMaxDelayDuration () const { return m_maxDelayDurationMs; }
 
-  bool solve ();
-  bool solveMaxFlowMinCost ();
+  bool SolveProblem (const std::string& optimisationProblem);
 
-  bool findMaxDelayMaxFlowLimit ();
 
 private:
   enum class Problem { MaxFlow, MinCost, MaxDelayMetric };
 
+  bool solveMaxFlowMinCost ();
+  bool findMaxDelayMaxFlowLimit ();
+
+  /* Problem definitions */
+  std::pair<bool, double> solveMaxFlowProblem ();
+  std::pair<bool, double> solveMinCostProblem (double totalNetworkFlow);
+  bool solveMaxPathDelayProblem ();
+
+  /* Constraints */
   void assignLpVariablePerPath ();
   void setFlowDataRateConstraint ();
   void setLinkCapacityConstraint ();
   void setTotalNetworkFlowConstraint (double totalNetworkFlow);
 
+  /* Objectives */
   void setMaxFlowObjective ();
   void setMinCostObjective ();
   void setMaxPathDelayMetricObjective();
 
   std::pair<bool, double> solveLpProblem (Problem problem);
-
-  std::pair<bool, double> solveMaxFlowProblem ();
-  std::pair<bool, double> solveMinCostProblem (double totalNetworkFlow);
-  bool solveMaxPathDelayProblem ();
 
   linkContainer_t& m_links;
   pathContainer_t& m_paths;
