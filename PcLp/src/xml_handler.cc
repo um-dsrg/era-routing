@@ -87,28 +87,20 @@ InsertTimeStampInRootElement (XMLElement* rootElement)
 void
 SaveDuration (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver)
 {
-  double maxFlowDuration {lpSolver.getMaxFlowDuration()};
-  double minCostDuration {lpSolver.getMinCostDuration()};
-  double maxDelayDuration {lpSolver.getMaxDelayDuration()};
-
-  double totalDuration {maxFlowDuration + minCostDuration + maxDelayDuration};
-
+  auto totalDuration {0.0};
   XMLElement* durationElement = xmlDoc.NewElement("Duration");
-  durationElement->SetAttribute("totalDurationMs", totalDuration);
 
-  XMLElement* maxFlowElement = xmlDoc.NewElement("MaximumFlow");
-  maxFlowElement->SetAttribute("DurationMs", maxFlowDuration);
+  for (const auto& [optimisationProblemName, durationInMs]: lpSolver.GetTimings())
+  {
+    XMLElement* problemElement = xmlDoc.NewElement("OptimisationProblem");
+    problemElement->SetAttribute("Name", optimisationProblemName.c_str());
+    problemElement->SetAttribute("DurationMs", durationInMs);
+    durationElement->InsertEndChild(problemElement);
 
-  XMLElement* minCostElement = xmlDoc.NewElement("MinimiumCost");
-  minCostElement->SetAttribute("DurationMs", minCostDuration);
+    totalDuration += durationInMs;
+  }
 
-  XMLElement* maxDelayElement = xmlDoc.NewElement("MaximumDelayMetric");
-  maxDelayElement->SetAttribute("DurationMs", maxDelayDuration);
-
-  durationElement->InsertEndChild(maxFlowElement);
-  durationElement->InsertEndChild(minCostElement);
-  durationElement->InsertEndChild(maxDelayElement);
-
+  durationElement->SetAttribute("TotalDurationMs", totalDuration);
   rootElement->InsertEndChild(durationElement);
 }
 
@@ -145,7 +137,7 @@ SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer
         {
           XMLElement* pathElement = xmlDoc.NewElement("Path");
           pathElement->SetAttribute("Id", path->getId());
-          pathElement->SetAttribute("DataRate", lpSolver.getLpColValue(path->getDataRateLpVar()));
+          pathElement->SetAttribute("DataRate", lpSolver.GetLpColValue(path->getDataRateLpVar()));
 
           for (Link* link: path->getLinks())
             {

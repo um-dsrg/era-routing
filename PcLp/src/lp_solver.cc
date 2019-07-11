@@ -52,38 +52,45 @@ LpSolver::SolveProblem(const std::string& optimisationProblem)
 bool
 LpSolver::solveMaxFlowMinCost ()
 {
-  auto [maxFlowoptimalSolutionFound, maxNetworkFlow] = solveMaxFlowProblem();
+  auto [maxFlowSolnFound, maxNetworkFlow] = solveMaxFlowProblem();
+  if (!maxFlowSolnFound) return false;
 
-  if (!maxFlowoptimalSolutionFound) return false;
+  // Reset the LP solver
+  m_lpSolver.clear();
 
-  m_lpSolver.clear(); // Reset the LP solver
-
-  auto [minCostOptimalSolnFound,
+  auto [minCostSolnFound,
         minNetworkCost] = solveMinCostProblem(false /* Flow Limited Minimum Cost */,
                                               maxNetworkFlow);
 
+  // Update the Flow Allocated Data Rate
   for (std::unique_ptr<Flow>& flow: m_flows)
     flow->calculateAllocatedDataRate(m_lpSolver);
 
-  return minCostOptimalSolnFound;
+  m_objectiveValues.emplace("Maximum Flow", maxNetworkFlow);
+  m_objectiveValues.emplace("Minimum Cost", minNetworkCost);
+
+  return minCostSolnFound;
 }
 
 bool
 LpSolver::solveMaxFlowFlowLimitedMinCost ()
 {
-  auto [maxFlowoptimalSolutionFound, maxNetworkFlow] = solveMaxFlowProblem();
+  auto [maxFlowSolnFound, maxNetworkFlow] = solveMaxFlowProblem();
+  if (!maxFlowSolnFound) return false;
 
-  if (!maxFlowoptimalSolutionFound) return false;
+  // Reset the LP solver
+  m_lpSolver.clear();
 
-  m_lpSolver.clear(); // Reset the LP solver
-
+  // Update the Flow Allocated Data Rate
   for (std::unique_ptr<Flow>& flow: m_flows)
     flow->calculateAllocatedDataRate(m_lpSolver);
 
-  auto [minCostOptimalSolnFound,
-        minNetworkCost] = solveMinCostProblem(true /*Flow limited Minimum Cost*/);
+  auto [minCostSolnFound, minNetworkCost] = solveMinCostProblem(true /*Flow limited Minimum Cost*/);
 
-  return minCostOptimalSolnFound;
+  m_objectiveValues.emplace("Maximum Flow", maxNetworkFlow);
+  m_objectiveValues.emplace("Minimum Cost", minNetworkCost);
+
+  return minCostSolnFound;
 }
 
 std::pair<bool, double>
@@ -97,7 +104,7 @@ LpSolver::solveMaxFlowProblem ()
   /* Objective */
   setMaxFlowObjective();
 
-  return solveLpProblem(Problem::MaxFlow);
+  return solveLpProblem("Maximum Flow");
 }
 
 std::pair<bool, double>
@@ -114,7 +121,7 @@ LpSolver::solveMinCostProblem (bool flowLimitedMinCost, double totalNetworkFlow)
   /* Objective */
   setMinCostObjective();
 
-  return solveLpProblem(Problem::MinCost);
+  return solveLpProblem("Minimum Cost");
 }
 
 void
@@ -205,28 +212,14 @@ LpSolver::setMinCostObjective ()
 }
 
 std::pair<bool, double>
-LpSolver::solveLpProblem (Problem problem)
+LpSolver::solveLpProblem (const std::string& optimisationProblem)
 {
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   m_lpSolver.solvePrimalExact();
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
-  // FIXME: Update the below to use a dictionary as well!
-  switch(problem)
-  {
-    case Problem::MaxFlow:
-      m_maxFlowDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>
-                            (end - start).count();
-      break;
-    case Problem::MinCost:
-      m_minCostDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>
-                            (end - start).count();
-      break;
-    case Problem::MaxDelayMetric:
-      m_maxDelayDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>
-                             (end - start).count();
-      break;
-  }
+  auto duration {std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()};
+  m_timings.emplace(optimisationProblem, duration);
 
   auto optimalSolutionFound = (m_lpSolver.primalType() == lemon::Lp::OPTIMAL);
   auto objectiveValue = m_lpSolver.primal();
@@ -279,7 +272,7 @@ LpSolver::solveMaxPathDelayProblem ()
   setLinkCapacityConstraint();
   setMaxPathDelayMetricObjective();
 
-  auto [solutionFound, metricValue] = solveLpProblem(Problem::MaxDelayMetric);
+  auto [solutionFound, metricValue] = solveLpProblem("Maximum Delay Metric");
 
   return solutionFound;
 }
@@ -321,7 +314,7 @@ LpSolver::findMaxDelayMaxFlowLimit ()
   setLinkCapacityConstraint();
   setMaxFlowObjective();
 
-  auto [solutionFound, objectiveValue] = solveLpProblem(Problem::MaxFlow);
+  auto [solutionFound, objectiveValue] = solveLpProblem("Maximum Flow");
 
   if (solutionFound)
   {
