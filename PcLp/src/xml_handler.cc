@@ -13,9 +13,11 @@
 using namespace tinyxml2;
 
 void InsertTimeStampInRootElement (XMLElement* rootElement);
+void SaveObjectives (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver);
 void SaveDuration (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver);
 void SaveLinkDetails (XMLDocument& xmlDoc, XMLElement* rootElement, linkContainer_t& links);
-void SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows, LpSolver& lpSolver);
+void SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows,
+                          LpSolver& lpSolver);
 
 XmlHandler::XmlHandler (std::string kspXmlPath)
 {
@@ -56,6 +58,9 @@ XmlHandler::saveResults (linkContainer_t& links, pathContainer_t& paths,
   // Insert time stamp
   InsertTimeStampInRootElement(rootElement);
 
+  // Save the objective values
+  SaveObjectives(xmlResFile, rootElement, lpSolver);
+
   // Save the solver duration
   SaveDuration(xmlResFile, rootElement, lpSolver);
 
@@ -82,6 +87,22 @@ InsertTimeStampInRootElement (XMLElement* rootElement)
   ss << std::put_time(std::localtime(&currentTimeFormatted), "%a %d-%m-%Y %T");
 
   rootElement->SetAttribute("Generated", ss.str().c_str());
+}
+
+void
+SaveObjectives (XMLDocument& xmlDoc, XMLElement* rootElement, LpSolver& lpSolver)
+{
+  XMLElement* objectivesElement = xmlDoc.NewElement("Objectives");
+
+  for (auto& [objectiveName, objectiveValue]: lpSolver.GetObjectiveValues())
+  {
+    XMLElement* objectiveElement = xmlDoc.NewElement("Objective");
+    objectiveElement->SetAttribute("Name", objectiveName.c_str());
+    objectiveElement->SetAttribute("Value", objectiveValue);
+    objectivesElement->InsertEndChild(objectiveElement);
+  }
+
+  rootElement->InsertEndChild(objectivesElement);
 }
 
 void
@@ -122,7 +143,8 @@ SaveLinkDetails (XMLDocument& xmlDoc, XMLElement* rootElement, linkContainer_t& 
 }
 
 void
-SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows, LpSolver& lpSolver)
+SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows,
+                     LpSolver& lpSolver)
 {
   XMLElement* optSolnElement = xmlDoc.NewElement("OptimalSolution");
 
@@ -152,32 +174,3 @@ SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer
     }
   rootElement->InsertEndChild(optSolnElement);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
