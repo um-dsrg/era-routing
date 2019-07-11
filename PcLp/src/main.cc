@@ -60,7 +60,6 @@ main (int argc, const char *argv[])
       return EXIT_FAILURE;
     }
 
-    // TODO: Update the xml handler result saving issue!
     // Save the results in the XML file!
     xmlHandler.saveResults(links, paths, flows, lpSolver, resultXmlPath);
   }
