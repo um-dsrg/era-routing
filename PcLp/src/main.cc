@@ -60,7 +60,7 @@ main (int argc, const char *argv[])
       return EXIT_FAILURE;
     }
 
-    // Save the results in the XML file!
+    // Save the results in the XML file
     xmlHandler.saveResults(links, paths, flows, lpSolver, resultXmlPath);
   }
   catch (std::exception& e)
