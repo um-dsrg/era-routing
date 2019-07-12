@@ -1,6 +1,8 @@
 #include <chrono>
 #include <algorithm>
 
+#include <lemon/lp_base.h>
+
 #include "lp_solver.h"
 
 /**
@@ -23,8 +25,9 @@ getLowestPathCost(const std::vector<Path*>& flowPaths)
 
 LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows) :
   m_links (links), m_paths(paths), m_flows(flows)
-{}
-
+{
+  m_lpSolver.messageLevel(lemon::LpBase::MessageLevel::MESSAGE_VERBOSE);
+}
 
 bool
 LpSolver::SolveProblem(const std::string& optimisationProblem)
