@@ -1,6 +1,6 @@
 #include <chrono>
+#include <math.h>
 #include <algorithm>
-
 #include <lemon/lp_base.h>
 
 #include "lp_solver.h"
@@ -134,7 +134,10 @@ LpSolver::solveMaxFlowProblem ()
   /* Objective */
   setMaxFlowObjective();
 
-  return solveLpProblem("Maximum Flow");
+  auto[optimalSolutionFound, maxNetworkFlow] = solveLpProblem("Maximum Flow");
+  maxNetworkFlow = (floor(maxNetworkFlow * 10) / 10);
+
+  return std::make_pair(optimalSolutionFound, maxNetworkFlow);
 }
 
 std::pair<bool, double>
