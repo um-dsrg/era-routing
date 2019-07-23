@@ -23,6 +23,7 @@ public:
    * @param pathElement The XML Flow element
    */
   Flow (tinyxml2::XMLElement* flowElement);
+  Flow (const Flow& flow);
 
   void addPath (Path* path) { m_paths.push_back(path); }
   id_t getId () { return m_id; }

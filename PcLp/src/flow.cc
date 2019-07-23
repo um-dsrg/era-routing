@@ -15,11 +15,16 @@ Flow::Flow (tinyxml2::XMLElement* flowElement) : m_allocatedDataRate {0.0}
   flowElement->QueryAttribute("RequestedDataRate", &m_requestedDataRate);
 }
 
+Flow::Flow (const Flow& flow): m_id(flow.m_id), m_requestedDataRate(flow.m_requestedDataRate),
+  m_allocatedDataRate(flow.m_allocatedDataRate), m_paths(flow.m_paths)
+{
+}
+
 void
 Flow::calculateAllocatedDataRate (const lemon::GlpkLp& lpSolver)
 {
   for (Path* path: m_paths)
-    {
-      m_allocatedDataRate += lpSolver.primal(path->getDataRateLpVar());
-    }
+  {
+    m_allocatedDataRate += lpSolver.primal(path->getDataRateLpVar());
+  }
 }

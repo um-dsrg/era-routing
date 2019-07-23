@@ -10,22 +10,27 @@
 class LpSolver
 {
 public:
-  LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows);
+  LpSolver (linkContainer_t& links, pathContainer_t& paths);
 
-  bool SolveProblem (const std::string& optimisationProblem);
-
-  double GetLpColValue (lemon::Lp::Col lpCol) { return m_lpSolver.primal(lpCol); }
+  // Getters
   const std::map<std::string, double>& GetTimings() { return m_timings; }
   const std::map<std::string, double>& GetObjectiveValues() { return m_objectiveValues; }
 
-private:
-  /* Problem solvers */
-  bool MaxFlowMinCost ();
-  bool MaxFlowFlowLimitedMinCost();
-  bool MaxFlowMaxDelayMetric ();
+  // Setters
+  void SetFlows(flowContainer_t* flowContainer);
 
-  /* Problem definitions */
+  void ClearTimings();
+  void ClearObjectiveValues() { m_objectiveValues.clear(); }
+
   std::pair<bool, double> solveMaxFlowProblem ();
+
+  bool MinCost (double maxNetworkFlow);
+  bool FlowLimitedMinCost(double maxNetworkFlow);
+  bool MaxDelayMetric (double maxNetworkFlow);
+
+  double GetLpColValue (lemon::Lp::Col lpCol) { return m_lpSolver.primal(lpCol); }
+private:
+  /* Solvers */
   std::pair<bool, double> solveMinCostProblem (bool flowLimitedMinCost,
                                                double totalNetworkFlow = 0.0);
   std::pair<bool, double> solveMaxPathDelayProblem ();
@@ -44,12 +49,12 @@ private:
   /* Miscellaneous */
   std::pair<bool, double> FindMaxDelayMaxFlowLimit ();
 
-  /* Lp Solver */
+  /* Lp Equation Solver */
   std::pair<bool, double> solveLpProblem (const std::string& optimisationProblem);
 
   linkContainer_t& m_links;
   pathContainer_t& m_paths;
-  flowContainer_t& m_flows;
+  flowContainer_t* m_flows;
 
   lemon::GlpkLp m_lpSolver;
 
