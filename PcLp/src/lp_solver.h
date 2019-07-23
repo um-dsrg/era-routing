@@ -19,7 +19,7 @@ public:
   // Setters
   void SetFlows(flowContainer_t* flowContainer);
 
-  void ClearTimings() { m_timings.clear(); }
+  void ClearTimings();
   void ClearObjectiveValues() { m_objectiveValues.clear(); }
 
   std::pair<bool, double> solveMaxFlowProblem ();

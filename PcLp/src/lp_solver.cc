@@ -35,6 +35,15 @@ LpSolver::SetFlows(flowContainer_t* flowContainer)
   m_flows = flowContainer;
 }
 
+void
+LpSolver::ClearTimings()
+{
+  auto maxFlowDuration = m_timings["Maximum Flow"];
+  m_timings.clear();
+
+  m_timings.emplace("Maximum Flow", maxFlowDuration);
+}
+
 bool
 LpSolver::MinCost (double maxNetworkFlow)
 {
