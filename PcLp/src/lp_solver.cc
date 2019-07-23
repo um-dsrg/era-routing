@@ -23,56 +23,29 @@ getLowestPathCost(const std::vector<Path*>& flowPaths)
   return *std::min_element(std::begin(pathCost), std::end(pathCost));
 }
 
-LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows) :
-  m_links (links), m_paths(paths), m_flows(flows)
+LpSolver::LpSolver (linkContainer_t& links, pathContainer_t& paths) :
+  m_links (links), m_paths(paths)
 {
   m_lpSolver.messageLevel(lemon::LpBase::MessageLevel::MESSAGE_VERBOSE);
 }
 
-bool
-LpSolver::SolveProblem(const std::string& optimisationProblem)
+void
+LpSolver::SetFlows(flowContainer_t* flowContainer)
 {
-  auto optimalSolutionFound {false};
-
-  if (optimisationProblem == "MaxFlow_MinCost")
-  {
-    std::cout << "Solving the Maximum Flow Minimum Cost problem..." << std::endl;
-    optimalSolutionFound = MaxFlowMinCost();
-  }
-  else if (optimisationProblem == "MaxFlow_FlowLimitedMinCost")
-  {
-    std::cout << "Solving the Maximum Flow Minimum Cost problem with each flow's assigned data "
-              << "rate set by Maximum Flow solution..." << std::endl;
-    optimalSolutionFound = MaxFlowFlowLimitedMinCost();
-  }
-  else if (optimisationProblem == "MaxFlow_MaxDelay")
-  {
-    std::cout << "Solving the Maximum Flow Maximum Delay metric problem" << std::endl;
-    optimalSolutionFound = MaxFlowMaxDelayMetric();
-  }
-  else
-  {
-    throw std::runtime_error(optimisationProblem + " is not supported");
-  }
-
-  return optimalSolutionFound;
+  m_flows = flowContainer;
 }
 
 bool
-LpSolver::MaxFlowMinCost ()
+LpSolver::MinCost (double maxNetworkFlow)
 {
-  auto [maxFlowSolnFound, maxNetworkFlow] = solveMaxFlowProblem();
-  if (!maxFlowSolnFound) return false;
-
-  // Reset the LP solver
-  m_lpSolver.clear();
+  m_lpSolver.clear();  // Reset the LP solver
 
   auto [minCostSolnFound,
         minNetworkCost] = solveMinCostProblem(false /* Flow Limited Minimum Cost */,
                                               maxNetworkFlow);
 
   // Update the Flow Allocated Data Rate
-  for (std::unique_ptr<Flow>& flow: m_flows)
+  for (auto& flow: *m_flows)
     flow->calculateAllocatedDataRate(m_lpSolver);
 
   m_objectiveValues.emplace("Maximum Flow", maxNetworkFlow);
@@ -82,13 +55,10 @@ LpSolver::MaxFlowMinCost ()
 }
 
 bool
-LpSolver::MaxFlowFlowLimitedMinCost ()
+LpSolver::FlowLimitedMinCost (double maxNetworkFlow)
 {
-  auto [maxFlowSolnFound, maxNetworkFlow] = solveMaxFlowProblem();
-  if (!maxFlowSolnFound) return false;
-
   // Update the Flow Allocated Data Rate
-  for (std::unique_ptr<Flow>& flow: m_flows)
+  for (std::unique_ptr<Flow>& flow: *m_flows)
     flow->calculateAllocatedDataRate(m_lpSolver);
 
   // Reset the LP solver
@@ -103,13 +73,10 @@ LpSolver::MaxFlowFlowLimitedMinCost ()
 }
 
 bool
-LpSolver::MaxFlowMaxDelayMetric ()
+LpSolver::MaxDelayMetric (double maxNetworkFlow)
 {
-  auto [maxFlowSolnFound, maxNetworkFlow] = solveMaxFlowProblem();
-  if (!maxFlowSolnFound) return false;
-
   // Update the Flow Allocated Data Rate
-  for (std::unique_ptr<Flow>& flow: m_flows)
+  for (std::unique_ptr<Flow>& flow: *m_flows)
     flow->calculateAllocatedDataRate(m_lpSolver);
 
   // Reset the LP solver
@@ -186,7 +153,7 @@ LpSolver::assignLpVariablePerPath ()
 void
 LpSolver::setFlowDataRateConstraint (bool allowReducedFlowRate)
 {
-  for (std::unique_ptr<Flow>& flow: m_flows)
+  for (std::unique_ptr<Flow>& flow: *m_flows)
     {
       lemon::Lp::Expr flowDataRateExpression;
 
@@ -263,7 +230,7 @@ LpSolver::setMaxPathDelayMetricObjective()
 {
   lemon::Lp::Expr maxPathDelayObjective;
 
-  for (const auto& flow: m_flows)
+  for (const auto& flow: *m_flows)
   {
     // No calculation required when a flow is allocated nothing. If we do not
     // skip unallocated flows we would get an error due to a division by zero
@@ -321,7 +288,7 @@ std::pair<bool, double>
 LpSolver::FindMaxDelayMaxFlowLimit ()
 {
   // Assign an LP variable per path and set the Flow Data Rate constraint
-  for (const auto& flow: m_flows)
+  for (const auto& flow: *m_flows)
   {
     lemon::Lp::Expr flowDataRateExpression;
 
@@ -358,7 +325,7 @@ LpSolver::FindMaxDelayMaxFlowLimit ()
 
   if (solutionFound)
   {
-    for (std::unique_ptr<Flow>& flow: m_flows) // Update the flow data rates
+    for (std::unique_ptr<Flow>& flow: *m_flows) // Update the flow data rates
     {
       flow->calculateAllocatedDataRate(m_lpSolver);
     }
