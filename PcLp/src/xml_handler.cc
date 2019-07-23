@@ -19,14 +19,14 @@ void SaveLinkDetails (XMLDocument& xmlDoc, XMLElement* rootElement, linkContaine
 void SaveOptimalSolution (XMLDocument& xmlDoc, XMLElement* rootElement, flowContainer_t& flows,
                           LpSolver& lpSolver);
 
-XmlHandler::XmlHandler (std::string kspXmlPath)
+XmlHandler::XmlHandler (std::string pathsXmlFile)
 {
-  XMLError eResult = m_kspXmlDoc.LoadFile(kspXmlPath.c_str());
+  XMLError eResult = m_kspXmlDoc.LoadFile(pathsXmlFile.c_str());
 
   if (eResult != XML_SUCCESS)
     {
       std::stringstream ss;
-      ss << "The file at: " << kspXmlPath << " could not be parsed";
+      ss << "The file at: " << pathsXmlFile << " could not be parsed";
       throw std::runtime_error(ss.str());
     }
 }

@@ -17,7 +17,7 @@
 class XmlHandler
 {
 public:
-  XmlHandler (std::string kspXmlPath);
+  XmlHandler (std::string pathsXmlFile);
   tinyxml2::XMLNode* getKspRootNode ();
   void saveResults (linkContainer_t& links, pathContainer_t& paths, flowContainer_t& flows,
                     LpSolver& lpSolver, std::string resultXmlPath);
