@@ -639,6 +639,46 @@ class GaOperators:
 
         return metric_value
 
+    def _calculate_max_delay_metric(self, chromosome) -> float:
+        """Calculate the Maximum Delay metric for a given chromosome.
+
+        The maximum delay metric is the summation of the largest path cost
+        from the set of assigned paths for a given flow. This metric is very
+        simple to understand; however, it is also quite a good representative of
+        what we are looking for because from the results of simulating
+        a simple queue model, it turns out that the path with the largest delay
+        value will have the largest impact on the average end-to-end delay
+        value.
+
+        Args:
+            chromosome: The chromosome to be evaluated.
+
+        Returns:
+            float: The Maximum Delay metric
+        """
+        self.log_info('_calculate_max_delay_metric - '
+                      '(Calculating the path standard deviation metric for '
+                      F'chromosome: {chromosome}')
+
+        metric_value = 0.0
+
+        for flow in self.flows.values():
+            # Get the list of paths that are being used/allocated any data rate
+            used_paths = [path_id for path_id in flow.get_path_ids() if chromosome[path_id] > 0]
+
+            # Find the path with the largest cost
+            largest_path_cost = max([flow.paths[path_id].cost for path_id in used_paths])
+
+            self.log_info('_calculate_max_delay_metric - '
+                          F'Flow: {flow.id} | Used Paths: {used_paths} | '
+                          F'Largest path cost: {largest_path_cost} | '
+                          F'Objective value: {metric_value}')
+
+            metric_value += largest_path_cost
+
+        return metric_value
+
+
     @staticmethod
     def _normalise_value(value, max_value):
         """Normalise the value to have a range between 0 and 1.
