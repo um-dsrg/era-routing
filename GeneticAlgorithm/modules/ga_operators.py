@@ -656,8 +656,7 @@ class GaOperators:
         Returns:
             float: The Maximum Delay metric
         """
-        self.log_info('_calculate_max_delay_metric - '
-                      '(Calculating the path standard deviation metric for '
+        self.log_info('_calculate_max_delay_metric - Calculating the maximum delay metric for '
                       F'chromosome: {chromosome}')
 
         metric_value = 0.0
@@ -666,15 +665,16 @@ class GaOperators:
             # Get the list of paths that are being used/allocated any data rate
             used_paths = [path_id for path_id in flow.get_path_ids() if chromosome[path_id] > 0]
 
-            # Find the path with the largest cost
-            largest_path_cost = max([flow.paths[path_id].cost for path_id in used_paths])
+            if len(used_paths) > 0:  # The metric is valid only if a flow is assigned any data
+                # Find the path with the largest cost
+                largest_path_cost = max([flow.paths[path_id].cost for path_id in used_paths])
 
-            self.log_info('_calculate_max_delay_metric - '
-                          F'Flow: {flow.id} | Used Paths: {used_paths} | '
-                          F'Largest path cost: {largest_path_cost} | '
-                          F'Objective value: {metric_value}')
+                self.log_info('_calculate_max_delay_metric - '
+                              F'Flow: {flow.id} | Used Paths: {used_paths} | '
+                              F'Largest path cost: {largest_path_cost} | '
+                              F'Objective value: {metric_value}')
 
-            metric_value += largest_path_cost
+                metric_value += largest_path_cost
 
         return metric_value
 
