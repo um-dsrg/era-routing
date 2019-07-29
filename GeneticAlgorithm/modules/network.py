@@ -188,3 +188,15 @@ class Network:
                                   std_dev_upper_bound))
 
         return std_dev_upper_bound
+
+    @staticmethod
+    def _get_max_delay_upper_bound(flows: dict) -> float:
+        """Returns the largest Maximum Delay upper bound value
+
+        Args:
+            flows (dict): The dictionary containing the flow details
+
+        Returns:
+            float: The Maximum Delay upper bound value
+        """
+        return sum([max(flow.get_path_costs()) for flow in flows.values()])
