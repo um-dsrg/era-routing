@@ -1,0 +1,34 @@
+{
+	"folders":
+	[
+		{
+			"folder_exclude_patterns":
+			[
+				".vscode",
+			],
+			"binary_file_patterns":
+			[
+				"build/*"
+			],
+			"path": "."
+		}
+	],
+	"build_systems":
+	[
+		{
+			"name": "Build PcLp - Debug",
+			"shell_cmd": "./build.sh debug",
+			"working_dir": "$project_path"
+		},
+		{
+			"name": "Build PcLp - Release",
+			"shell_cmd": "./build.sh release",
+			"working_dir": "$project_path"
+		},
+		{
+			"name": "Clean PcLp",
+			"shell_cmd": "./build.sh clean",
+			"working_dir": "$project_path"
+		}
+	]
+}
