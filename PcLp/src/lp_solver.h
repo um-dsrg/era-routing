@@ -26,14 +26,14 @@ public:
 
   bool MinCost (double maxNetworkFlow);
   bool FlowLimitedMinCost(double maxNetworkFlow);
-  bool MaxDelayMetric (double maxNetworkFlow);
+  bool MaxDelayDistributionMetric (double maxNetworkFlow);
 
   double GetLpColValue (lemon::Lp::Col lpCol) { return m_lpSolver.primal(lpCol); }
 private:
   /* Solvers */
   std::pair<bool, double> solveMinCostProblem (bool flowLimitedMinCost,
                                                double totalNetworkFlow = 0.0);
-  std::pair<bool, double> solveMaxPathDelayProblem ();
+  std::pair<bool, double> solveMaxDelayDistributionProblem ();
 
   /* Constraints */
   void assignLpVariablePerPath ();
@@ -44,7 +44,7 @@ private:
   /* Objectives */
   void setMaxFlowObjective ();
   void setMinCostObjective ();
-  void setMaxPathDelayMetricObjective();
+  void setMaxDelayDistributionObjective();
 
   /* Miscellaneous */
   std::pair<bool, double> FindMaxDelayMaxFlowLimit ();

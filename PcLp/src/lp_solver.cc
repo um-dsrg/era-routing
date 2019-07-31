@@ -82,7 +82,7 @@ LpSolver::FlowLimitedMinCost (double maxNetworkFlow)
 }
 
 bool
-LpSolver::MaxDelayMetric (double maxNetworkFlow)
+LpSolver::MaxDelayDistributionMetric (double maxNetworkFlow)
 {
   // Update the Flow Allocated Data Rate
   for (std::unique_ptr<Flow>& flow: *m_flows)
@@ -91,10 +91,11 @@ LpSolver::MaxDelayMetric (double maxNetworkFlow)
   // Reset the LP solver
   m_lpSolver.clear();
 
-  auto [maxDelaySolnFound, maxDelayMetric] = solveMaxPathDelayProblem();
+  auto [maxDelaySolnFound, maxDelayDistributionMetric] = solveMaxDelayDistributionProblem();
 
   m_objectiveValues.emplace("Maximum Flow", maxNetworkFlow);
-  m_objectiveValues.emplace("Maximum Delay Metric", maxDelayMetric);
+  m_objectiveValues.emplace("Maximum Delay Distribution Metric",
+                            maxDelayDistributionMetric);
 
   return maxDelaySolnFound;
 }
@@ -134,7 +135,7 @@ LpSolver::solveMinCostProblem (bool flowLimitedMinCost, double totalNetworkFlow)
 }
 
 std::pair<bool, double>
-LpSolver::solveMaxPathDelayProblem ()
+LpSolver::solveMaxDelayDistributionProblem ()
 {
   /* Variable assignments + Constraints */
   assignLpVariablePerPath();
@@ -142,7 +143,7 @@ LpSolver::solveMaxPathDelayProblem ()
   setLinkCapacityConstraint();
 
   /* Objective */
-  setMaxPathDelayMetricObjective();
+  setMaxDelayDistributionObjective();
 
   return solveLpProblem("Maximum Delay Metric");
 }
@@ -235,7 +236,7 @@ LpSolver::setMinCostObjective ()
 }
 
 void
-LpSolver::setMaxPathDelayMetricObjective()
+LpSolver::setMaxDelayDistributionObjective()
 {
   lemon::Lp::Expr maxPathDelayObjective;
 
