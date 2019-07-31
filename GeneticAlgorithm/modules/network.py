@@ -193,10 +193,13 @@ class Network:
     def _get_max_delay_upper_bound(flows: dict) -> float:
         """Returns the largest Maximum Delay upper bound value
 
+        The upper bound is equal to the largest path cost out of all the flows
+        considered.
+
         Args:
             flows (dict): The dictionary containing the flow details
 
         Returns:
             float: The Maximum Delay upper bound value
         """
-        return sum([max(flow.get_path_costs()) for flow in flows.values()])
+        return max([max(flow.get_path_costs()) for flow in flows.values()])
