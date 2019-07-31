@@ -642,13 +642,16 @@ class GaOperators:
     def _calculate_max_delay_metric(self, chromosome) -> float:
         """Calculate the Maximum Delay metric for a given chromosome.
 
-        The maximum delay metric is the summation of the largest path cost
-        from the set of assigned paths for a given flow. This metric is very
-        simple to understand; however, it is also quite a good representative of
-        what we are looking for because from the results of simulating
-        a simple queue model, it turns out that the path with the largest delay
-        value will have the largest impact on the average end-to-end delay
-        value.
+        The metric value for an individual flow is calculated by multiplying the
+        largest path delay from the set of used paths, with the fraction of data
+        rate the flow is allocated compared to the total network flow. The final
+        metric value is created by adding all the individual flow metrics
+        together.
+
+        In this metric, the largest path delay is taken to be the flow's average
+        delay. Although simple, this metric is a good representative of the
+        actual performance when compared to the results achieved when simulating
+        a queue model.
 
         Args:
             chromosome: The chromosome to be evaluated.
@@ -656,6 +659,8 @@ class GaOperators:
         Returns:
             float: The Maximum Delay metric
         """
+        total_network_flow = sum(chromosome)
+
         self.log_info('_calculate_max_delay_metric - Calculating the maximum delay metric for '
                       F'chromosome: {chromosome}')
 
@@ -668,13 +673,17 @@ class GaOperators:
             if len(used_paths) > 0:  # The metric is valid only if a flow is assigned any data
                 # Find the path with the largest cost
                 largest_path_cost = max([flow.paths[path_id].cost for path_id in used_paths])
+                allocated_data_rate = sum([chromosome[path_id] for path_id in used_paths])
+                flow_metric_value = (allocated_data_rate / total_network_flow) * largest_path_cost
 
                 self.log_info('_calculate_max_delay_metric - '
                               F'Flow: {flow.id} | Used Paths: {used_paths} | '
                               F'Largest path cost: {largest_path_cost} | '
-                              F'Objective value: {metric_value}')
+                              F'Allocated Data Rate: {allocated_data_rate} | '
+                              F'Total Network Flow: {total_network_flow} | '
+                              F'Flow Metric: {flow_metric_value}')
 
-                metric_value += largest_path_cost
+                metric_value += flow_metric_value
 
         return metric_value
 
