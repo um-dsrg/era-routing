@@ -114,6 +114,8 @@ LpSolver::solveMaxFlowProblem ()
   auto[optimalSolutionFound, maxNetworkFlow] = solveLpProblem("Maximum Flow");
   maxNetworkFlow = (floor(maxNetworkFlow * 10) / 10);
 
+  m_objectiveValues.emplace("Maximum Flow", maxNetworkFlow);
+
   return std::make_pair(optimalSolutionFound, maxNetworkFlow);
 }
 
