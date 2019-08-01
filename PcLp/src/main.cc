@@ -83,6 +83,8 @@ main (int argc, const char *argv[])
 
       if (optimisationProblem == "MaxFlowOnly")
       {
+        lpSolver.UpdateFlowAllocatedDataRate();
+
         const auto& outputPath {outputPaths[index]};
         xmlHandler.saveResults(links, paths, flows, lpSolver, outputPath);
       }

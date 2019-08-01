@@ -44,6 +44,15 @@ LpSolver::ClearTimings()
   m_timings.emplace("Maximum Flow", maxFlowDuration);
 }
 
+void
+LpSolver::UpdateFlowAllocatedDataRate()
+{
+  for (auto& flow: *m_flows)
+  {
+    flow->calculateAllocatedDataRate(m_lpSolver);
+  }
+}
+
 bool
 LpSolver::MinCost (double maxNetworkFlow)
 {
@@ -53,9 +62,7 @@ LpSolver::MinCost (double maxNetworkFlow)
         minNetworkCost] = solveMinCostProblem(false /* Flow Limited Minimum Cost */,
                                               maxNetworkFlow);
 
-  // Update the Flow Allocated Data Rate
-  for (auto& flow: *m_flows)
-    flow->calculateAllocatedDataRate(m_lpSolver);
+  UpdateFlowAllocatedDataRate();
 
   m_objectiveValues.emplace("Maximum Flow", maxNetworkFlow);
   m_objectiveValues.emplace("Minimum Cost", minNetworkCost);
@@ -84,9 +91,7 @@ LpSolver::FlowLimitedMinCost (double maxNetworkFlow)
 bool
 LpSolver::MaxDelayDistributionMetric (double maxNetworkFlow)
 {
-  // Update the Flow Allocated Data Rate
-  for (std::unique_ptr<Flow>& flow: *m_flows)
-    flow->calculateAllocatedDataRate(m_lpSolver);
+  UpdateFlowAllocatedDataRate();
 
   // Reset the LP solver
   m_lpSolver.clear();

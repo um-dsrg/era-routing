@@ -22,6 +22,8 @@ public:
   void ClearTimings();
   void ClearObjectiveValues() { m_objectiveValues.clear(); }
 
+  void UpdateFlowAllocatedDataRate();
+
   std::pair<bool, double> solveMaxFlowProblem ();
 
   bool MinCost (double maxNetworkFlow);
