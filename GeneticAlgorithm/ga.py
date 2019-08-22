@@ -27,8 +27,17 @@ from modules.xml_handler import XmlHandler
 from modules.algorithms import nsga2, nsga3
 
 
+def check_deap_version():
+    """Ensure that DEAP version is at least 1.3 for NSGA-III"""
+    import deap
+    if float(deap.__version__) < 1.3:
+        raise RuntimeError("DEAP version must be 1.3 or higher to include NSGA-III functionality")
+
+
 def main():
     """Main function that sets up and runs the Genetic Algorithm."""
+    check_deap_version()
+
     parameters = Parameters()
     logger = Logger(parameters)
     objectives = Objectives(parameters.objectives)
