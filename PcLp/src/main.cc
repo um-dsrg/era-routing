@@ -77,7 +77,7 @@ main (int argc, const char *argv[])
       return EXIT_FAILURE;
     }
 
-    for (auto index = 0; index < optimisationProblems.size(); ++index)
+    for (uint32_t index = 0; index < optimisationProblems.size(); ++index)
     {
       const auto& optimisationProblem {optimisationProblems[index]};
 
