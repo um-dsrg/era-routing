@@ -450,6 +450,12 @@ class GaOperators:
                                          k=len(self.network.links)):
                 link_column = actual_network_matrix[:, link_id]
                 link_usage = np.sum(link_column)
+
+                for ack_path in self.network.get_ack_paths_used_by_link(link_id):
+                    # The below calculation assumes an ACK packet tranmitted
+                    # every 2 Data packets received
+                    link_usage += (chromosome[ack_path] * 0.0458)
+
                 link_capacity = self.network.get_link_capacity(link_id)
 
                 if link_usage > link_capacity:  # Over provisioned link found
@@ -686,7 +692,6 @@ class GaOperators:
                 metric_value += flow_metric_value
 
         return metric_value
-
 
     @staticmethod
     def _normalise_value(value, max_value):

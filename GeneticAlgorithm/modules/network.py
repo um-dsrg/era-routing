@@ -39,13 +39,14 @@ class Network:
         :param objectives: The objectives for this optimisation.
         :param log_info: Pointer to ta function that will insert a log entry in the information log file
         """
+        self.log_info = log_info
+
         self.links = dict()  # type: Dict[int, Link]
         self._generate_link_details(ksp_xml_file_root)
+        self.link_ack_path_map = self._generate_link_ack_path_usage_map(ksp_xml_file_root)
 
         self.network_matrix = self._create_network_matrix(flows)
         self._generate_network_matrix(flows)
-
-        self.log_info = log_info
 
         # Store the name of the objectives and calculate their upper
         # bounds
@@ -61,6 +62,10 @@ class Network:
     def get_link_capacity(self, link_id):
         """Return the capacity for the link with id link_id"""
         return self.links[link_id].capacity
+
+    def get_ack_paths_used_by_link(self, link_id) -> list:
+        """Returns the list of ACK paths used by the given link"""
+        return self.link_ack_path_map[link_id]
 
     def get_num_paths(self):
         """Returns the number of paths."""
@@ -95,6 +100,27 @@ class Network:
 
         if not self.links:  # Error if no links are found
             raise RuntimeError('No links found in the xml file')
+
+    def _generate_link_ack_path_usage_map(self,
+                                          ksp_xml_file_root: etree.Element) -> Dict[int, list]:
+        """
+        Builds a map that given a link id will return the list of ack paths that
+        pass through that given link.
+        """
+        link_ack_path_map = {link_id: [] for link_id in self.links}  # type: Dict[int, list]
+
+        for ack_path_element in ksp_xml_file_root.findall("FlowDetails/Flow/AckPaths/Path"):
+            path_id = int(ack_path_element.get("Id"))
+
+            for link_element in ack_path_element.findall("Link"):
+                link_id = int(link_element.get("Id"))
+                link_ack_path_map[link_id].append(path_id)
+
+        self.log_info("Logging the Link -> Ack path usage map")
+        for link_id, path_list in link_ack_path_map.items():
+            self.log_info(F"Link {link_id} | Path List: {path_list}")
+
+        return link_ack_path_map
 
     def _generate_network_matrix(self, flows: Dict[int, Flow]):
         """Generate a binary matrix that represents the network.
