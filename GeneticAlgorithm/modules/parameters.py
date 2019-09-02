@@ -143,14 +143,15 @@ class Parameters:
 
         # Check mutation functions
         assert cmd_line_parser.mutationFunctions != "", "Mutation functions must be provided"
-        self.mutationFunctions = [mutationFunction for mutationFunction
+        self.mutationFunctions = [mutationFunction.strip() for mutationFunction
                                   in cmd_line_parser.mutationFunctions.split(",")]
 
         # Check mutation function probability
         assert cmd_line_parser.mutationFunctionProbability != "", \
             "Mutation function probability must be provided"
-        self.mutationFunctionProbability = [float(mutFuncProb) for mutFuncProb
-                                            in cmd_line_parser.mutationFunctionProbability]
+        self.mutationFunctionProbability = \
+            [float(mutFuncProb.strip()) for mutFuncProb
+             in cmd_line_parser.mutationFunctionProbability.split(",")]
 
         # Check that mutation functions and the function probabilities given are valid
         assert sum(self.mutationFunctionProbability) == 1, \
