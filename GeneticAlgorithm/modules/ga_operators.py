@@ -171,7 +171,7 @@ class GaOperators:
             rand_num = random.random()
 
             for mutationFunction in self.mutationFunctions:
-                if mutationFunction.probability <= rand_num:
+                if rand_num <= mutationFunction.probability:
                     chromosome = mutationFunction.function(flow, chromosome)
                     break
 
