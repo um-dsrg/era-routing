@@ -42,6 +42,13 @@ class Parameters:
                                  'will be mutated. This variable dictates the '
                                  'number of genes that will be modified by a '
                                  'single mutation operator.')
+        parser.add_argument('--mutationFunctions', type=str, required=True, default="",
+                            help="A comma separated list of the functions to be used when carrying "
+                                 "out a mutation operation")
+        parser.add_argument('--mutationFunctionProbability', type=str, required=True, default="",
+                            help="A comma separated list of the probability to associate with each "
+                                 "mutation function. Note that the sum of the values must always "
+                                 "add up to 1")
         parser.add_argument("--nsga3_p", type=int, required=False, default=0,
                             help="The p value that will be used to calculate the number of "
                                  "reference points to generate")
@@ -88,19 +95,19 @@ class Parameters:
 
         # Verify that the file exists
         if os.path.isfile(cmd_line_parser.input) is False:
-            raise AssertionError("The input file does not exist: {}".format(cmd_line_parser.input))
+            raise AssertionError(F"The input file does not exist: {cmd_line_parser.input}")
         self.inputFile = cmd_line_parser.input
 
         # Verify that the path where the result file will be stored exists
         if os.path.isdir(os.path.dirname(cmd_line_parser.output)) is False:
-            raise AssertionError("The output directory does not exist: {}"
-                                 .format(os.path.dirname(cmd_line_parser.output)))
+            raise AssertionError(F"The output directory does not exist: "
+                                 F"{os.path.dirname(cmd_line_parser.output)}")
         self.outputFile = cmd_line_parser.output
 
         # Verify the algorithm is valid
         self.algorithm = cmd_line_parser.algorithm.lower()
         if self.algorithm not in ["nsga2", "nsga3"]:
-            raise AssertionError("Unknown algorithm given: {}".format(self.algorithm))
+            raise AssertionError(F"Unknown algorithm given: {self.algorithm}")
 
         # Ensure that nsga3_p is given when nsga3 is chosen
         if self.algorithm == "nsga3" and cmd_line_parser.nsga3_p <= 0:
@@ -134,13 +141,30 @@ class Parameters:
             'Mutation fraction must be between 0 and 1'
         self.mutation_fraction = cmd_line_parser.mutation_fraction
 
+        # Check mutation functions
+        assert cmd_line_parser.mutationFunctions != "", "Mutation functions must be provided"
+        self.mutationFunctions = [mutationFunction for mutationFunction
+                                  in cmd_line_parser.mutationFunctions.split(",")]
+
+        # Check mutation function probability
+        assert cmd_line_parser.mutationFunctionProbability != "", \
+            "Mutation function probability must be provided"
+        self.mutationFunctionProbability = [float(mutFuncProb) for mutFuncProb
+                                            in cmd_line_parser.mutationFunctionProbability]
+
+        # Check that mutation functions and the function probabilities given are valid
+        assert sum(self.mutationFunctionProbability) == 1, \
+            "The mutation function probability MUST add up to 1"
+
+        assert len(self.mutationFunctions) == len(self.mutationFunctionProbability), \
+            "The number of mutation functions and probabilities needs to be equal"
+
+        # Check XML save frequency
         if cmd_line_parser.xml_save_frequency is None:
             self.xml_save_frequency = self.num_generations
         else:
-            assert 1 <= cmd_line_parser.xml_save_frequency \
-                     <= self.num_generations, \
-                'The xml_save_frequency should be between 1 and ' \
-                '{}'.format(self.num_generations)
+            assert 1 <= cmd_line_parser.xml_save_frequency <= self.num_generations, \
+                F"The xml_save_frequency should be between 1 and {self.num_generations}"
             self.xml_save_frequency = cmd_line_parser.xml_save_frequency
 
         # Check to make sure that if logging is enabled, the location where to
