@@ -4,11 +4,21 @@ Module that contains all the genetic algorithm operators.
 import math
 import random
 import statistics
+from typing import NamedTuple
 
 import numpy as np
 
 from modules.definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
 from modules.ga_statistics import OpType, MutationType
+
+
+class MutationFunction(NamedTuple):
+    """
+    A custom Namedtuple that will hold the probability and function pointer to
+    that mutation function
+    """
+    probability: float
+    function
 
 
 class GaOperators:
@@ -37,6 +47,17 @@ class GaOperators:
         self.log_info = log_info  # Information log file
 
         self.mutation_fraction = parameters.mutation_fraction
+
+        cumulativeProbability = 0.0
+        self.mutationFunctions = list()
+
+        for probability, functionName in zip(parameters.mutationFunctionProbability,
+                                             parameters.mutationFunctions):
+            cumulativeProbability += probability
+            self.mutationFunctions.append(MutationFunction(cumulativeProbability,
+                                                           getattr(self,
+                                                                   F"mutation_{functionName}")))
+
         # Get a list of functions that will be used to calculate the metric for
         # each of the objectives.
         self.metric_functions = [getattr(self, metric_function_name)
