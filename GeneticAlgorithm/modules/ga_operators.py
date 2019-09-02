@@ -318,7 +318,7 @@ class GaOperators:
                         paths_to_mutate.append(path)
         else:
             paths_to_mutate.append(flow_paths[0])  # Add the only path available to that flow
-            self.log_info(F"_mutation_MinimisePathStdDev - Path {paths_to_mutate[0].id)} added to "
+            self.log_info(F"_mutation_MinimisePathStdDev - Path {paths_to_mutate[0].id} added to "
                           "mutation list because it is the only path")
 
         mutated_chromosome = self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
