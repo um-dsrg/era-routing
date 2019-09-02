@@ -4,7 +4,7 @@ Module that contains all the genetic algorithm operators.
 import math
 import random
 import statistics
-from typing import NamedTuple
+from collections import namedtuple
 
 import numpy as np
 
@@ -12,13 +12,7 @@ from modules.definitions import ACCURACY_VALUE, ACCURACY_ZERO_VALUE
 from modules.ga_statistics import OpType, MutationType
 
 
-class MutationFunction(NamedTuple):
-    """
-    A custom Namedtuple that will hold the probability and function pointer to
-    that mutation function
-    """
-    probability: float
-    function
+MutationFunction = namedtuple("MutationFunction", "probability function")
 
 
 class GaOperators:
@@ -56,7 +50,7 @@ class GaOperators:
             cumulativeProbability += probability
             self.mutationFunctions.append(MutationFunction(cumulativeProbability,
                                                            getattr(self,
-                                                                   F"mutation_{functionName}")))
+                                                                   F"_mutation_{functionName}")))
 
         # Get a list of functions that will be used to calculate the metric for
         # each of the objectives.
@@ -175,25 +169,14 @@ class GaOperators:
                 chromosome[path_id] = 0
 
             rand_num = random.random()
-            if rand_num < 0.25:  # Minimise the number of paths
-                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MIN_PATH))
-                chromosome = self._min_path_mutation(flow, chromosome)
-                chromosome.mutation_operation = MutationType.MIN_PATH
-            elif rand_num < 0.50:  # Minimise the cost
-                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MIN_COST))
-                chromosome = self._min_cost_mutation(flow, chromosome)
-                chromosome.mutation_operation = MutationType.MIN_COST
-            elif rand_num < 0.75:  # Minimise the path standard deviation
-                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MIN_PATH_STD_DEV))
-                chromosome = self._min_path_std_dev_mutation(flow, chromosome)
-                chromosome.mutation_operation = MutationType.MIN_PATH_STD_DEV
-            else:  # Maximise the flow
-                self.log_info("Mutation: {} | {}".format(rand_num, MutationType.MAX_FLOW))
-                chromosome = self._max_flow_mutation(flow, chromosome)
-                chromosome.mutation_operation = MutationType.MAX_FLOW
+
+            for mutationFunction in self.mutationFunctions:
+                if mutationFunction.probability <= rand_num:
+                    chromosome = mutationFunction.function(flow, chromosome)
+                    break
 
         self.ga_stats.log_mutation_operation(chromosome.mutation_operation)
-        return self._validate_chromosome(chromosome),  # NOTE Always return a tuple
+        return self._validate_chromosome(chromosome),  # NOTE: Always return a tuple
 
     def round_small_numbers(self, population: list) -> list:
         """Rounds very small numbers to zero in a given population
@@ -230,7 +213,7 @@ class GaOperators:
 
         return random.sample(list(self.flows.values()), num_flows_to_mutate)
 
-    def _min_path_mutation(self, flow, chromosome):
+    def _mutation_MinimisePathsUsed(self, flow, chromosome):
         """Mutate the flow path usage to minimise the number of paths used.
 
         The number of paths to choose diminishes linearly as the number of
@@ -257,9 +240,11 @@ class GaOperators:
 
         paths_to_mutate = random.sample(flow.get_paths(), num_paths_mutate)
 
-        return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
+        mutated_chromosome = self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
+        mutated_chromosome.mutation_operation = MutationType.MIN_PATH
+        return mutated_chromosome
 
-    def _min_cost_mutation(self, flow, chromosome):
+    def _mutation_MinimiseCost(self, flow, chromosome):
         """Mutate the flow path usage to minimise the cost.
 
         :param flow:       The flow that will be mutated.
@@ -282,11 +267,14 @@ class GaOperators:
                 paths_to_mutate.append(path)
 
         if paths_to_mutate:
-            return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
-        # else Return the chromosome as is if no paths are to be used
-        return chromosome
+            mutated_chromosome = self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
+        else:
+            mutated_chromosome = chromosome
 
-    def _min_path_std_dev_mutation(self, flow, chromosome):
+        mutated_chromosome.mutation_operation = MutationType.MIN_COST
+        return mutated_chromosome
+
+    def _mutation_MinimisePathStdDev(self, flow, chromosome):
         """Mutate the flow path usage to minimise the path standard deviation.
 
         :param flow:       The flow that will be mutated.
@@ -310,8 +298,8 @@ class GaOperators:
             largest_cost_difference = max([abs(path.cost - base_path.cost)
                                            for path in flow_paths if path.id != base_path.id])
 
-            self.log_info('_min_path_std_dev_mutation - Base Path: {} | Largest Cost Difference: {}'
-                          .format(base_path, largest_cost_difference))
+            self.log_info(F"_mutation_MinimisePathStdDev - Base Path: {base_path} | "
+                          F"Largest Cost Difference: {largest_cost_difference}")
 
             for path in flow_paths:
                 if path.id == base_path.id:  # The base path must always be included
@@ -319,22 +307,25 @@ class GaOperators:
                 else:
                     p_choose_path = 1 - (abs(base_path.cost - path.cost) /
                                          float(largest_cost_difference + 1))
-                    self.log_info('_min_path_std_dev_mutation - Probability to choose path: {} cost {} is : {}'
-                                  .format(path.id, path.cost, p_choose_path))
+                    self.log_info(F"_mutation_MinimisePathStdDev - Probability to choose path: "
+                                  F"{path.id} cost {path.cost} is : {p_choose_path}")
 
                     random_number = random.random()
                     if random_number < p_choose_path:
-                        self.log_info('_min_path_std_dev_mutation - Random Number: {} | Path {} added to mutation list'
-                                      .format(random_number, path.id))
+                        self.log_info(F"_mutation_MinimisePathStdDev - "
+                                      F"Random Number: {random_number} | "
+                                      F"Path {path.id} added to mutation list")
                         paths_to_mutate.append(path)
         else:
             paths_to_mutate.append(flow_paths[0])  # Add the only path available to that flow
-            self.log_info('_min_path_std_dev_mutation - Path {} added to mutation list because it is the only path'
-                          .format(paths_to_mutate[0].id))
+            self.log_info(F"_mutation_MinimisePathStdDev - Path {paths_to_mutate[0].id)} added to "
+                          "mutation list because it is the only path")
 
-        return self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
+        mutated_chromosome = self._assign_data_rate_on_paths(flow, paths_to_mutate, chromosome)
+        mutated_chromosome.mutation_operation = MutationType.MIN_PATH_STD_DEV
+        return mutated_chromosome
 
-    def _max_flow_mutation(self, flow, chromosome):
+    def _mutation_MaximiseFlow(self, flow, chromosome):
         """Mutate the flow path usage to maximise the allocated data rate.
 
         :param flow:       The flow that will be mutated.
@@ -342,7 +333,9 @@ class GaOperators:
 
         :return: The mutated chromosome.
         """
-        return self._assign_data_rate_on_paths(flow, flow.get_paths(), chromosome)
+        mutated_chromosome = self._assign_data_rate_on_paths(flow, flow.get_paths(), chromosome)
+        mutated_chromosome.mutation_operation = MutationType.MAX_FLOW
+        return mutated_chromosome
 
     def _assign_data_rate_on_paths(self, flow, paths_to_use, chromosome):
         """Assign data rate on the give path set for a particular flow
