@@ -337,6 +337,55 @@ class GaOperators:
         mutated_chromosome.mutation_operation = MutationType.MAX_FLOW
         return mutated_chromosome
 
+    def _mutation_AllRandom(self, flow, chromosome):
+        # The below are the list of tasks needed to be accomplished to
+        # successfully implement the all random mutation.
+        # 1. Choose the number of paths to transmit on, 0 included. Referred to
+        #    as x.
+
+        numAvailablePaths = flow.get_num_paths()
+        pathOptions = list(range(0, numAvailablePaths + 1))
+        numPathsToUse = random.choice(pathOptions)
+
+        if numPathsToUse == 0:  # No paths chosen; thus, no transmission
+            chromosome.mutation_operation = MutationType.ALL_RANDOM
+            return chromosome
+
+        # 2. Choose x paths at random.
+        pathsToUse = random.sample(flow.get_paths(), numPathsToUse)
+
+        # # 3. Randomly choose the fraction of the flow to transmit.
+        # dataRateToTransmit = flow.requested_rate * random.random()
+
+        # # 4. Find the total remaining capacity for each path
+        # act_net_mat = (np.array(chromosome)[:, np.newaxis] * self.network.network_matrix)
+
+        # pathRemainingCapacity = dict()  # Key: Path Id | Value: Remaining Capacity
+
+        # for path in pathsToUse:
+        #     linkRemainingCapacity = list()
+        #     for linkId in path.links:
+        #         linkCapacity = self.network.get_link_capacity(linkId)
+        #         linkUsage = np.sum(act_net_mat[:, linkId])
+        #         remainingCapacity = linkCapacity - linkUsage
+        #         linkRemainingCapacity.append(remainingCapacity)
+
+        #     pathRemainingCapacity[path.id] = min(linkRemainingCapacity)
+
+        # # 4. Choose the min, between the link capacities and the flow data rate.
+        # dataRateToTransmit = min(dataRateToTransmit, pathRemainingCapacity.values())
+
+        # 5. Randomly choose how much data rate to transmit on each link. The
+        #    numbers need to be bounded such that all the allocated will be
+        #    performed.
+        # The order is already randomised here, no need to randomise it again
+
+        # add assert that dataratetotransmit is 0
+
+        mutated_chromosome = self._assign_data_rate_on_paths(flow, pathsToUse, chromosome)
+        mutated_chromosome.mutation_operation = MutationType.ALL_RANDOM
+        return mutated_chromosome
+
     def _assign_data_rate_on_paths(self, flow, paths_to_use, chromosome):
         """Assign data rate on the give path set for a particular flow
 
