@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Genetic Algorithm",
+            "type": "python",
+            "request": "launch",
+            "program": "${env:HOME}/Documents/Git/Development/GeneticAlgorithm/ga.py",
+            "args": [
+                "--input=${env:HOME}/Documents/Results/GeneticAlgorithm/TestingNewMutation/paths.xml",
+                "--output=${env:HOME}/Documents/Results/GeneticAlgorithm/TestingNewMutation/gaResult.xml",
+                "--algorithm=nsga2",
+                "--num_generations=10",
+                "--pop_size=20",
+                "--prob_crossover=0.9",
+                "--prob_mutation=1.0",
+                "--mutation_fraction=0.1",
+                "--mutationFunctions=MaximiseFlow, MinimiseCost",
+                "--mutationFunctionProbability=0.5, 0.5",
+                "--objectives",
+                "net_flow, 1, _calculate_total_network_flow, _get_network_flow_upper_bound ",
+                "delay_met, 1, _calculate_delay_distribution_metric, _get_delay_distribution_upper_bound ",
+                "std_dev_paths, -1, _calculate_path_standard_deviation_metric, _get_path_std_dev_upper_bound",
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}
