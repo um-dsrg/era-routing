@@ -547,7 +547,7 @@ class GaOperators:
                 link_usage = np.sum(link_column)
 
                 for ack_path in self.network.get_ack_paths_used_by_link(link_id):
-                    # The below calculation assumes an ACK packet tranmitted
+                    # The below calculation assumes an ACK packet transmitted
                     # every 2 Data packets received
                     link_usage += (chromosome[ack_path] * 0.0458)
 
