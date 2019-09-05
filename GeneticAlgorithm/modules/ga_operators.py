@@ -337,6 +337,26 @@ class GaOperators:
         mutated_chromosome.mutation_operation = MutationType.MAX_FLOW
         return mutated_chromosome
 
+    def _mutation_MinimiseMaxDelay(self, flow, chromosome):
+        """Mutation that minimises the largest path delay values
+
+        :param flow:       The flow that will be mutated.
+        :param chromosome: The chromosome to be mutated.
+
+        :return: The mutated chromosome.
+        """
+        pathsToUse = list()
+
+        randomNumber = random.random()
+        minPathCost = min(flow.get_path_costs())
+
+        pathsToUse = [path for path in flow.get_paths()
+                      if (minPathCost / path.cost) >= randomNumber]
+
+        mutated_chromosome = self._assign_data_rate_on_paths(flow, pathsToUse, chromosome)
+        mutated_chromosome.mutation_operation = MutationType.MIN_MAX_DELAY
+        return mutated_chromosome
+
     def _mutation_NoTransmission(self, flow, chromosome):
         """Mutate the flow such that no transmission occurs
 

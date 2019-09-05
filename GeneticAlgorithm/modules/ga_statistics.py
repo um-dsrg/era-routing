@@ -47,7 +47,8 @@ class MutationType(Enum):
     MIN_COST = 1
     MAX_FLOW = 2
     MIN_PATH_STD_DEV = 3
-    ALL_RANDOM = 4
+    MIN_MAX_DELAY = 4
+    ALL_RANDOM = 5
 
     def __repr__(self):
         return 'Enum MutationType(' + self.__str__() + ')'
@@ -63,6 +64,8 @@ class MutationType(Enum):
             str_repr = 'Minimise Path Standard Deviation'
         elif self.name == 'MAX_FLOW':
             str_repr = 'Maximise Flow'
+        elif self.name == "MIN_MAX_DELAY":
+            str_repr = "Minimise Maximum Delay"
         elif self.name == 'ALL_RANDOM':
             str_repr = 'All Random'
         elif self.name == "NO_OP":
