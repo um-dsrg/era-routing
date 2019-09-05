@@ -190,7 +190,7 @@ class GaOperators:
         Returns:
             list -- The new population with very small numbers rounded to zero
         """
-        self.log_info("The popluation before rounding: {}".format(population))
+        self.log_info("The population before rounding: {}".format(population))
 
         for chromosome_index, chromosome in enumerate(population):
             for gene_index, gene in enumerate(chromosome):
