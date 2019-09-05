@@ -337,6 +337,17 @@ class GaOperators:
         mutated_chromosome.mutation_operation = MutationType.MAX_FLOW
         return mutated_chromosome
 
+    def _mutation_NoTransmission(self, flow, chromosome):
+        """Mutate the flow such that no transmission occurs
+
+        :param flow:       The flow that will be mutated.
+        :param chromosome: The chromosome to be mutated.
+
+        :return: The mutated chromosome.
+        """
+        self.log_info(F"_mutation_NoTransmission - Flow {flow.id} no transmission")
+        return chromosome
+
     def _mutation_AllRandom(self, flow, chromosome):
         # The below are the list of tasks needed to be accomplished to
         # successfully implement the all random mutation.
