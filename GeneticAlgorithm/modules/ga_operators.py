@@ -366,6 +366,7 @@ class GaOperators:
         :return: The mutated chromosome.
         """
         self.log_info(F"_mutation_NoTransmission - Flow {flow.id} no transmission")
+        chromosome.mutation_operation = MutationType.NO_TRANSMISSION
         return chromosome
 
     def _mutation_AllRandom(self, flow, chromosome):
