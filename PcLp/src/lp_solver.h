@@ -10,27 +10,44 @@
 class LpSolver
 {
 public:
-  LpSolver (linkContainer_t& links, pathContainer_t& paths);
+  LpSolver (linkContainer_t &links, pathContainer_t &paths);
 
   // Getters
-  const std::map<std::string, double>& GetTimings() { return m_timings; }
-  const std::map<std::string, double>& GetObjectiveValues() { return m_objectiveValues; }
+  const std::map<std::string, double> &
+  GetTimings ()
+  {
+    return m_timings;
+  }
+  const std::map<std::string, double> &
+  GetObjectiveValues ()
+  {
+    return m_objectiveValues;
+  }
 
   // Setters
-  void SetFlows(flowContainer_t* flowContainer);
+  void SetFlows (flowContainer_t *flowContainer);
 
-  void ClearTimings();
-  void ClearObjectiveValues() { m_objectiveValues.clear(); }
+  void ClearTimings ();
+  void
+  ClearObjectiveValues ()
+  {
+    m_objectiveValues.clear ();
+  }
 
-  void UpdateFlowAllocatedDataRate();
+  void UpdateFlowAllocatedDataRate ();
 
   std::pair<bool, double> solveMaxFlowProblem ();
 
   bool MinCost (double maxNetworkFlow);
-  bool FlowLimitedMinCost(double maxNetworkFlow);
+  bool FlowLimitedMinCost (double maxNetworkFlow);
   bool MaxDelayDistributionMetric (double maxNetworkFlow);
 
-  double GetLpColValue (lemon::Lp::Col lpCol) { return m_lpSolver.primal(lpCol); }
+  double
+  GetLpColValue (lemon::Lp::Col lpCol)
+  {
+    return m_lpSolver.primal (lpCol);
+  }
+
 private:
   /* Solvers */
   std::pair<bool, double> solveMinCostProblem (bool flowLimitedMinCost,
@@ -46,17 +63,17 @@ private:
   /* Objectives */
   void setMaxFlowObjective ();
   void setMinCostObjective ();
-  void setMaxDelayDistributionObjective();
+  void setMaxDelayDistributionObjective ();
 
   /* Miscellaneous */
   std::pair<bool, double> FindMaxDelayMaxFlowLimit ();
 
   /* Lp Equation Solver */
-  std::pair<bool, double> solveLpProblem (const std::string& optimisationProblem);
+  std::pair<bool, double> solveLpProblem (const std::string &optimisationProblem);
 
-  linkContainer_t& m_links;
-  pathContainer_t& m_paths;
-  flowContainer_t* m_flows;
+  linkContainer_t &m_links;
+  pathContainer_t &m_paths;
+  flowContainer_t *m_flows;
 
   lemon::GlpkLp m_lpSolver;
 

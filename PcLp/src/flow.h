@@ -22,22 +22,42 @@ public:
    * Constructs a Flow object from a Flow XML element
    * @param pathElement The XML Flow element
    */
-  Flow (tinyxml2::XMLElement* flowElement);
-  Flow (const Flow& flow);
+  Flow (tinyxml2::XMLElement *flowElement);
+  Flow (const Flow &flow);
 
-  void addPath (Path* path) { m_paths.push_back(path); }
-  id_t getId () { return m_id; }
-  double getRequestedDataRate () { return m_requestedDataRate; }
-  double getAllocatedDataRate () { return m_allocatedDataRate; }
-  std::vector<Path*>& getPaths () { return m_paths; }
+  void
+  addPath (Path *path)
+  {
+    m_paths.push_back (path);
+  }
+  id_t
+  getId ()
+  {
+    return m_id;
+  }
+  double
+  getRequestedDataRate ()
+  {
+    return m_requestedDataRate;
+  }
+  double
+  getAllocatedDataRate ()
+  {
+    return m_allocatedDataRate;
+  }
+  std::vector<Path *> &
+  getPaths ()
+  {
+    return m_paths;
+  }
 
-  void calculateAllocatedDataRate (const lemon::GlpkLp& lpSolver);
+  void calculateAllocatedDataRate (const lemon::GlpkLp &lpSolver);
 
 private:
   id_t m_id;
   double m_requestedDataRate;
   double m_allocatedDataRate;
-  std::vector<Path*> m_paths;
+  std::vector<Path *> m_paths;
 };
 
 #endif /* SRC_FLOW_H_ */

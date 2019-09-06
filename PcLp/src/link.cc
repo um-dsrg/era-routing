@@ -6,9 +6,9 @@
  */
 #include "link.h"
 
-Link::Link (tinyxml2::XMLElement* linkElement)
+Link::Link (tinyxml2::XMLElement *linkElement)
 {
-  linkElement->QueryAttribute("Id", &m_id);
-  linkElement->QueryAttribute("Cost", &m_cost);
-  linkElement->QueryAttribute("Capacity", &m_capacity);
+  linkElement->QueryAttribute ("Id", &m_id);
+  linkElement->QueryAttribute ("Cost", &m_cost);
+  linkElement->QueryAttribute ("Capacity", &m_capacity);
 }
