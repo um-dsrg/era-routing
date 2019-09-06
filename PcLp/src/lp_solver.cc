@@ -23,8 +23,8 @@ getLowestPathCost (const std::vector<Path *> &flowPaths)
   return *std::min_element (std::begin (pathCost), std::end (pathCost));
 }
 
-LpSolver::LpSolver (linkContainer_t &links, pathContainer_t &paths)
-    : m_links (links), m_paths (paths)
+LpSolver::LpSolver (linkContainer_t &links, pathContainer_t &paths, bool considerAckFlags)
+    : m_links (links), m_paths (paths), m_considerAckFlags (considerAckFlags)
 {
   m_lpSolver.messageLevel (lemon::LpBase::MessageLevel::MESSAGE_VERBOSE);
 }
@@ -198,10 +198,14 @@ LpSolver::setLinkCapacityConstraint ()
           linkCapacityExpression += path->getDataRateLpVar ();
         }
 
-      for (Path *ackPath : link->getAckPaths ())
+      if (m_considerAckFlags)
         {
-          // The below calculation assumes an ACK packet transmitted every 2 Data packets received
-          linkCapacityExpression += (ackPath->getDataRateLpVar () * 0.0458);
+          for (Path *ackPath : link->getAckPaths ())
+            {
+              // The below calculation assumes an ACK packet is transmitted for
+              // every 2 data packets received.
+              linkCapacityExpression += (ackPath->getDataRateLpVar () * 0.0458);
+            }
         }
 
       m_lpSolver.addRow (linkCapacityExpression <= link->getCapacity ());

@@ -10,7 +10,7 @@
 class LpSolver
 {
 public:
-  LpSolver (linkContainer_t &links, pathContainer_t &paths);
+  LpSolver (linkContainer_t &links, pathContainer_t &paths, bool considerAckFlags);
 
   // Getters
   const std::map<std::string, double> &
@@ -71,9 +71,12 @@ private:
   /* Lp Equation Solver */
   std::pair<bool, double> solveLpProblem (const std::string &optimisationProblem);
 
+  /* Member variables */
   linkContainer_t &m_links;
   pathContainer_t &m_paths;
   flowContainer_t *m_flows;
+
+  bool m_considerAckFlags;
 
   lemon::GlpkLp m_lpSolver;
 
