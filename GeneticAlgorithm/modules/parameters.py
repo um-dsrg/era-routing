@@ -25,6 +25,8 @@ class Parameters:
                             help='The location to the path selection result file')
         parser.add_argument("-o", "--output", required=True,
                             help='The location where to save the XML result file.')
+        parser.add_argument("--pclpResultFile", required=False, type=str, default="",
+                            help="The path to the pclp result file")
         parser.add_argument("--algorithm", type=str, required=True,
                             help="The Evolutionary algorithm to run. Available options are: "
                                  "nsga2 | nsga3")
@@ -103,6 +105,15 @@ class Parameters:
             raise AssertionError(F"The output directory does not exist: "
                                  F"{os.path.dirname(cmd_line_parser.output)}")
         self.outputFile = cmd_line_parser.output
+
+        # Verify that the pclpResult file exists if given
+        if cmd_line_parser.pclpResultFile:
+            if os.path.isfile(cmd_line_parser.pclpResultFile) is False:
+                raise AssertionError("The pclp result file does not exist: "
+                                     F"{cmd_line_parser.pclpResultFile}")
+            self.pclpResultFile = cmd_line_parser.pclpResultFile
+        else:
+            self.pclpResultFile = ""
 
         # Verify the algorithm is valid
         self.algorithm = cmd_line_parser.algorithm.lower()

@@ -1,5 +1,10 @@
 """Contains various different evolutionary algorithms"""
 
+import random
+from typing import Dict
+
+from lxml import etree
+
 from deap import algorithms, tools
 from modules.timings import GaTimings
 
@@ -16,6 +21,36 @@ def nsga2(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, to
     # Generate the first population
     population = toolbox.population(n=parameters.pop_size)
     population = ga_operators.round_small_numbers(population)
+
+    # If the PcLp result file is given add it to the first population
+    if parameters.pclpResultFile:
+        logger.log_info(F"Adding the PcLp result to population. File: {parameters.pclpResultFile}")
+        xmlParser = etree.XMLParser(remove_blank_text=True)
+        resFileRoot = etree.parse(parameters.pclpResultFile, xmlParser).getroot()
+
+        pathAssignment = dict()  # type: Dict[int, float]
+
+        for pathElement in resFileRoot.findall("OptimalSolution/Flow/Path"):
+            pathId = int(pathElement.get("Id"))
+            pathDataRate = float(pathElement.get("DataRate"))
+
+            if pathId in pathAssignment:
+                raise RuntimeError("Trying to insert duplicate path when generating lp solution. "
+                                   F"Path Id: {pathId}")
+
+            pathAssignment[pathId] = pathDataRate
+
+        chromosomeIndex = random.randint(0, len(population) - 1)
+        chromosomeToChange = population[chromosomeIndex]
+
+        for pathId, pathDataRate in sorted(pathAssignment.items()):
+            logger.log_info(F"Path ID: {pathId} | Data Rate: {pathDataRate}")
+            chromosomeToChange[pathId] = pathDataRate
+
+        population[chromosomeIndex] = chromosomeToChange
+
+    logger.log_info(F"The chromosome is {population[chromosomeIndex]}")
+
     population = ga_stats.reset_chromosome_counters(population)
 
     # Evaluate individuals with an invalid fitness
