@@ -48,8 +48,7 @@ def nsga2(parameters, logger, ga_operators, ga_stats, ga_results, result_xml, to
             chromosomeToChange[pathId] = pathDataRate
 
         population[chromosomeIndex] = chromosomeToChange
-
-    logger.log_info(F"The chromosome is {population[chromosomeIndex]}")
+        logger.log_info(F"The chromosome is {population[chromosomeIndex]}")
 
     population = ga_stats.reset_chromosome_counters(population)
 
