@@ -79,17 +79,26 @@ class GaOperators:
 
         for flow in self.flows.values():
             num_paths = flow.get_num_paths()
-            paths_to_use = random.sample(list(flow.paths.values()),
-                                         random.randint(1, num_paths))
+            paths_to_use = random.sample(list(flow.paths.values()), random.randint(1, num_paths))
 
-            # Find the largest data rate we can transmit on the path
+            remaining_rate = flow.requested_rate
+
+            # # # New Method # # #
             for path in paths_to_use:
-                path_link_capacities = [self.network.links[link_id].capacity
-                                        for link_id in path.links]
+                # TODO: May add the link capacity in the range here.
+                rate_on_path = random.uniform(0, remaining_rate)
+                chromosome[path.id] = rate_on_path
+                remaining_rate -= rate_on_path
 
-                min_link_capacity = min(path_link_capacities)
-                chromosome[path.id] = min(flow.requested_rate,
-                                          min_link_capacity)
+            # # # Old Method # # #
+            # # Find the largest data rate we can transmit on the path
+            # for path in paths_to_use:
+            #     path_link_capacities = [self.network.links[link_id].capacity
+            #                             for link_id in path.links]
+
+            #     min_link_capacity = min(path_link_capacities)
+            #     chromosome[path.id] = min(flow.requested_rate,
+            #                               min_link_capacity)
 
         return self._validate_chromosome(chromosome)
 
