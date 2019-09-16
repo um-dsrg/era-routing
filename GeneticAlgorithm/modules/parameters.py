@@ -37,10 +37,12 @@ class Parameters:
                             help='The population size.')
         parser.add_argument("--populationGenerator", type=str, required=True,
                             help="The method used to generate the initial population. Valid "
-                                 "values are RandomAllocation and MaximiseFlow. RandomAllocation "
-                                 "assigns the data rate to transmit on each path at random. "
-                                 "MaximiseFlow tries to cram as much data as possible on each "
-                                 "path. Both of the method above will randomly select the number "
+                                 "values are RandomPathAllocation, RandomFlowAllocation and "
+                                 "MaximiseFlowAllocation. RandomPathAllocation assigns the data "
+                                 "rate to transmit on each path at random. RandomFlowAllocation "
+                                 "randomly chooses the fraction of flow to transmit. "
+                                 "MaximiseFlowAllocation tries to cram as much data as possible on "
+                                 "each path. All of the above methods randomly select the number "
                                  "of paths to use for transmission. The paths used are also "
                                  "assigned in random order.")
         parser.add_argument('--prob_crossover', type=float, required=True,
@@ -145,7 +147,9 @@ class Parameters:
                                  'Population size needs to be divisible by 4')
         self.pop_size = cmd_line_parser.pop_size
 
-        if cmd_line_parser.populationGenerator not in ["RandomAllocation", "MaximiseFlow"]:
+        if cmd_line_parser.populationGenerator not in ["RandomPathAllocation",
+                                                       "RandomFlowAllocation",
+                                                       "MaximiseFlowAllocation"]:
             raise AssertionError(F"The population generation method "
                                  F"{cmd_line_parser.populationGenerator} is not supported")
         self.populationGenerator = cmd_line_parser.populationGenerator

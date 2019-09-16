@@ -54,10 +54,12 @@ def main():
 
     # # # Configure the GA operators # # #
     toolbox = base.Toolbox()
-    if parameters.populationGenerator == "RandomAllocation":
-        toolbox.register('indices', ga_operators.generateChromosomeRandom)
-    elif parameters.populationGenerator == "MaximiseFlow":
-        toolbox.register('indices', ga_operators.generateChromosomeMaxFlow)
+    if parameters.populationGenerator == "RandomPathAllocation":
+        toolbox.register("indices", ga_operators.genChromosomeRandomPathAllocation)
+    elif parameters.populationGenerator == "RandomFlowAllocation":
+        toolbox.register("indices", ga_operators.genChromosomeRandomFlowAllocation)
+    elif parameters.populationGenerator == "MaximiseFlowAllocation":
+        toolbox.register("indices", ga_operators.genChromosomeMaximiseFlowAllocation)
     else:
         raise RuntimeError("Invalid population generator given")
 
