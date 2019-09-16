@@ -58,7 +58,7 @@ class GaOperators:
                                  for metric_function_name
                                  in objectives.get_metric_calc_fns()]
 
-    def generate_chromosome(self):
+    def generateChromosomeMaxFlow(self) -> list:
         """Generate a single chromosome.
 
         This function is called by the DEAP framework when generating the first
@@ -81,24 +81,45 @@ class GaOperators:
             num_paths = flow.get_num_paths()
             paths_to_use = random.sample(list(flow.paths.values()), random.randint(1, num_paths))
 
+            # Find the largest data rate we can transmit on the path
+            for path in paths_to_use:
+                path_link_capacities = [self.network.links[link_id].capacity
+                                        for link_id in path.links]
+
+                min_link_capacity = min(path_link_capacities)
+                chromosome[path.id] = min(flow.requested_rate, min_link_capacity)
+
+        return self._validate_chromosome(chromosome)
+
+    def generateChromosomeRandom(self) -> list:
+        """Generate a single chromosome.
+
+        This function is called by the DEAP framework when generating the first
+        population. This generation method will select the number of paths a
+        flow is going to use at random with equal probability, including no
+        paths at all. Once the number of paths the flow is going to use is
+        selected, the paths are chosen at random from all the flow's available
+        paths. The amount of data rate to transmit on each path is randomly
+        assigned.
+
+        The chromosome size is equivalent to the total number of paths in the
+        network.
+
+        :return: A newly generated, valid chromosome
+        """
+        chromosome_size = self.network.get_num_paths()
+        chromosome = [0] * chromosome_size
+
+        for flow in self.flows.values():
+            num_paths = flow.get_num_paths()
+            paths_to_use = random.sample(list(flow.paths.values()), random.randint(0, num_paths))
+
             remaining_rate = flow.requested_rate
 
-            # # # New Method # # #
             for path in paths_to_use:
-                # TODO: May add the link capacity in the range here.
                 rate_on_path = random.uniform(0, remaining_rate)
                 chromosome[path.id] = rate_on_path
                 remaining_rate -= rate_on_path
-
-            # # # Old Method # # #
-            # # Find the largest data rate we can transmit on the path
-            # for path in paths_to_use:
-            #     path_link_capacities = [self.network.links[link_id].capacity
-            #                             for link_id in path.links]
-
-            #     min_link_capacity = min(path_link_capacities)
-            #     chromosome[path.id] = min(flow.requested_rate,
-            #                               min_link_capacity)
 
         return self._validate_chromosome(chromosome)
 
