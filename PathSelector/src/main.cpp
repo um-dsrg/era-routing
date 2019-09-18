@@ -24,26 +24,30 @@ main (int argc, const char *argv[])
   try
     {
       po::options_description cmdLineParams ("Allowed options");
-      cmdLineParams.add_options () ("help,h", "Produce the help message.") (
-          "input,i", po::value<std::string> (&inputFile)->required (),
-          "The path to the LGF graph file.") (
-          "output,o", po::value<std::string> (&outputFile)->required (),
-          "The path where to store the output of the KSP algorithm in XML format.") (
-          "globalK", po::value<uint32_t> (&globalK),
-          "Number of shortest paths to calculate for every flow.") (
-          "perFlowK", po::bool_switch (&perFlowK),
-          "When set, the number of paths per flow will be determined based on the "
-          "per flow k value.") (
-          "includeAllKEqualCostPaths", po::bool_switch (&includeAllKEqualCostPaths),
-          "When set, all the paths with the same cost as the kth path will be "
-          "included. Irrelevant of this setting, flows with k=1 will only have "
-          "one path to simulate OSPF") ("kShortestPath", po::bool_switch (&kShortestPath),
-                                        "When set use the KSP algorithm to find paths") (
-          "edgeDisjoint", po::bool_switch (&edgeDisjoint),
-          "When set use the edge disjoint algorithm to find paths") (
-          "relaxedEdgeDisjoint", po::bool_switch (&relaxedEdgeDisjoint),
-          "When set, use the relaxed edge disjoint algorithm.") (
-          "verbose,v", po::bool_switch (&verbose), "Enable verbose output.");
+      // clang-format off
+      cmdLineParams.add_options ()
+        ("help,h", "Produce the help message.")
+        ("input,i", po::value<std::string> (&inputFile)->required (),
+         "The path to the LGF graph file.")
+        ("output,o", po::value<std::string> (&outputFile)->required (),
+         "The path where to store the output of the KSP algorithm in XML format.")]
+        ("globalK", po::value<uint32_t> (&globalK),
+         "Number of shortest paths to calculate for every flow.")
+        ("perFlowK", po::bool_switch (&perFlowK),
+         "When set, the number of paths per flow will be determined based on the "
+        "per flow k value.")
+        ("includeAllKEqualCostPaths", po::bool_switch (&includeAllKEqualCostPaths),
+         "When set, all the paths with the same cost as the kth path will be "
+         "included. Irrelevant of this setting, flows with k=1 will only have "
+         "one path to simulate OSPF")
+        ("kShortestPath", po::bool_switch (&kShortestPath),
+         "When set use the KSP algorithm to find paths")
+        ("edgeDisjoint", po::bool_switch (&edgeDisjoint),
+         "When set use the edge disjoint algorithm to find paths")
+        ("relaxedEdgeDisjoint", po::bool_switch (&relaxedEdgeDisjoint),
+         "When set, use the relaxed edge disjoint algorithm.")
+        ("verbose,v", po::bool_switch (&verbose), "Enable verbose output.");
+      // clang-format on
 
       po::variables_map vm;
       po::store (po::parse_command_line (argc, argv, cmdLineParams), vm);
