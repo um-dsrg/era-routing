@@ -40,6 +40,9 @@ class GaOperators:
         self.ga_stats = ga_stats  # type: GaStatistics
         self.log_info = log_info  # Information log file
 
+        # Boolean flag that determines whether the GA will take into consideration Acknowledgements or not
+        self.considerAcks = parameters.considerAcks
+
         self.mutation_fraction = parameters.mutation_fraction
 
         cumulativeProbability = 0.0
@@ -610,10 +613,11 @@ class GaOperators:
                 link_column = actual_network_matrix[:, link_id]
                 link_usage = np.sum(link_column)
 
-                for ack_path in self.network.get_ack_paths_used_by_link(link_id):
-                    # The below calculation assumes an ACK packet transmitted
-                    # every 2 Data packets received
-                    link_usage += (chromosome[ack_path] * 0.0458)
+                if self.considerAcks:
+                    for ack_path in self.network.get_ack_paths_used_by_link(link_id):
+                        # The below calculation assumes an ACK packet is
+                        # transmitted for every 2 Data packets received
+                        link_usage += (chromosome[ack_path] * 0.0458)
 
                 link_capacity = self.network.get_link_capacity(link_id)
 

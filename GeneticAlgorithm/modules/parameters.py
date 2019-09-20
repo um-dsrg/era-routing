@@ -16,6 +16,9 @@ class Parameters:
         params_element.set('prob_crossover', str(self.prob_crossover))
         params_element.set('p_mutation', str(self.prob_mutation))
         params_element.set('mutation_fraction', str(self.mutation_fraction))
+        params_element.set("algorithm", str(self.algorithm))
+        params_element.set("populationGenerator", str(self.populationGenerator))
+        params_element.set("considerAcks", str(self.considerAcks))
 
     @staticmethod
     def _set_cmd_line_args():
@@ -70,6 +73,8 @@ class Parameters:
                                  'this order: '
                                  'name, weight (maximise=1 / minimise=-1), '
                                  'metric calculation function, bound calculation function')
+        parser.add_argument("--considerAcks", action="store_true", required=False,
+                            help="When set, the GA will take into consideration ACK flows")
         parser.add_argument('--log_directory', type=str, required=False,
                             help='The path where to store the log files.')
         parser.add_argument('--status_log', action='store_true',
@@ -98,6 +103,7 @@ class Parameters:
         parser.set_defaults(info_log=False)
         parser.set_defaults(store_genes=False)
         parser.set_defaults(saveParentOffspring=False)
+        parser.set_defaults(considerAcks=False)
 
         return parser.parse_args()
 
@@ -195,6 +201,9 @@ class Parameters:
             assert 1 <= cmd_line_parser.xml_save_frequency <= self.num_generations, \
                 F"The xml_save_frequency should be between 1 and {self.num_generations}"
             self.xml_save_frequency = cmd_line_parser.xml_save_frequency
+
+        # Acknowledgement handling
+        self.considerAcks = cmd_line_parser.considerAcks
 
         # Check to make sure that if logging is enabled, the location where to
         # store the log files is given as well
