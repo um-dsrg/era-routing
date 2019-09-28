@@ -30,7 +30,7 @@ main (int argc, const char *argv[])
         ("input,i", po::value<std::string> (&inputFile)->required (),
          "The path to the LGF graph file.")
         ("output,o", po::value<std::string> (&outputFile)->required (),
-         "The path where to store the output of the KSP algorithm in XML format.")]
+         "The path where to store the output of the KSP algorithm in XML format.")
         ("globalK", po::value<uint32_t> (&globalK),
          "Number of shortest paths to calculate for every flow.")
         ("perFlowK", po::bool_switch (&perFlowK),
