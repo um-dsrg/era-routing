@@ -364,7 +364,7 @@ BoostGraph::GetPaths (Flow::flowContainer_t &flows)
 }
 
 /**
- * @brief Return the K shortest path between the given source and destination nodes
+ * @brief Return the K shortest paths between the given source and destination nodes
  * @param srcNode The Source Node
  * @param dstNode The Destination Node
  * @param k The number of paths to find
@@ -379,6 +379,13 @@ BoostGraph::GetKShortestPaths (node_t srcNode, node_t dstNode, uint32_t k)
                          boost::get (boost::vertex_index_t (), m_graph), k);
 }
 
+/**
+ * @brief Return the K shortest edge disjoint paths between the given source and destination nodes
+ * @param srcNode The Source Node
+ * @param dstNode The Destination Node
+ * @param k The number of paths to find
+ * @return The list of paths found
+ */
 BoostGraph::pathContainer_t
 BoostGraph::GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k)
 {
