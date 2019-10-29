@@ -1,11 +1,27 @@
 #include <set>
 #include <list>
+#include <random>
 #include <math.h>
-#include <boost/numeric/conversion/cast.hpp>
 #include <boost/graph/copy.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
-#include "yen_ksp.hpp"
 #include "boost-graph.hpp"
+#include "yen_ksp.hpp"
+
+/**
+ A function that compares two floating point numbers to check for equality.
+
+ @param value1 The first value to compare.
+ @param value2 The second value to compare.
+ @param accuracy The accuracy used during the comparison. Default: 1e-9.
+ @return True: The numbers are equal at the given accuracy.
+         False: The numbers are not equal at the given accuracy.
+ */
+bool
+numbersAreClose (double value1, double value2, double accuracy = 1e-9)
+{
+  return (std::fabs (value1 - value2) < accuracy);
+}
 
 /**
  Construct the BoostGraph object from the lemon graph.
@@ -165,15 +181,16 @@ BoostGraph::GetLinkCapacity (const BoostGraph::link_t &link) const
 /**
  @brief Retrieve the link opposite to that given by \p linkId.
 
- Retrieve the link opposite to that given by \p linkId. The opposite link is defined
- as the link that has the opposite source and destination nodes BUT identical delay
- values. The capacities may be different.
+ Retrieve the link opposite to that given by \p linkId. The opposite link is
+ defined as the link that has the opposite source and destination nodes BUT
+ identical delay values. The capacities may be different.
 
- If the opposite link has not been found, the returned link id is equal to \p linkId.
+ If the opposite link has not been found, the returned link id is equal to \p
+ linkId.
 
  @param linkId The id of the link to find the opposite of.
- @return The link id of the opposite link. If the opposite link is not found, the
-         returned link id is equal to that given.
+ @return The link id of the opposite link. If the opposite link is not found,
+ the returned link id is equal to that given.
  */
 std::list<id_t>
 BoostGraph::GetOppositeLink (id_t linkId) const
@@ -271,34 +288,93 @@ BoostGraph::GetDestinationNode (const link_t &link) const
   return boost::target (link, m_graph);
 }
 
-/**
- A function that compares two floating point numbers to check for equality.
-
- @param value1 The first value to compare.
- @param value2 The second value to compare.
- @param accuracy The accuracy used during the comparison. Default: 1e-9.
- @return True: The numbers are equal at the given accuracy.
-         False: The numbers are not equal at the given accuracy.
- */
-bool
-numbersAreClose (double value1, double value2, double accuracy = 1e-9)
+// TODO: Add documentation
+void
+BoostGraph::GetPaths (Flow::flowContainer_t &flows)
 {
-  return (std::fabs (value1 - value2) < accuracy);
+  for (auto &[flowId, flow] : flows)
+    {
+      LOG_MSG ("Finding " << flow.k << " paths for flow: " << flowId);
+
+      auto k = flow.k;
+      auto &srcNode{m_nodeMap.at (flow.sourceId)};
+      auto &dstNode{m_nodeMap.at (flow.destinationId)};
+
+      auto numPathsToGet = k + 1;
+      pathContainer_t paths;
+      auto lastPathCost = linkCost_t{0.0};
+      auto secondToLastPathCost = linkCost_t{0.0};
+      auto randomlyRemoveExcessPaths{true};
+
+      do
+        {
+          // NOTE: The below function needs to be udpated based on what function we want to use.
+          paths = boost::yen_ksp (m_graph, srcNode, dstNode,
+                                  /* Link weight attribute */
+                                  boost::get (&LinkDetails::cost, m_graph),
+                                  boost::get (boost::vertex_index_t (), m_graph), numPathsToGet);
+
+          lastPathCost = paths.back ().first;
+          secondToLastPathCost = std::prev (paths.end (), 2)->first;
+
+          if (paths.size () <= k)
+            {
+              randomlyRemoveExcessPaths = false;
+              break;
+            }
+          else if (paths.empty ())
+            throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
+
+          numPathsToGet++;
+        }
+      while (numbersAreClose (lastPathCost, secondToLastPathCost));
+
+      if (randomlyRemoveExcessPaths == false)
+        {
+          AddDataPaths (flow, paths);
+        }
+      else
+        { // FIXME: Put this in a function
+          // Container storing the list of paths to be chosen at random
+          pathContainer_t pathsWithEqualCost;
+
+          auto pathIterator = paths.begin ();
+          std::advance (pathIterator, k - 1);
+          auto kthPathCost = pathIterator->first;
+
+          for (; pathIterator != paths.end (); ++pathIterator)
+            {
+              if (numbersAreClose (pathIterator->first, kthPathCost))
+                pathsWithEqualCost.push_back (*pathIterator);
+            }
+
+          pathContainer_t randomlyChosenPaths;
+          std::sample (pathsWithEqualCost.begin (), pathsWithEqualCost.end (),
+                       std::back_inserter (randomlyChosenPaths), 1,
+                       std::mt19937{std::random_device{}()});
+
+          pathContainer_t finalPathSet;
+          finalPathSet.assign (paths.begin (), std::next (paths.begin (), k - 1));
+          finalPathSet.assign (randomlyChosenPaths.begin (), randomlyChosenPaths.end ());
+
+          AddDataPaths (flow, finalPathSet);
+        }
+    }
 }
 
 /**
  @brief Add the kth shortest path for each data flow based on the flow's k value
 
  Add the kth shortest paths for each data flow. If includeAllKEqualCostPaths is
- set include all the paths with the same cost as path k. If k is equal to 1, then
- only one path will be chosen to simulate OSPF routing.
+ set include all the paths with the same cost as path k. If k is equal to 1,
+ then only one path will be chosen to simulate OSPF routing.
 
- Acknowledgement paths take the reverse route of the corresponding data path.
+ Acknowledgment paths take the reverse route of the corresponding data path.
 
  @param flows The flows that will be updated with the paths
  @param includeAllKEqualCostPaths Flag that when set allows the KSP algorithm to
-                                  include all the paths with cost equal to the kth
-                                  path.
+                                  include all the paths with cost equal to the
+ kth path.
  */
 void
 BoostGraph::FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEqualCostPaths)
@@ -324,18 +400,20 @@ BoostGraph::FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEq
       else if (k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size () == k))
         {
           /**
-             Only search for more paths if K is not equal to 1, the includeAllEqualCostPaths is
-             enabled, and if the number of found paths is equal to k; thus, we need more paths to
-             determine whether all paths have been included.
-             */
+         Only search for more paths if K is not equal to 1, the
+         includeAllEqualCostPaths is enabled, and if the number of found paths
+         is equal to k; thus, we need more paths to determine whether all paths
+         have been included.
+         */
           auto kthPathCost{kShortestPaths.back ().first};
           auto allEqualCostPathsFound = bool{false};
           auto extendedK = uint32_t{k};
 
           /**
-             The number of paths found in the previous run. This variable will be used to stop the
-             algorithm when all the paths for a particular flow have been found.
-             */
+         The number of paths found in the previous run. This variable will be
+         used to stop the algorithm when all the paths for a particular flow
+         have been found.
+         */
           auto prevNumPathsFound{kShortestPaths.size ()};
 
           while (allEqualCostPathsFound == false)
@@ -349,15 +427,15 @@ BoostGraph::FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEq
                   prevNumPathsFound != kShortestPaths.size ())
                 {
                   /**
-                     * This if condition will be true when the last path's cost is equal to the K
-                     * shortest path and the number of paths found in the previous run and this run
-                     * are different. If both of those conditions are satisfied, the K value needs to
-                     * be increased further to make sure that all the paths are being taken into
-                     * consideration.
-                     * Note that if the number of paths returned in the previous run and this run
-                     * are equal than this particular flow has no more paths to offer and the loop
-                     * should be terminated.
-                     */
+           * This if condition will be true when the last path's cost is equal
+           * to the K shortest path and the number of paths found in the
+           * previous run and this run are different. If both of those
+           * conditions are satisfied, the K value needs to be increased further
+           * to make sure that all the paths are being taken into consideration.
+           * Note that if the number of paths returned in the previous run and
+           * this run are equal than this particular flow has no more paths to
+           * offer and the loop should be terminated.
+           */
                   prevNumPathsFound = kShortestPaths.size ();
                   continue;
                 }
@@ -399,8 +477,8 @@ BoostGraph::FindKEdgeDisjointPaths (Flow::flowContainer_t &flows)
 
       LOG_MSG ("Finding the paths for flow " << flow.id);
 
-      // Simpler solution, copy the graph - store only the link ids - and at the end loop and add
-      // data paths using the original graph.
+      // Simpler solution, copy the graph - store only the link ids - and at the
+      // end loop and add data paths using the original graph.
       graph_t tempGraph;
       boost::copy_graph (m_graph, tempGraph);
 
@@ -485,17 +563,18 @@ BoostGraph::FindKEdgeDisjointPaths (Flow::flowContainer_t &flows)
 /**
  * @brief Find the first K relaxed edge disjoint paths for each flow.
  *
- * The Relaxed Edge disjoint algorithm will find the first K edge disjoint paths; however, different
- * from the algorithm in FindKEdgeDisjointPaths, links that are the only means of communication for
- * that node are not deleted.
+ * The Relaxed Edge disjoint algorithm will find the first K edge disjoint
+ * paths; however, different from the algorithm in FindKEdgeDisjointPaths, links
+ * that are the only means of communication for that node are not deleted.
  *
- * The links that will not be deleted are discovered using the following method after having found
- * the shortest path that links the source with the destination node. First, the shortest path is
- * traversed from the source node, to the destination nodes. For every node met, a check is made to
- * see if it's the only outgoing link available to that node. If it is, retain that link, if not the
- * link can be deleted in subsequent iterations. The same procedure is repeated starting from the
- * destination node and moving towards the source node backwards. The link is retained if nodes only
- * have one incoming link.
+ * The links that will not be deleted are discovered using the following method
+ * after having found the shortest path that links the source with the
+ * destination node. First, the shortest path is traversed from the source node,
+ * to the destination nodes. For every node met, a check is made to see if it's
+ * the only outgoing link available to that node. If it is, retain that link, if
+ * not the link can be deleted in subsequent iterations. The same procedure is
+ * repeated starting from the destination node and moving towards the source
+ * node backwards. The link is retained if nodes only have one incoming link.
  *
  * @param[in,out] flows The flow set that will be updated with the found paths.
  */
@@ -508,7 +587,8 @@ BoostGraph::FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows)
 
       LOG_MSG ("Finding " << flow.k << " relaxed edge disjoint path(s) for Flow: " << flow.id);
 
-      // Find and save links that cannot be removed as they are the sole point of connection
+      // Find and save links that cannot be removed as they are the sole point of
+      // connection
       auto linksToRetain = std::set<id_t>{GetLinksToRetain (flow)};
 
       graph_t tempGraph;
@@ -555,9 +635,9 @@ BoostGraph::FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows)
           edgeDisjointPaths.push_back (pathLinks);
 
           /**
-           * Remove all the edges of the found path with the exception of the links that are in the
-           * links to retain set.
-           */
+       * Remove all the edges of the found path with the exception of the links
+       * that are in the links to retain set.
+       */
           for (const auto &shortestPathDetails : shortestPath)
             {
               for (const auto &link : shortestPathDetails.second)
@@ -625,7 +705,8 @@ BoostGraph::GetLinksToRetain (const Flow &flow)
   for (const auto &link : shortestPath)
     {
       auto srcNode{GetSourceNode (link)};
-      // The number of outgoing links from a node excluding those connected to a terminal
+      // The number of outgoing links from a node excluding those connected to a
+      // terminal
       auto numOutgoingLinks = uint32_t{0};
 
       using outEdgeIt = graph_t::out_edge_iterator;
@@ -658,7 +739,8 @@ BoostGraph::GetLinksToRetain (const Flow &flow)
     {
       const auto &link = *linkIt;
       auto dstNode{GetDestinationNode (link)};
-      // The number of incoming links from a node excluding those connected with a terminal
+      // The number of incoming links from a node excluding those connected with a
+      // terminal
       auto numIncomingLinks = uint32_t{0};
 
       using inEdgeIt = graph_t::in_edge_iterator;
@@ -712,9 +794,9 @@ BoostGraph::AddDataPaths (Flow &flow, const BoostGraph::pathContainer_t &paths)
 /**
  @brief Find the routes that the Acknowledgment flows will take for TCP flows.
 
- Find the routes that the Acknowledgment flows will take for TCP flows by looping
- through all the paths of each flow and finding the reverse path for each data
- path in the flow.
+ Find the routes that the Acknowledgment flows will take for TCP flows by
+ looping through all the paths of each flow and finding the reverse path for
+ each data path in the flow.
 
  @param[in,out] flows The flow container.
  */
@@ -748,7 +830,8 @@ BoostGraph::AddAckPaths (Flow::flowContainer_t &flows)
               bool ackLinkFound{false};
               BoostGraph::link_t ackLink;
 
-              // The source and destination nodes are reversed to find the opposite link
+              // The source and destination nodes are reversed to find the opposite
+              // link
               std::tie (ackLink, ackLinkFound) = boost::edge (dataDstNode, dataSrcNode, m_graph);
 
               if (!ackLinkFound)
@@ -767,8 +850,9 @@ BoostGraph::AddAckPaths (Flow::flowContainer_t &flows)
 /**
  @brief Find the shortest route that the Acknowledgement flow can take.
 
- Find the shortest route that the Acknowledgement flow can take. This ack route will be used by the
- network simulator when the PPFS switch will be used where only a single path for the ACK is needed.
+ Find the shortest route that the Acknowledgement flow can take. This ack route
+ will be used by the network simulator when the PPFS switch will be used where
+ only a single path for the ACK is needed.
 
  @param[in,out] flows The flow container.
  */

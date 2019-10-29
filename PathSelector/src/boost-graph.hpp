@@ -51,6 +51,8 @@ public:
   node_t GetSourceNode (const link_t &link) const;
   node_t GetDestinationNode (const link_t &link) const;
 
+  void GetPaths(Flow::flowContainer_t &flows);
+
   void FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEqualCostPaths);
   void FindKEdgeDisjointPaths (Flow::flowContainer_t &flows);
   void FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows);

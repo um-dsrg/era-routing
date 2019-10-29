@@ -70,25 +70,27 @@ main (int argc, const char *argv[])
 
       Flow::flowContainer_t flows{ParseFlows (inputFile, perFlowK, globalK)};
 
-      if (kShortestPath)
-        {
-          boostGraph.FindKShortestPaths (flows, includeAllKEqualCostPaths);
-        }
-      else if (edgeDisjoint)
-        {
-          boostGraph.FindKEdgeDisjointPaths (flows);
-        }
-      else if (relaxedEdgeDisjoint)
-        {
-          if (includeAllKEqualCostPaths)
-            throw std::runtime_error ("The RelaxedKEdgeDisjoint does include equal cost paths");
+      boostGraph.GetPaths (flows);
 
-          boostGraph.FindKRelaxedEdgeDisjointPaths (flows);
-        }
-      else
-        {
-          throw std::runtime_error ("No path selection algorithm chosen");
-        }
+      //      if (kShortestPath)
+      //        {
+      //          boostGraph.FindKShortestPaths (flows, includeAllKEqualCostPaths);
+      //        }
+      //      else if (edgeDisjoint)
+      //        {
+      //          boostGraph.FindKEdgeDisjointPaths (flows);
+      //        }
+      //      else if (relaxedEdgeDisjoint)
+      //        {
+      //          if (includeAllKEqualCostPaths)
+      //            throw std::runtime_error ("The RelaxedKEdgeDisjoint does include equal cost paths");
+
+      //          boostGraph.FindKRelaxedEdgeDisjointPaths (flows);
+      //        }
+      //      else
+      //        {
+      //          throw std::runtime_error ("No path selection algorithm chosen");
+      //        }
 
       boostGraph.AddAckPaths (flows);
       boostGraph.AddShortestPathAck (flows);
