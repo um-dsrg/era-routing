@@ -59,15 +59,16 @@ public:
 private:
   pathContainer_t GetKShortestPaths (node_t srcNode, node_t dstNode, uint32_t k);
   pathContainer_t GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
-  //  void FindKEdgeDisjointPaths (Flow::flowContainer_t &flows);
-  //  void FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows);
+  pathContainer_t GetKShortestRelaxedEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
 
   void GenerateBoostGraph (const LemonGraph &lemonGraph);
   void GenerateBoostNodes (const LemonGraph &lemonGraph);
   void GenerateBoostLinks (const LemonGraph &lemonGraph);
 
-  std::set<id_t> GetLinksToRetain (const Flow &flow);
+  std::set<id_t> GetLinksToRetain (node_t srcNode, node_t dstNode);
   void AddDataPaths (Flow &flow, const pathContainer_t &paths);
+  bool PathsEqual (const std::list<BoostGraph::link_t> &pathA,
+                   const std::list<BoostGraph::link_t> &pathB);
 
   graph_t m_graph; /**< The boost graph. */
   std::map<id_t, node_t> m_nodeMap; /**< Maps the node id with its respective boost node. */
