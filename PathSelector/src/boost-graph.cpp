@@ -211,6 +211,7 @@ BoostGraph::GetOppositeLink (id_t linkId) const
       auto incomingLinkSrcNodeId = GetNodeId (boost::source (*incomingLinkIt, m_graph));
       auto incomingLinkCost = GetLinkCost (*incomingLinkIt);
 
+      // FIXME: Update the below comparison
       if ((incomingLinkSrcNodeId == dstNodeId) && (linkCost == incomingLinkCost))
         {
           oppositeLinks.emplace_back (GetLinkId (*incomingLinkIt));
@@ -308,7 +309,7 @@ BoostGraph::GetPaths (Flow::flowContainer_t &flows)
 
       do
         {
-          // NOTE: The below function needs to be udpated based on what function we want to use.
+          // FIXME: Replace with the function
           paths = boost::yen_ksp (m_graph, srcNode, dstNode,
                                   /* Link weight attribute */
                                   boost::get (&LinkDetails::cost, m_graph),
@@ -363,320 +364,190 @@ BoostGraph::GetPaths (Flow::flowContainer_t &flows)
 }
 
 /**
- @brief Add the kth shortest path for each data flow based on the flow's k value
-
- Add the kth shortest paths for each data flow. If includeAllKEqualCostPaths is
- set include all the paths with the same cost as path k. If k is equal to 1,
- then only one path will be chosen to simulate OSPF routing.
-
- Acknowledgment paths take the reverse route of the corresponding data path.
-
- @param flows The flows that will be updated with the paths
- @param includeAllKEqualCostPaths Flag that when set allows the KSP algorithm to
-                                  include all the paths with cost equal to the
- kth path.
+ * @brief Return the K shortest path between the given source and destination nodes
+ * @param srcNode The Source Node
+ * @param dstNode The Destination Node
+ * @param k The number of paths to find
+ * @return The list of paths found
  */
-void
-BoostGraph::FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEqualCostPaths)
+BoostGraph::pathContainer_t
+BoostGraph::GetKShortestPaths (node_t srcNode, node_t dstNode, uint32_t k)
 {
-  for (auto &flowPair : flows)
+  return boost::yen_ksp (m_graph, srcNode, dstNode,
+                         /* Link weight attribute */
+                         boost::get (&LinkDetails::cost, m_graph),
+                         boost::get (boost::vertex_index_t (), m_graph), k);
+}
+
+BoostGraph::pathContainer_t
+BoostGraph::GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k)
+{
+  graph_t tempGraph;
+  boost::copy_graph (m_graph, tempGraph);
+
+  auto pathFound = bool{false};
+  auto numPathsFound = uint32_t{0};
+
+  pathContainer_t paths;
+
+  do
     {
-      auto &flow{flowPair.second};
-
-      auto k = flow.k;
-      auto &srcNode{m_nodeMap.at (flow.sourceId)};
-      auto &dstNode{m_nodeMap.at (flow.destinationId)};
-
-      auto kShortestPaths =
+      auto path =
           pathContainer_t{boost::yen_ksp (m_graph, srcNode, dstNode,
                                           /* Link weight attribute */
                                           boost::get (&LinkDetails::cost, m_graph),
-                                          boost::get (boost::vertex_index_t (), m_graph), k)};
+                                          boost::get (boost::vertex_index_t (), m_graph), 1)};
 
-      if (kShortestPaths.empty ())
+      if (path.empty ())
+        pathFound = false;
+
+      // Remove all edges of the found path
+      for (const auto &[linkCost, links] : path)
         {
-          throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
-        }
-      else if (k != 1 && includeAllKEqualCostPaths && (kShortestPaths.size () == k))
-        {
-          /**
-         Only search for more paths if K is not equal to 1, the
-         includeAllEqualCostPaths is enabled, and if the number of found paths
-         is equal to k; thus, we need more paths to determine whether all paths
-         have been included.
-         */
-          auto kthPathCost{kShortestPaths.back ().first};
-          auto allEqualCostPathsFound = bool{false};
-          auto extendedK = uint32_t{k};
-
-          /**
-         The number of paths found in the previous run. This variable will be
-         used to stop the algorithm when all the paths for a particular flow
-         have been found.
-         */
-          auto prevNumPathsFound{kShortestPaths.size ()};
-
-          while (allEqualCostPathsFound == false)
+          for (const auto &link : links)
             {
-              extendedK = boost::numeric_cast<uint32_t> (std::ceil (extendedK * 1.5));
-              kShortestPaths = boost::yen_ksp (
-                  m_graph, srcNode, dstNode, boost::get (&LinkDetails::cost, m_graph),
-                  boost::get (boost::vertex_index_t (), m_graph), extendedK);
+              auto srcNode = boost::source (link, tempGraph);
+              auto dstNode = boost::target (link, tempGraph);
 
-              if (numbersAreClose (kShortestPaths.back ().first, kthPathCost) &&
-                  prevNumPathsFound != kShortestPaths.size ())
-                {
-                  /**
-           * This if condition will be true when the last path's cost is equal
-           * to the K shortest path and the number of paths found in the
-           * previous run and this run are different. If both of those
-           * conditions are satisfied, the K value needs to be increased further
-           * to make sure that all the paths are being taken into consideration.
-           * Note that if the number of paths returned in the previous run and
-           * this run are equal than this particular flow has no more paths to
-           * offer and the loop should be terminated.
-           */
-                  prevNumPathsFound = kShortestPaths.size ();
-                  continue;
-                }
-              else
-                {
-                  allEqualCostPathsFound = true;
-                  // Keep all the paths with cost lower than or equal to the kthPathCost
-                  kShortestPaths.remove_if (
-                      [kthPathCost](
-                          const std::pair<linkCost_t, std::list<BoostGraph::link_t>> &path)
-                          -> bool {
-                        if (path.first < kthPathCost || numbersAreClose (path.first, kthPathCost))
-                          {
-                            return false;
-                          }
-                        else
-                          {
-                            return true;
-                          }
-                      });
+              auto srcNodeType = boost::get (&NodeDetails::type, tempGraph, srcNode);
+              auto dstNodeType = boost::get (&NodeDetails::type, tempGraph, dstNode);
+
+              if (srcNodeType == 'S' && dstNodeType == 'S')
+                { // Only remove edges between switches
+                  LOG_MSG ("Removing link " << boost::get (&LinkDetails::id, tempGraph, link)
+                                            << " Cost" << linkCost);
+                  boost::remove_edge (link, tempGraph);
                 }
             }
         }
 
-      AddDataPaths (flow, kShortestPaths);
+      // Move the found path to the paths list
+      paths.splice (paths.end (), path);
+
+      numPathsFound++;
     }
+  while (pathFound || (numPathsFound < k)); // FIXME: Verify that this is correct
+
+  return paths;
 }
 
-/**
- * @brief Find the first K edge disjoint paths for each flow.
- * @param[in,out] flows The flow set that will be updated with the found paths.
- */
-void
-BoostGraph::FindKEdgeDisjointPaths (Flow::flowContainer_t &flows)
-{
-  for (auto &flowPair : flows)
-    {
-      auto &flow{flowPair.second};
+///**
+// * @brief Find the first K relaxed edge disjoint paths for each flow.
+// *
+// * The Relaxed Edge disjoint algorithm will find the first K edge disjoint
+// * paths; however, different from the algorithm in FindKEdgeDisjointPaths, links
+// * that are the only means of communication for that node are not deleted.
+// *
+// * The links that will not be deleted are discovered using the following method
+// * after having found the shortest path that links the source with the
+// * destination node. First, the shortest path is traversed from the source node,
+// * to the destination nodes. For every node met, a check is made to see if it's
+// * the only outgoing link available to that node. If it is, retain that link, if
+// * not the link can be deleted in subsequent iterations. The same procedure is
+// * repeated starting from the destination node and moving towards the source
+// * node backwards. The link is retained if nodes only have one incoming link.
+// *
+// * @param[in,out] flows The flow set that will be updated with the found paths.
+// */
+//void
+//BoostGraph::FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows)
+//{
+//  for (auto &flowPair : flows)
+//    {
+//      auto &flow{flowPair.second};
 
-      LOG_MSG ("Finding the paths for flow " << flow.id);
+//      LOG_MSG ("Finding " << flow.k << " relaxed edge disjoint path(s) for Flow: " << flow.id);
 
-      // Simpler solution, copy the graph - store only the link ids - and at the
-      // end loop and add data paths using the original graph.
-      graph_t tempGraph;
-      boost::copy_graph (m_graph, tempGraph);
+//      // Find and save links that cannot be removed as they are the sole point of
+//      // connection
+//      auto linksToRetain = std::set<id_t>{GetLinksToRetain (flow)};
 
-      std::list<std::list<id_t>> edgeDisjointPathIds; // List of edge disjoint paths
+//      graph_t tempGraph;
+//      boost::copy_graph (m_graph, tempGraph);
 
-      for (uint32_t i = 0; i < flow.k; ++i)
-        {
-          auto &srcNode{m_nodeMap.at (flow.sourceId)};
-          auto &dstNode{m_nodeMap.at (flow.destinationId)};
+//      // Container storing the edge disjoint paths as a list of link ids
+//      std::list<std::list<id_t>> edgeDisjointPaths;
 
-          auto foundPaths =
-              pathContainer_t{boost::yen_ksp (tempGraph, srcNode, dstNode,
-                                              /* Link weight attribute */
-                                              boost::get (&LinkDetails::cost, tempGraph),
-                                              boost::get (boost::vertex_index_t (), tempGraph), 1)};
+//      for (uint32_t i = 0; i < flow.k; ++i)
+//        {
+//          auto &srcNode{m_nodeMap.at (flow.sourceId)};
+//          auto &dstNode{m_nodeMap.at (flow.destinationId)};
 
-          if (foundPaths.empty ())
-            {
-              break; // No more paths found. Exit the loop
-            }
+//          auto shortestPath =
+//              pathContainer_t{boost::yen_ksp (tempGraph, srcNode, dstNode,
+//                                              /* Link weight attribute */
+//                                              boost::get (&LinkDetails::cost, tempGraph),
+//                                              boost::get (boost::vertex_index_t (), tempGraph), 1)};
 
-          // Save the found paths
-          LOG_MSG ("New Path\n----------");
-          std::list<id_t> pathLinks;
-          for (const auto &pathPair : foundPaths)
-            {
-              for (const auto &link : pathPair.second)
-                {
-                  pathLinks.emplace_back (boost::get (&LinkDetails::id, tempGraph, link));
-                  LOG_MSG ("Link: " << boost::get (&LinkDetails::id, tempGraph, link));
-                }
-            }
+//          if (shortestPath.empty ())
+//            break; // No more paths found. Exit the loop
 
-          edgeDisjointPathIds.push_back (pathLinks);
+//          // Save the found path
+//          LOG_MSG_NONEWLINE ("Path " << i << " Found. Links: ");
+//          std::list<id_t> pathLinks;
+//          for (const auto &shortestPathDetails : shortestPath)
+//            {
+//              for (const auto &link : shortestPathDetails.second)
+//                {
+//                  auto linkId{boost::get (&LinkDetails::id, tempGraph, link)};
+//                  pathLinks.emplace_back (linkId);
+//                  LOG_MSG_NONEWLINE (linkId << ", ");
+//                }
+//            }
+//          LOG_MSG_NONEWLINE ("\n");
 
-          // Remove all the edges of the found path
-          for (const auto &pathPair : foundPaths)
-            {
-              const auto &pathLinks{pathPair.second};
+//          if (edgeDisjointPaths.back () == pathLinks)
+//            {
+//              LOG_MSG ("This path has been found already. All paths for Flow: "
+//                       << flow.id << " have been found");
+//              break;
+//            }
 
-              for (const auto &link : pathLinks)
-                {
-                  auto srcNode = boost::source (link, tempGraph);
-                  auto dstNode = boost::target (link, tempGraph);
+//          edgeDisjointPaths.push_back (pathLinks);
 
-                  auto srcNodeType = boost::get (&NodeDetails::type, tempGraph, srcNode);
-                  auto dstNodeType = boost::get (&NodeDetails::type, tempGraph, dstNode);
+//          /**
+//       * Remove all the edges of the found path with the exception of the links
+//       * that are in the links to retain set.
+//       */
+//          for (const auto &shortestPathDetails : shortestPath)
+//            {
+//              for (const auto &link : shortestPathDetails.second)
+//                {
+//                  auto linkId = id_t{boost::get (&LinkDetails::id, tempGraph, link)};
 
-                  if (srcNodeType == 'S' && dstNodeType == 'S')
-                    {
-                      // Only remove edges that are between switches
-                      LOG_MSG ("Removing link " << boost::get (&LinkDetails::id, tempGraph, link));
-                      boost::remove_edge (link, tempGraph);
-                    }
-                }
-            }
-        }
+//                  if (linksToRetain.find (linkId) != linksToRetain.end ())
+//                    { // The link should not be deleted
+//                      LOG_MSG ("Link: " << linkId << " has been retained");
+//                    }
+//                  else
+//                    {
+//                      boost::remove_edge (link, tempGraph);
+//                      LOG_MSG ("Link: " << linkId << " has been removed");
+//                    }
+//                }
+//            }
+//        }
 
-      if (edgeDisjointPathIds.empty ())
-        {
-          throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
-        }
+//      if (edgeDisjointPaths.empty ())
+//        throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
 
-      // Save the paths to the flow
-      for (const auto &path : edgeDisjointPathIds)
-        {
-          Path dataPath (/* assign a path id to this path */ true);
-          auto pathCost = 0.0;
+//      // Save the paths to the flow
+//      for (const auto &path : edgeDisjointPaths)
+//        {
+//          Path dataPath (/* assign a path id to this path */ true);
+//          auto pathCost = 0.0;
 
-          for (const auto &linkId : path)
-            {
-              pathCost += boost::get (&LinkDetails::cost, m_graph, GetLink (linkId));
-              dataPath.AddLink (linkId);
-            }
+//          for (const auto &linkId : path)
+//            {
+//              pathCost += boost::get (&LinkDetails::cost, m_graph, GetLink (linkId));
+//              dataPath.AddLink (linkId);
+//            }
 
-          dataPath.cost = pathCost;
-          flow.AddDataPath (dataPath);
-        }
-    }
-}
-
-/**
- * @brief Find the first K relaxed edge disjoint paths for each flow.
- *
- * The Relaxed Edge disjoint algorithm will find the first K edge disjoint
- * paths; however, different from the algorithm in FindKEdgeDisjointPaths, links
- * that are the only means of communication for that node are not deleted.
- *
- * The links that will not be deleted are discovered using the following method
- * after having found the shortest path that links the source with the
- * destination node. First, the shortest path is traversed from the source node,
- * to the destination nodes. For every node met, a check is made to see if it's
- * the only outgoing link available to that node. If it is, retain that link, if
- * not the link can be deleted in subsequent iterations. The same procedure is
- * repeated starting from the destination node and moving towards the source
- * node backwards. The link is retained if nodes only have one incoming link.
- *
- * @param[in,out] flows The flow set that will be updated with the found paths.
- */
-void
-BoostGraph::FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows)
-{
-  for (auto &flowPair : flows)
-    {
-      auto &flow{flowPair.second};
-
-      LOG_MSG ("Finding " << flow.k << " relaxed edge disjoint path(s) for Flow: " << flow.id);
-
-      // Find and save links that cannot be removed as they are the sole point of
-      // connection
-      auto linksToRetain = std::set<id_t>{GetLinksToRetain (flow)};
-
-      graph_t tempGraph;
-      boost::copy_graph (m_graph, tempGraph);
-
-      // Container storing the edge disjoint paths as a list of link ids
-      std::list<std::list<id_t>> edgeDisjointPaths;
-
-      for (uint32_t i = 0; i < flow.k; ++i)
-        {
-          auto &srcNode{m_nodeMap.at (flow.sourceId)};
-          auto &dstNode{m_nodeMap.at (flow.destinationId)};
-
-          auto shortestPath =
-              pathContainer_t{boost::yen_ksp (tempGraph, srcNode, dstNode,
-                                              /* Link weight attribute */
-                                              boost::get (&LinkDetails::cost, tempGraph),
-                                              boost::get (boost::vertex_index_t (), tempGraph), 1)};
-
-          if (shortestPath.empty ())
-            break; // No more paths found. Exit the loop
-
-          // Save the found path
-          LOG_MSG_NONEWLINE ("Path " << i << " Found. Links: ");
-          std::list<id_t> pathLinks;
-          for (const auto &shortestPathDetails : shortestPath)
-            {
-              for (const auto &link : shortestPathDetails.second)
-                {
-                  auto linkId{boost::get (&LinkDetails::id, tempGraph, link)};
-                  pathLinks.emplace_back (linkId);
-                  LOG_MSG_NONEWLINE (linkId << ", ");
-                }
-            }
-          LOG_MSG_NONEWLINE ("\n");
-
-          if (edgeDisjointPaths.back () == pathLinks)
-            {
-              LOG_MSG ("This path has been found already. All paths for Flow: "
-                       << flow.id << " have been found");
-              break;
-            }
-
-          edgeDisjointPaths.push_back (pathLinks);
-
-          /**
-       * Remove all the edges of the found path with the exception of the links
-       * that are in the links to retain set.
-       */
-          for (const auto &shortestPathDetails : shortestPath)
-            {
-              for (const auto &link : shortestPathDetails.second)
-                {
-                  auto linkId = id_t{boost::get (&LinkDetails::id, tempGraph, link)};
-
-                  if (linksToRetain.find (linkId) != linksToRetain.end ())
-                    { // The link should not be deleted
-                      LOG_MSG ("Link: " << linkId << " has been retained");
-                    }
-                  else
-                    {
-                      boost::remove_edge (link, tempGraph);
-                      LOG_MSG ("Link: " << linkId << " has been removed");
-                    }
-                }
-            }
-        }
-
-      if (edgeDisjointPaths.empty ())
-        throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
-
-      // Save the paths to the flow
-      for (const auto &path : edgeDisjointPaths)
-        {
-          Path dataPath (/* assign a path id to this path */ true);
-          auto pathCost = 0.0;
-
-          for (const auto &linkId : path)
-            {
-              pathCost += boost::get (&LinkDetails::cost, m_graph, GetLink (linkId));
-              dataPath.AddLink (linkId);
-            }
-
-          dataPath.cost = pathCost;
-          flow.AddDataPath (dataPath);
-        }
-    }
-}
+//          dataPath.cost = pathCost;
+//          flow.AddDataPath (dataPath);
+//        }
+//    }
+//}
 
 std::set<id_t>
 BoostGraph::GetLinksToRetain (const Flow &flow)

@@ -51,15 +51,17 @@ public:
   node_t GetSourceNode (const link_t &link) const;
   node_t GetDestinationNode (const link_t &link) const;
 
-  void GetPaths(Flow::flowContainer_t &flows);
+  void GetPaths (Flow::flowContainer_t &flows);
 
-  void FindKShortestPaths (Flow::flowContainer_t &flows, bool includeAllKEqualCostPaths);
-  void FindKEdgeDisjointPaths (Flow::flowContainer_t &flows);
-  void FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows);
   void AddAckPaths (Flow::flowContainer_t &flows);
   void AddShortestPathAck (Flow::flowContainer_t &flows);
 
 private:
+  pathContainer_t GetKShortestPaths (node_t srcNode, node_t dstNode, uint32_t k);
+  pathContainer_t GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
+  //  void FindKEdgeDisjointPaths (Flow::flowContainer_t &flows);
+  //  void FindKRelaxedEdgeDisjointPaths (Flow::flowContainer_t &flows);
+
   void GenerateBoostGraph (const LemonGraph &lemonGraph);
   void GenerateBoostNodes (const LemonGraph &lemonGraph);
   void GenerateBoostLinks (const LemonGraph &lemonGraph);
