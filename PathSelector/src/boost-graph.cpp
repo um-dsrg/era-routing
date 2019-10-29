@@ -137,7 +137,7 @@ BoostGraph::GetLink (id_t linkId) const
       return m_linkMap.at (linkId);
   } catch (const std::out_of_range &oor)
     {
-      std::cerr << "The link " << linkId << " was not found" << std::endl;
+      std::cerr << "The link " << linkId << " was not found\n" << oor.what () << std::endl;
       throw;
   }
 }
@@ -211,8 +211,7 @@ BoostGraph::GetOppositeLink (id_t linkId) const
       auto incomingLinkSrcNodeId = GetNodeId (boost::source (*incomingLinkIt, m_graph));
       auto incomingLinkCost = GetLinkCost (*incomingLinkIt);
 
-      // FIXME: Update the below comparison
-      if ((incomingLinkSrcNodeId == dstNodeId) && (linkCost == incomingLinkCost))
+      if ((incomingLinkSrcNodeId == dstNodeId) && (numbersAreClose (linkCost, incomingLinkCost)))
         {
           oppositeLinks.emplace_back (GetLinkId (*incomingLinkIt));
         }
