@@ -149,7 +149,7 @@ class PathSelectorTestClass(unittest.TestCase):
         self.baseDir = os.path.dirname(os.path.abspath(__file__))
 
     def genPathSelectorCommand(self, graph: str, resultFileName: str, pathSelAlgorithm: str,
-                               k: int) -> Tuple[str, str]:
+                               k: int) -> Tuple[str, list]:
         """
         Generate the command to run the PathSelector
 
@@ -163,8 +163,8 @@ class PathSelectorTestClass(unittest.TestCase):
         inputFile = F"{self.baseDir}/graphs/{graph}.lgf"
         outputFile = F"{self.baseDir}/paths/{resultFileName}.xml"
 
-        command = (F"{self.pathSelectorExePath} -i {inputFile} -o {outputFile} "
-                   F"--pathSelectionAlgorithm {pathSelAlgorithm} --globalK {k}")
+        command = [F"{self.pathSelectorExePath}", "-i", F"{inputFile}", "-o", F"{outputFile}",
+                   "--pathSelectionAlgorithm", F"{pathSelAlgorithm}", "--globalK", F"{k}"]
 
         return outputFile, command
 
@@ -175,7 +175,7 @@ class PathSelectorTestClass(unittest.TestCase):
         self.assertTrue(pa.VerifyNetworkTopology())
         self.assertTrue(pa.VerifyNumPaths(k))
 
-    @timeout_decorator.timeout(1, use_signals=False)
+    # @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondK_1(self):
         """Test the Diamond topology with k = 1"""
         k = 1
@@ -184,9 +184,8 @@ class PathSelectorTestClass(unittest.TestCase):
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
-            print(pathSelCommand)
-            ret = subprocess.call(pathSelCommand)
-            self.assertEqual(ret, 0, "The PathSelector algorithm failed")
+            ret = subprocess.run(pathSelCommand)
+            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
 
             pa = PathAnalyser(outputFile)
             self.verifySetup(pa, k)
@@ -200,8 +199,8 @@ class PathSelectorTestClass(unittest.TestCase):
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
-            ret = subprocess.call(pathSelCommand)
-            self.assertEqual(ret, 0, "The PathSelector algorithm failed")
+            ret = subprocess.run(pathSelCommand)
+            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
 
             pa = PathAnalyser(outputFile)
             self.verifySetup(pa, k)
@@ -215,8 +214,8 @@ class PathSelectorTestClass(unittest.TestCase):
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
-            ret = subprocess.call(pathSelCommand)
-            self.assertEqual(ret, 0, "The PathSelector algorithm failed")
+            ret = subprocess.run(pathSelCommand)
+            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
 
             pa = PathAnalyser(outputFile)
             self.verifySetup(pa, k)
