@@ -7,6 +7,7 @@ import pathlib
 import unittest
 from typing import Tuple, List, Dict
 
+import timeout_decorator
 from lxml import etree
 
 
@@ -173,15 +174,41 @@ class PathSelectorTestClass(unittest.TestCase):
         self.assertTrue(pa.VerifyNetworkTopology())
         self.assertTrue(pa.VerifyNumPaths(k))
 
+    @timeout_decorator.timeout(1, use_signals=False)
+    def testDiamondK_1(self):
+        """Test the Diamond topology with k = 1"""
+        k = 1
+        for algorithm in ["KSP", "RED", "ED"]:
+            outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
+                                                                     F"diamond_{algorithm}_K{k}",
+                                                                     algorithm, k)
+            os.system(pathSelCommand)
+            pa = PathAnalyser(outputFile)
+            self.verifySetup(pa, k)
+
+    @timeout_decorator.timeout(1, use_signals=False)
+    def testDiamondK_2(self):
+        """Test the Diamond topology with k = 2"""
+        k = 2
+        for algorithm in ["KSP", "RED", "ED"]:
+            outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
+                                                                     F"diamond_{algorithm}_K{k}",
+                                                                     algorithm, k)
+            os.system(pathSelCommand)
+            pa = PathAnalyser(outputFile)
+            self.verifySetup(pa, k)
+
+    @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondK_5(self):
         """Test the Diamond topology with k = 5"""
         k = 5
-        outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
-                                                                 F"diamond_KSP_K{k}", "KSP", k)
-        os.system(pathSelCommand)
-        pa = PathAnalyser(outputFile)
-
-        self.verifySetup(pa, k)
+        for algorithm in ["KSP", "RED", "ED"]:
+            outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
+                                                                     F"diamond_{algorithm}_K{k}",
+                                                                     algorithm, k)
+            os.system(pathSelCommand)
+            pa = PathAnalyser(outputFile)
+            self.verifySetup(pa, k)
 
 
 if __name__ == "__main__":
