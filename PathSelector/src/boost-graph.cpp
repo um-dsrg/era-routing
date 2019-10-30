@@ -335,18 +335,19 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
           lastPathCost = paths.back ().first;
           secondToLastPathCost = std::prev (paths.end (), 2)->first;
 
-          if (paths.size () <= k)
+          if (paths.empty ())
+            throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
+          else if (paths.size () <= k)
             {
               randomlyRemoveExcessPaths = false;
               break;
             }
-          else if (paths.empty ())
-            throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
+          else if (previousNumPathsFound == paths.size ())
+            break;
 
           numPathsToGet++;
         }
-      while (numbersAreClose (lastPathCost, secondToLastPathCost) ||
-             (previousNumPathsFound != paths.size ()));
+      while (numbersAreClose (lastPathCost, secondToLastPathCost));
 
       if (randomlyRemoveExcessPaths == false)
         {
