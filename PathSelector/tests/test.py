@@ -166,19 +166,22 @@ class PathSelectorTestClass(unittest.TestCase):
 
         return outputFile, command
 
+    def verifySetup(self, pa: PathAnalyser, k: int):
+        """Run all verification tests available"""
+        self.assertTrue(pa.VerifyAckPaths())
+        self.assertTrue(pa.VerifyPathCost())
+        self.assertTrue(pa.VerifyNetworkTopology())
+        self.assertTrue(pa.VerifyNumPaths(k))
+
     def testDiamondK_5(self):
         """Test the Diamond topology with k = 5"""
         k = 5
         outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                  F"diamond_KSP_K{k}", "KSP", k)
         os.system(pathSelCommand)
-
         pa = PathAnalyser(outputFile)
 
-        self.assertTrue(pa.VerifyAckPaths())
-        self.assertTrue(pa.VerifyPathCost())
-        self.assertTrue(pa.VerifyNetworkTopology())
-        self.assertTrue(pa.VerifyNumPaths(k))
+        self.verifySetup(pa, k)
 
 
 if __name__ == "__main__":
