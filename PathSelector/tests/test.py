@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test the functionality of the PathSelector algorithm"""
 
-import os
 import math
+import os
 import pathlib
 import unittest
 from typing import Tuple, List, Dict
@@ -38,12 +38,74 @@ class PathAnalyser:
 
     def __init__(self, resFilePath: str):
         xmlParser = etree.XMLParser(remove_blank_text=True)
-        resultFileRoot = etree.parse(resFilePath, xmlParser).getroot()
+        self.resultFileRoot = etree.parse(resFilePath, xmlParser).getroot()
 
         self.flows = {int(flowElement.get("Id")): Flow(flowElement) for flowElement in
-                      resultFileRoot.findall("FlowDetails/Flow")}
-        self.linkProperties = {int(linkElement.get("Id")): float(linkElement.get("Cost")) for
-                               linkElement in resultFileRoot.findall("LinkDetails/Link")}
+                      self.resultFileRoot.findall("FlowDetails/Flow")}
+        self.linkProperties = {int(linkElement.get("Id")): float(linkElement.get("Cost"))
+                               for linkElement in self.resultFileRoot.findall("LinkDetails/Link")}
+
+    def VerifyNetworkTopology(self) -> bool:
+        """Verify the created Network Topology element"""
+        for linkElement in self.resultFileRoot.findall("NetworkTopology/Link"):
+            linkCost = float(linkElement.get("Delay"))
+
+            srcNodes = list()
+            dstNodes = list()
+
+            for linkElementElement in linkElement.findall("LinkElement"):
+                linkId = int(linkElementElement.get("Id"))
+                if self.linkProperties[linkId] != linkCost:
+                    return False
+
+                srcNodes.append(int(linkElementElement.get("SourceNode")))
+                dstNodes.append(int(linkElementElement.get("DestinationNode")))
+
+            if srcNodes[0] != dstNodes[1] or srcNodes[1] != dstNodes[0]:
+                return False
+
+        return True
+
+    def VerifyNumPaths(self, k: int) -> bool:
+        """Verify that no flow has more than k paths"""
+        for flow in self.flows.values():
+            if len(flow.dataPaths) > k or len(flow.ackPaths) > k:
+                return False
+
+        return True
+
+    def VerifyPathCost(self) -> bool:
+        """
+        Ensure that the path cost is correct by verifying against the
+        LinkDetails element
+        """
+        for flow in self.flows.values():
+            for dataPath in flow.dataPaths.values():
+                calculatedCost = sum([self.linkProperties[linkId] for linkId in dataPath.links])
+                if not math.isclose(dataPath.cost, calculatedCost):
+                    return False
+
+        return True
+
+    def VerifyAckPaths(self) -> bool:
+        """Check that the ACK paths use the reverse links of the data paths"""
+        oppositeLink = dict()
+
+        for linkElement in self.resultFileRoot.findall("NetworkTopology/Link"):
+            linkIds = [int(linkElementElement.get("Id")) for linkElementElement
+                       in linkElement.findall("LinkElement")]
+            oppositeLink[linkIds[0]] = linkIds[1]
+            oppositeLink[linkIds[1]] = linkIds[0]
+
+        for flow in self.flows.values():
+            for pathId, dataPath in flow.dataPaths.items():
+                flowAckPath = flow.ackPaths[pathId].links
+                generatedAckPath = [oppositeLink[linkId] for linkId in dataPath.links]
+
+                if flowAckPath != generatedAckPath:
+                    return False
+
+        return True
 
     def DataPathExists(self, flowId: int, links: List[int]) -> bool:
         """Check if a data path with the same links exists for the given flow"""
@@ -66,27 +128,6 @@ class PathAnalyser:
                     return True
         # else
         return False
-
-    def VerifyNumPaths(self, k: int) -> bool:
-        """Verify that no flow has more than k paths"""
-        for flow in self.flows.values():
-            if len(flow.dataPaths) > k or len(flow.ackPaths) > k:
-                return False
-
-        return True
-
-    def VerifyPathCost(self) -> bool:
-        """
-        Ensure that the path cost is correct by verifying against the
-        LinkDetails element
-        """
-        for flow in self.flows.values():
-            for dataPath in flow.dataPaths.values():
-                calculatedCost = sum([self.linkProperties[linkId] for linkId in dataPath.links])
-                if not math.isclose(dataPath.cost, calculatedCost):
-                    return False
-
-        return True
 
 
 class PathSelectorTestClass(unittest.TestCase):
@@ -134,7 +175,9 @@ class PathSelectorTestClass(unittest.TestCase):
 
         pa = PathAnalyser(outputFile)
 
+        self.assertTrue(pa.VerifyAckPaths())
         self.assertTrue(pa.VerifyPathCost())
+        self.assertTrue(pa.VerifyNetworkTopology())
         self.assertTrue(pa.VerifyNumPaths(k))
 
 
