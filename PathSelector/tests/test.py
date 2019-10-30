@@ -4,6 +4,7 @@
 import math
 import os
 import pathlib
+import subprocess
 import unittest
 from typing import Tuple, List, Dict
 
@@ -179,10 +180,14 @@ class PathSelectorTestClass(unittest.TestCase):
         """Test the Diamond topology with k = 1"""
         k = 1
         for algorithm in ["KSP", "RED", "ED"]:
+            print(F"\nRunning the {algorithm} algorithm...")
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
-            os.system(pathSelCommand)
+            print(pathSelCommand)
+            ret = subprocess.call(pathSelCommand)
+            self.assertEqual(ret, 0, "The PathSelector algorithm failed")
+
             pa = PathAnalyser(outputFile)
             self.verifySetup(pa, k)
 
@@ -191,10 +196,13 @@ class PathSelectorTestClass(unittest.TestCase):
         """Test the Diamond topology with k = 2"""
         k = 2
         for algorithm in ["KSP", "RED", "ED"]:
+            print(F"\nRunning the {algorithm} algorithm...")
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
-            os.system(pathSelCommand)
+            ret = subprocess.call(pathSelCommand)
+            self.assertEqual(ret, 0, "The PathSelector algorithm failed")
+
             pa = PathAnalyser(outputFile)
             self.verifySetup(pa, k)
 
@@ -203,10 +211,13 @@ class PathSelectorTestClass(unittest.TestCase):
         """Test the Diamond topology with k = 5"""
         k = 5
         for algorithm in ["KSP", "RED", "ED"]:
+            print(F"\nRunning the {algorithm} algorithm...")
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
-            os.system(pathSelCommand)
+            ret = subprocess.call(pathSelCommand)
+            self.assertEqual(ret, 0, "The PathSelector algorithm failed")
+
             pa = PathAnalyser(outputFile)
             self.verifySetup(pa, k)
 
