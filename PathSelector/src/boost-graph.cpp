@@ -325,10 +325,11 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
       auto secondToLastPathCost = linkCost_t{0.0};
       auto randomlyRemoveExcessPaths{true};
 
+      auto previousNumPathsFound = size_t{0};
+
       do
         {
-          // What happens if it returns the same path over and over again?
-          // I.e there are no more paths to find? Currently it will loop ad infinitum.
+          previousNumPathsFound = paths.size ();
           paths = pathSelectorFunction (srcNode, dstNode, numPathsToGet);
 
           lastPathCost = paths.back ().first;
@@ -344,7 +345,8 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
 
           numPathsToGet++;
         }
-      while (numbersAreClose (lastPathCost, secondToLastPathCost));
+      while (numbersAreClose (lastPathCost, secondToLastPathCost) ||
+             (previousNumPathsFound != paths.size ()));
 
       if (randomlyRemoveExcessPaths == false)
         {
