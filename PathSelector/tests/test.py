@@ -1,180 +1,142 @@
+#!/usr/bin/env python3
+"""Test the functionality of the PathSelector algorithm"""
+
 import os
+import math
+import pathlib
 import unittest
+from typing import Tuple, List, Dict
+
 from lxml import etree
-from typing import Dict
-from pathlib import Path
 
 
-class FlowPath:
-    def __init__(self, pathElement, hasPathId=True):
-        if hasPathId is True:
-            self.id = int(pathElement.get('Id'))
-        else:
-            self.id = -1
+class Path:
+    """Class representing a Path"""
 
-        self.links = [int(linkElement.get('Id')) for linkElement in pathElement.findall('Link')]
+    def __init__(self, pathElement):
+        self.id = int(pathElement.get("Id"))
+        self.cost = float(pathElement.get("Cost"))
+        self.links = [int(linkElement.get("Id")) for linkElement in pathElement.findall("Link")]
 
 
 class Flow:
-    def __init__(self):
-        self.id = 0               # type: int
-        self.dataPaths = dict()   # type: Dict[int, FlowPath]
-        self.ackPaths = dict()    # type: Dict[int, FlowPath]
-        self.ackShortestPath = 0  # type: FlowPath
+    """Class representing a Flow"""
+
+    def __init__(self, flowElement):
+        self.id = int(flowElement.get("Id"))
+        self.dataPaths = {int(pathElement.get("Id")): Path(pathElement) for pathElement in
+                          flowElement.findall("Paths/Path")}  # type: Dict[int, Path]
+        self.ackPaths = {int(pathElement.get("Id")): Path(pathElement) for pathElement in
+                         flowElement.findall("AckPaths/Path")}  # type: Dict[int, Path]
 
 
-class ResultAnalyser:
-    def __init__(self, resFilePath):
-        self.flows = dict()  # type: Dict[int, Flow]
-        self.parseFlows(resFilePath)
+class PathAnalyser:
+    """
+    Class that contains all the necessary functionality to analyse the path
+    result file
+    """
 
-    def parseFlows(self, resFilePath):
-        xml_parser = etree.XMLParser(remove_blank_text=True)
-        resFileRoot = etree.parse(resFilePath, xml_parser).getroot()
+    def __init__(self, resFilePath: str):
+        xmlParser = etree.XMLParser(remove_blank_text=True)
+        resultFileRoot = etree.parse(resFilePath, xmlParser).getroot()
 
-        for flowElement in resFileRoot.findall('FlowDetails/Flow'):
-            flow = Flow()
-            flow.id = int(flowElement.get('Id'))
+        self.flows = {int(flowElement.get("Id")): Flow(flowElement) for flowElement in
+                      resultFileRoot.findall("FlowDetails/Flow")}
+        self.linkProperties = {int(linkElement.get("Id")): float(linkElement.get("Cost")) for
+                               linkElement in resultFileRoot.findall("LinkDetails/Link")}
 
-            # Parse the data paths
-            for pathElement in flowElement.findall('Paths/Path'):
-                path = FlowPath(pathElement)
-                flow.dataPaths[path.id] = path
+    def DataPathExists(self, flowId: int, links: List[int]) -> bool:
+        """Check if a data path with the same links exists for the given flow"""
+        if flowId in self.flows:
+            flow = self.flows[flowId]  # type: Flow
 
-            # Parse the ack paths
-            for ackPathElement in flowElement.findall('AckPaths/Path'):
-                path = FlowPath(ackPathElement)
-                flow.ackPaths[path.id] = path
+            for path in flow.dataPaths.values():
+                if path.links == links:
+                    return True
 
-            # Parse the ack paths
-            ackShortestPathElement = flowElement.find('AckShortestPath')
-            flow.ackShortestPath = FlowPath(ackShortestPathElement, hasPathId=False)
+        return False
 
-            self.flows[flow.id] = flow
+    def AckPathExists(self, flowId: int, links: List[int]) -> bool:
+        """Check if an Ack path with the same links exists for the given flow"""
+        if flowId in self.flows:
+            flow = self.flows[flowId]  # type: Flow
 
-    def getNumDataPaths(self, flowId):
-        return len(self.flows[flowId].dataPaths)
+            for path in flow.ackPaths.values():
+                if path.links == links:
+                    return True
+        # else
+        return False
 
-    def getNumAckPaths(self, flowId):
-        return len(self.flows[flowId].ackPaths)
+    def VerifyNumPaths(self, k: int) -> bool:
+        """Verify that no flow has more than k paths"""
+        for flow in self.flows.values():
+            if len(flow.dataPaths) > k or len(flow.ackPaths) > k:
+                return False
 
-    def dataPathExists(self, flowId, links):
-        pathExists = False
+        return True
 
-        for flowPath in self.flows[flowId].dataPaths.values():
-            pathLinks = flowPath.links
-            if sorted(pathLinks) == sorted(links):
-                pathExists = True
-                break
+    def VerifyPathCost(self) -> bool:
+        """
+        Ensure that the path cost is correct by verifying against the
+        LinkDetails element
+        """
+        for flow in self.flows.values():
+            for dataPath in flow.dataPaths.values():
+                calculatedCost = sum([self.linkProperties[linkId] for linkId in dataPath.links])
+                if not math.isclose(dataPath.cost, calculatedCost):
+                    return False
 
-        return pathExists
-
-    def ackPathExists(self, flowId, links):
-        pathExists = False
-
-        for flowPath in self.flows[flowId].ackPaths.values():
-            pathLinks = flowPath.links
-            if sorted(pathLinks) == sorted(links):
-                pathExists = True
-                break
-
-        return pathExists
-
-    def compareAckShortestPath(self, flowId, links):
-        return sorted(self.flows[flowId].ackShortestPath.links) == sorted(links)
-
-    def comparePathIds(self, flowId, dataPath, ackPath):
-        dataPathId = -1
-        ackPathId = -1
-
-        for flowPath in self.flows[flowId].dataPaths.values():
-            if sorted(flowPath.links) == sorted(dataPath):
-                dataPathId = flowPath.id
-                break
-
-        for flowPath in self.flows[flowId].ackPaths.values():
-            if sorted(flowPath.links) == sorted(ackPath):
-                ackPathId = flowPath.id
-                break
-
-        return dataPathId == ackPathId
+        return True
 
 
-class KspTestClass(unittest.TestCase):
+class PathSelectorTestClass(unittest.TestCase):
+    """Class to test the PathSelector Algorithm"""
+
     def setUp(self):
-        home_dir = str(Path.home())
-        self.kspExePath = home_dir + '/Repositories/Development/KShortestPath/build/release/ksp'
-        self.assertTrue(os.path.isfile(self.kspExePath), 'The KSP release executable was not found')
+        """Function called to do any required setup before running a test
+
+        Note that any exception raised by this method will be considered an
+        error rather than a test failure.
+        """
+        homeDir = str(pathlib.Path.home())
+        self.pathSelectorExePath = (F"{homeDir}/Documents/Git/Development/PathSelector/build/"
+                                    "release/pathSelector")
+        self.assertTrue(os.path.isfile(self.pathSelectorExePath),
+                        F"The path selector executable was not found in {self.pathSelectorExePath}")
         self.baseDir = os.path.dirname(os.path.abspath(__file__))
 
-    def genKspCommand(self, inputFile, outputFile, globalK=0, perFlowK=False,
-                      includeAllKEqualCostPaths=False):
-        kspCommand = self.kspExePath + ' -i ' + inputFile + ' -o ' + outputFile
+    def genPathSelectorCommand(self, graph: str, resultFileName: str, pathSelAlgorithm: str,
+                               k: int) -> Tuple[str, str]:
+        """
+        Generate the command to run the PathSelector
 
-        if globalK > 0:
-            kspCommand += ' --globalK ' + str(globalK)
+        :param graph: The name of the graph to use
+        :param resultFileName: The name of the result file to generate
+        :param pathSelAlgorithm: The path selection algorithm to use
+        :param k: Number of paths to generate
 
-        if perFlowK is True:
-            kspCommand += ' --perFlowK'
+        :return: (the full path to the output file, the path selector command)
+        """
+        inputFile = F"{self.baseDir}/graphs/{graph}.lgf"
+        outputFile = F"{self.baseDir}/paths/{resultFileName}.xml"
 
-        if includeAllKEqualCostPaths is True:
-            kspCommand += ' --includeAllKEqualCostPaths'
+        command = (F"{self.pathSelectorExePath} -i {inputFile} -o {outputFile} "
+                   F"--pathSelectionAlgorithm {pathSelAlgorithm} --globalK {k}")
 
-        return kspCommand
+        return outputFile, command
 
-    def testCircleThreePaths(self):
-        inputGraphFile = self.baseDir + '/graphs/circleThreePaths.lgf'
-        outputFile = self.baseDir + '/graphs/circleThreePaths.xml'
-        kspCommand = self.genKspCommand(inputGraphFile, outputFile, perFlowK=True)
-        os.system(kspCommand)
+    def testDiamondK_5(self):
+        """Test the Diamond topology with k = 5"""
+        k = 5
+        outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
+                                                                 F"diamond_KSP_K{k}", "KSP", k)
+        os.system(pathSelCommand)
 
-        ra = ResultAnalyser(outputFile)
+        pa = PathAnalyser(outputFile)
 
-        self.assertEqual(ra.getNumDataPaths(0), 3, 'The number of data paths is not equal to 3')
-        self.assertEqual(ra.getNumAckPaths(0), 3, 'The number of ack paths is not equal to 3')
-
-        self.assertTrue(ra.dataPathExists(0, [0, 3]), 'The data path 0 - 1 - 4 does not exist')
-        self.assertTrue(ra.ackPathExists(0, [9, 6]), 'The ack path 4 - 1 - 0 does not exist')
-        self.assertTrue(ra.comparePathIds(0, [9, 6], [0, 3]), 'The ack and data paths do not match')
-
-        self.assertTrue(ra.dataPathExists(0, [1, 4]), 'The data path 0 - 2 - 4 does not exist')
-        self.assertTrue(ra.ackPathExists(0, [10, 7]), 'The ack path 4 - 2 - 0 does not exist')
-        self.assertTrue(ra.comparePathIds(0, [1, 4], [10, 7]), 'The ack and data paths do not match')
-
-        self.assertTrue(ra.dataPathExists(0, [2, 5]), 'The data path 0 - 3 - 4 does not exist')
-        self.assertTrue(ra.ackPathExists(0, [11, 8]), 'The ack path 4 - 3 - 0 does not exist')
-        self.assertTrue(ra.comparePathIds(0, [2, 5], [11, 8]), 'The ack and data paths do not match')
-
-        self.assertTrue(ra.compareAckShortestPath(0, [6, 9]), 'The shortest path ack does not match')
-
-    def testButterflyPerFlowK(self):
-        inputGraphFile = self.baseDir + '/graphs/butterfly.lgf'
-        outputFile = self.baseDir + '/graphs/butterflyPerFlowK.xml'
-        kspCommand = self.genKspCommand(inputGraphFile, outputFile, perFlowK=True, includeAllKEqualCostPaths=True)
-        os.system(kspCommand)
-
-        ra = ResultAnalyser(outputFile)
-
-        # Flow 0
-        self.assertEqual(ra.getNumDataPaths(0), 1, 'The number of data paths is not equal to 1')
-        self.assertEqual(ra.getNumAckPaths(0), 1, 'The number of ack paths is not equal to 1')
-        self.assertTrue(ra.dataPathExists(0, [0, 4, 18]), 'The data path 0 - 2 - 6 - 8 does not exist')
-        self.assertTrue(ra.ackPathExists(0, [19, 5, 1]), 'The ack path 8 - 6 - 2 - 0 does not exist')
-        self.assertTrue(ra.comparePathIds(0, [0, 4, 18], [19, 5, 1]), 'The ack and data paths do not match')
-
-        # Flow 1
-        self.assertEqual(ra.getNumDataPaths(1), 2, 'The number of data paths is not equal to 2')
-        self.assertEqual(ra.getNumAckPaths(1), 2, 'The number of ack paths is not equal to 2')
-
-        self.assertTrue(ra.dataPathExists(1, [2, 12, 20]), 'The data path 1 - 3 - 7 - 9 does not exist')
-        self.assertTrue(ra.ackPathExists(1, [21, 13, 3]), 'The ack path 9 - 7 - 3 - 1 does not exist')
-        self.assertTrue(ra.comparePathIds(1, [2, 12, 20], [21, 13, 3]), 'The ack and data paths do not match')
-
-        self.assertTrue(ra.dataPathExists(1, [2, 8, 10, 16, 20]), 'The data path 2 - 8 - 10 - 16 - 20 does not exist')
-        self.assertTrue(ra.ackPathExists(1, [21, 17, 11, 9, 3]), 'The ack path 20 - 16 - 10 - 8 - 2 does not exist')
-        self.assertTrue(ra.comparePathIds(1, [2, 8, 10, 16, 20], [21, 17, 11, 9, 3]),
-                        'The ack and data paths do not match')
+        self.assertTrue(pa.VerifyPathCost())
+        self.assertTrue(pa.VerifyNumPaths(k))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)
