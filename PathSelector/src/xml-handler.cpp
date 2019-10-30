@@ -28,7 +28,7 @@ XmlHandler::XmlHandler ()
  */
 void
 XmlHandler::AddParameterList (const std::string &inputFile, const std::string &outputFile,
-                              const uint32_t globalK, bool perFlowK, bool includeAllKEqualCostPaths)
+                              const uint32_t globalK, bool perFlowK)
 {
   XMLElement *parametersElement = m_xmlDoc.NewElement ("Parameters");
 
@@ -54,17 +54,6 @@ XmlHandler::AddParameterList (const std::string &inputFile, const std::string &o
       perFlowKElement->SetText ("Disabled");
     }
   parametersElement->InsertEndChild (perFlowKElement);
-
-  XMLElement *includeAllPathsElement = m_xmlDoc.NewElement ("includeAllKEqualCostPaths");
-  if (includeAllKEqualCostPaths)
-    {
-      includeAllPathsElement->SetText ("Enabled");
-    }
-  else
-    {
-      includeAllPathsElement->SetText ("Disabled");
-    }
-  parametersElement->InsertEndChild (includeAllPathsElement);
 
   m_rootNode->InsertEndChild (parametersElement);
 }

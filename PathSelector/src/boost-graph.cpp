@@ -2,6 +2,7 @@
 #include <list>
 #include <random>
 #include <math.h>
+#include <functional>
 #include <boost/graph/copy.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 
@@ -290,8 +291,26 @@ BoostGraph::GetDestinationNode (const link_t &link) const
 
 // TODO: Add documentation
 void
-BoostGraph::GetPaths (Flow::flowContainer_t &flows)
+BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
+                                const std::string &pathSelectionAlgorithm)
 {
+  std::function<pathContainer_t (node_t, node_t, uint32_t)> pathSelectorFunction;
+
+  if (pathSelectionAlgorithm == "KSP")
+    pathSelectorFunction = std::bind (&BoostGraph::GetKShortestPaths, this, std::placeholders::_1,
+                                      std::placeholders::_2, std::placeholders::_3);
+  else if (pathSelectionAlgorithm == "RED")
+    pathSelectorFunction =
+        std::bind (&BoostGraph::GetKShortestRelaxedEdgeDisjointPaths, this, std::placeholders::_1,
+                   std::placeholders::_2, std::placeholders::_3);
+  else if (pathSelectionAlgorithm == "ED")
+    pathSelectorFunction =
+        std::bind (&BoostGraph::GetKShortestEdgeDisjointPaths, this, std::placeholders::_1,
+                   std::placeholders::_2, std::placeholders::_3);
+  else
+    throw std::runtime_error ("The path selection algorithm " + pathSelectionAlgorithm +
+                              "is not supported");
+
   for (auto &[flowId, flow] : flows)
     {
       LOG_MSG ("Finding " << flow.k << " paths for flow: " << flowId);
@@ -308,11 +327,7 @@ BoostGraph::GetPaths (Flow::flowContainer_t &flows)
 
       do
         {
-          // FIXME: Replace with the function
-          paths = boost::yen_ksp (m_graph, srcNode, dstNode,
-                                  /* Link weight attribute */
-                                  boost::get (&LinkDetails::cost, m_graph),
-                                  boost::get (boost::vertex_index_t (), m_graph), numPathsToGet);
+          paths = pathSelectorFunction (srcNode, dstNode, numPathsToGet);
 
           lastPathCost = paths.back ().first;
           secondToLastPathCost = std::prev (paths.end (), 2)->first;
@@ -334,9 +349,10 @@ BoostGraph::GetPaths (Flow::flowContainer_t &flows)
           AddDataPaths (flow, paths);
         }
       else
-        { // FIXME: Put this in a function
-          // Container storing the list of paths to be chosen at random
-          pathContainer_t pathsWithEqualCost;
+        { // Randomly choose which paths that have equal cost to retain
+
+          // FIXME: The below function is incorrect in how it's handling the indexes
+          pathContainer_t pathsWithEqualCost; // Container storing the paths to be chosen at random
 
           auto pathIterator = paths.begin ();
           std::advance (pathIterator, k - 1);
@@ -350,7 +366,7 @@ BoostGraph::GetPaths (Flow::flowContainer_t &flows)
 
           pathContainer_t randomlyChosenPaths;
           std::sample (pathsWithEqualCost.begin (), pathsWithEqualCost.end (),
-                       std::back_inserter (randomlyChosenPaths), 1,
+                       std::back_inserter (randomlyChosenPaths), 1, // FIXME: This needs updating
                        std::mt19937{std::random_device{}()});
 
           pathContainer_t finalPathSet;

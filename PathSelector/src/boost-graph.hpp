@@ -51,7 +51,7 @@ public:
   node_t GetSourceNode (const link_t &link) const;
   node_t GetDestinationNode (const link_t &link) const;
 
-  void GetPaths (Flow::flowContainer_t &flows);
+  void AssignPathsToFlows (Flow::flowContainer_t &flows, const std::string &pathSelectionAlgorithm);
 
   void AddAckPaths (Flow::flowContainer_t &flows);
   void AddShortestPathAck (Flow::flowContainer_t &flows);

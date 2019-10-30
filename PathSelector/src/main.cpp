@@ -10,19 +10,15 @@ namespace po = boost::program_options;
 int
 main (int argc, const char *argv[])
 {
-  std::string inputFile;
-  std::string outputFile;
-  uint32_t globalK{0};
-  bool perFlowK{false};
-  bool includeAllKEqualCostPaths{false};
-  bool verbose{false};
-
-  bool kShortestPath{false};
-  bool edgeDisjoint{false};
-  bool relaxedEdgeDisjoint{false};
-
   try
     {
+      std::string inputFile{""};
+      std::string outputFile{""};
+      std::string pathSelectionAlgorithm{""};
+      uint32_t globalK{0};
+      bool perFlowK{false};
+      bool verbose{false};
+
       po::options_description cmdLineParams ("Allowed options");
       // clang-format off
       cmdLineParams.add_options ()
@@ -31,29 +27,22 @@ main (int argc, const char *argv[])
          "The path to the LGF graph file.")
         ("output,o", po::value<std::string> (&outputFile)->required (),
          "The path where to store the output of the KSP algorithm in XML format.")
+        ("pathSelectionAlgorithm", po::value<std::string> (&pathSelectionAlgorithm)->required(),
+         "The path selection method to use. Available options are: KSP (K Shortest Path), "
+         "RED (Releaxed Edge Disjoint), ED (Edge Disjoint)")
         ("globalK", po::value<uint32_t> (&globalK),
          "Number of shortest paths to calculate for every flow.")
         ("perFlowK", po::bool_switch (&perFlowK),
          "When set, the number of paths per flow will be determined based on the "
         "per flow k value.")
-        ("includeAllKEqualCostPaths", po::bool_switch (&includeAllKEqualCostPaths),
-         "When set, all the paths with the same cost as the kth path will be "
-         "included. Irrelevant of this setting, flows with k=1 will only have "
-         "one path to simulate OSPF")
-        ("kShortestPath", po::bool_switch (&kShortestPath),
-         "When set use the KSP algorithm to find paths")
-        ("edgeDisjoint", po::bool_switch (&edgeDisjoint),
-         "When set use the edge disjoint algorithm to find paths")
-        ("relaxedEdgeDisjoint", po::bool_switch (&relaxedEdgeDisjoint),
-         "When set, use the relaxed edge disjoint algorithm.")
         ("verbose,v", po::bool_switch (&verbose), "Enable verbose output.");
       // clang-format on
 
       po::variables_map vm;
       po::store (po::parse_command_line (argc, argv, cmdLineParams), vm);
 
-      if (vm.count ("help"))
-        { // Output help message
+      if (vm.count ("help")) // Output help message
+        {
           std::cout << cmdLineParams << "\n";
           return 0;
         }
@@ -61,52 +50,27 @@ main (int argc, const char *argv[])
       po::notify (vm); // Check if all parameters required were passed
 
       if (!perFlowK && globalK <= 0)
-        {
-          throw std::runtime_error ("The global K value needs to be set if per flow K is disabled");
-        }
+        throw std::runtime_error ("The global K value needs to be set if per flow K is disabled");
 
       LemonGraph lemonGraph (inputFile);
       BoostGraph boostGraph (lemonGraph);
 
       Flow::flowContainer_t flows{ParseFlows (inputFile, perFlowK, globalK)};
 
-      boostGraph.GetPaths (flows);
-
-      //      if (kShortestPath)
-      //        {
-      //          boostGraph.FindKShortestPaths (flows, includeAllKEqualCostPaths);
-      //        }
-      //      else if (edgeDisjoint)
-      //        {
-      //          boostGraph.FindKEdgeDisjointPaths (flows);
-      //        }
-      //      else if (relaxedEdgeDisjoint)
-      //        {
-      //          if (includeAllKEqualCostPaths)
-      //            throw std::runtime_error ("The RelaxedKEdgeDisjoint does include equal cost paths");
-
-      //          boostGraph.FindKRelaxedEdgeDisjointPaths (flows);
-      //        }
-      //      else
-      //        {
-      //          throw std::runtime_error ("No path selection algorithm chosen");
-      //        }
-
+      boostGraph.AssignPathsToFlows (flows, pathSelectionAlgorithm);
       boostGraph.AddAckPaths (flows);
       boostGraph.AddShortestPathAck (flows);
 
       if (verbose)
-        {
-          PrintFlows (flows);
-        }
+        PrintFlows (flows);
 
       XmlHandler kspResFile;
-      kspResFile.AddParameterList (inputFile, outputFile, globalK, perFlowK,
-                                   includeAllKEqualCostPaths);
+      kspResFile.AddParameterList (inputFile, outputFile, globalK, perFlowK);
       kspResFile.AddLinkDetails (boostGraph);
       kspResFile.AddFlows (flows);
       kspResFile.AddNetworkTopology (boostGraph);
       kspResFile.SaveFile (outputFile);
+
   } catch (const std::exception &e)
     {
       std::cerr << "Error: " << e.what () << "\n";
