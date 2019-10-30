@@ -327,6 +327,8 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
 
       do
         {
+          // What happens if it returns the same path over and over again?
+          // I.e there are no more paths to find? Currently it will loop ad infinitum.
           paths = pathSelectorFunction (srcNode, dstNode, numPathsToGet);
 
           lastPathCost = paths.back ().first;
@@ -349,29 +351,41 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
           AddDataPaths (flow, paths);
         }
       else
-        { // Randomly choose which paths that have equal cost to retain
-
-          // FIXME: The below function is incorrect in how it's handling the indexes
-          pathContainer_t pathsWithEqualCost; // Container storing the paths to be chosen at random
-
+        { // Randomly choose which paths that have equal cost to the kth path to keep
           auto pathIterator = paths.begin ();
           std::advance (pathIterator, k - 1);
           auto kthPathCost = pathIterator->first;
 
-          for (; pathIterator != paths.end (); ++pathIterator)
+          pathContainer_t finalPathSet;
+          pathContainer_t pathsWithEqualCost;
+
+          for (const auto &[pathCost, path] : paths)
             {
-              if (numbersAreClose (pathIterator->first, kthPathCost))
-                pathsWithEqualCost.push_back (*pathIterator);
+              if (pathCost < kthPathCost)
+                finalPathSet.push_back (std::make_pair (pathCost, path));
+              else if (numbersAreClose (pathCost, kthPathCost))
+                pathsWithEqualCost.push_back (std::make_pair (pathCost, path));
             }
+
+          if (finalPathSet.size () >= k)
+            throw std::runtime_error ("Flow " + std::to_string (flowId) +
+                                      " has more paths with lower cost than the kth path than "
+                                      "expected");
+
+          auto numPathsToSelectRandomly = k - finalPathSet.size ();
 
           pathContainer_t randomlyChosenPaths;
           std::sample (pathsWithEqualCost.begin (), pathsWithEqualCost.end (),
-                       std::back_inserter (randomlyChosenPaths), 1, // FIXME: This needs updating
+                       std::back_inserter (randomlyChosenPaths), numPathsToSelectRandomly,
                        std::mt19937{std::random_device{}()});
 
-          pathContainer_t finalPathSet;
-          finalPathSet.assign (paths.begin (), std::next (paths.begin (), k - 1));
-          finalPathSet.assign (randomlyChosenPaths.begin (), randomlyChosenPaths.end ());
+          finalPathSet.insert (finalPathSet.end (), randomlyChosenPaths.begin (),
+                               randomlyChosenPaths.end ());
+
+          if (finalPathSet.size () != k)
+            throw std::runtime_error ("Flow " + std::to_string (flowId) + " should have " +
+                                      std::to_string (k) + " paths but it does not. It has " +
+                                      std::to_string (finalPathSet.size ()) + " paths instead");
 
           AddDataPaths (flow, finalPathSet);
         }
