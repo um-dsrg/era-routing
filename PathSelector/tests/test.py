@@ -220,6 +220,23 @@ class PathSelectorTestClass(unittest.TestCase):
             pa = PathAnalyser(outputFile)
             self.verifySetup(pa, k)
 
+    @timeout_decorator.timeout(1, use_signals=False)
+    def testLine(self):
+        """Test the Line topology with various k values"""
+        for k in [1, 5, 10]:
+            for algorithm in ["KSP", "RED", "ED"]:
+                print(F"Running the {algorithm} algorithm with k {k}...")
+                outputFile, pathSelCommand = self.genPathSelectorCommand("line",
+                                                                         F"line_{algorithm}_K{k}",
+                                                                         algorithm, k)
+                ret = subprocess.run(pathSelCommand)
+                self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
+
+                pa = PathAnalyser(outputFile)
+                self.verifySetup(pa, k)
+                self.assertTrue(pa.DataPathExists(0, [0, 2, 4]))
+                self.assertTrue(pa.AckPathExists(0, [1, 3, 5]))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
