@@ -35,7 +35,9 @@ public:
                                         NodeDetails, LinkDetails>;
   using node_t = graph_t::vertex_descriptor;
   using link_t = graph_t::edge_descriptor;
-  using pathContainer_t = std::list<std::pair<linkCost_t, std::list<BoostGraph::link_t>>>;
+  using path_t = std::pair<linkCost_t, std::list<BoostGraph::link_t>>;
+  using pathContainer_t = std::list<path_t>;
+  //  using pathContainer_t = std::list<std::pair<linkCost_t, std::list<BoostGraph::link_t>>>;
 
   explicit BoostGraph (const LemonGraph &lemonGraph);
 
@@ -57,15 +59,16 @@ public:
   void AddShortestPathAck (Flow::flowContainer_t &flows);
 
 private:
-  pathContainer_t GetKShortestPaths (node_t srcNode, node_t dstNode, uint32_t k);
-  pathContainer_t GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
-  pathContainer_t GetKShortestRelaxedEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
-
   void GenerateBoostGraph (const LemonGraph &lemonGraph);
   void GenerateBoostNodes (const LemonGraph &lemonGraph);
   void GenerateBoostLinks (const LemonGraph &lemonGraph);
 
+  pathContainer_t GetKShortestPaths (node_t srcNode, node_t dstNode, uint32_t k);
+  pathContainer_t GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
+  pathContainer_t GetKShortestRelaxedEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
   std::set<id_t> GetLinksToRetain (node_t srcNode, node_t dstNode);
+  path_t ConvertPath (const graph_t &fromGraph, const path_t &path);
+
   void AddDataPaths (Flow &flow, const pathContainer_t &paths);
   bool PathsEqual (const std::list<BoostGraph::link_t> &pathA,
                    const std::list<BoostGraph::link_t> &pathB);

@@ -382,6 +382,7 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
                        std::back_inserter (randomlyChosenPaths), numPathsToSelectRandomly,
                        std::mt19937{std::random_device{}()});
 
+          // TODO: Replace this with splice
           finalPathSet.insert (finalPathSet.end (), randomlyChosenPaths.begin (),
                                randomlyChosenPaths.end ());
 
@@ -430,13 +431,15 @@ BoostGraph::GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint3
   do
     {
       auto path =
-          pathContainer_t{boost::yen_ksp (m_graph, srcNode, dstNode,
+          pathContainer_t{boost::yen_ksp (tempGraph, srcNode, dstNode,
                                           /* Link weight attribute */
-                                          boost::get (&LinkDetails::cost, m_graph),
-                                          boost::get (boost::vertex_index_t (), m_graph), 1)};
+                                          boost::get (&LinkDetails::cost, tempGraph),
+                                          boost::get (boost::vertex_index_t (), tempGraph), 1)};
 
       if (path.empty ())
         break;
+
+      paths.emplace_back (ConvertPath (tempGraph, path.front ()));
 
       // Remove all edges of the found path
       for (const auto &[linkCost, links] : path)
@@ -457,9 +460,6 @@ BoostGraph::GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint3
                 }
             }
         }
-
-      // Move the found path to the paths list
-      paths.splice (paths.end (), path);
 
       numPathsFound++;
     }
@@ -507,14 +507,17 @@ BoostGraph::GetKShortestRelaxedEdgeDisjointPaths (node_t srcNode, node_t dstNode
   do
     {
       auto path =
-          pathContainer_t{boost::yen_ksp (m_graph, srcNode, dstNode,
+          pathContainer_t{boost::yen_ksp (tempGraph, srcNode, dstNode,
                                           /* Link weight attribute */
-                                          boost::get (&LinkDetails::cost, m_graph),
-                                          boost::get (boost::vertex_index_t (), m_graph), 1)};
+                                          boost::get (&LinkDetails::cost, tempGraph),
+                                          boost::get (boost::vertex_index_t (), tempGraph), 1)};
 
-      // If the current and previously found path are the same all paths have been found
-      if (path.empty () || PathsEqual (path.front ().second, paths.back ().second))
-        break;
+      if (path.empty ())
+        break; // There are no more paths to find
+      else if (!paths.empty () && PathsEqual (path.front ().second, paths.back ().second))
+        break; // If the current and previously found path are the same, all paths have been found
+
+      paths.emplace_back (ConvertPath (tempGraph, path.front ()));
 
       /**
        * Remove all the edges of the found path with the exception of the links
@@ -537,9 +540,6 @@ BoostGraph::GetKShortestRelaxedEdgeDisjointPaths (node_t srcNode, node_t dstNode
                 }
             }
         }
-
-      // Move the found path to the paths list
-      paths.splice (paths.end (), path);
 
       numPathsFound++;
     }
@@ -634,6 +634,19 @@ BoostGraph::GetLinksToRetain (node_t srcNode, node_t dstNode)
   LOG_MSG ("Backward search complete");
 
   return linksToRetain;
+}
+
+BoostGraph::path_t
+BoostGraph::ConvertPath (const graph_t &fromGraph, const path_t &fromPath)
+{
+  auto [pathCost, pathLinks] = fromPath;
+  std::list<BoostGraph::link_t> convertedPathLinks;
+  for (const auto &link : pathLinks)
+    {
+      auto linkId = id_t{boost::get (&LinkDetails::id, fromGraph, link)};
+      convertedPathLinks.emplace_back (GetLink (linkId));
+    }
+  return std::make_pair (pathCost, convertedPathLinks);
 }
 
 /**
