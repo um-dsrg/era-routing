@@ -251,6 +251,24 @@ class PathSelectorTestClass(unittest.TestCase):
         return False
 
     @timeout_decorator.timeout(1, use_signals=False)
+    def testButterfly(self):
+        """Test the Butterfly topology for all the given algorithms"""
+        k = 5
+        for algorithm in ["KSP", "RED", "ED"]:
+            pa = self.runAndVerify("butterfly", algorithm, k)
+            # TODO: Continue from here. The RED algorithm is not returning the correct pathset under
+            # TODO: the butterfly network topology
+            # if k == 1:
+            #     self.assertTrue(self.verifyRandomPathSelection("diamond", algorithm, k, 0,
+            #                                                    [[0, 2, 6, 10], [0, 4, 8, 10]]))
+            # else:
+            #     pa = self.runAndVerify("diamond", algorithm, k)
+            #     self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10]))
+            #     self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10]))
+            #     self.assertTrue(pa.AckPathExists(0, [1, 3, 7, 11]))
+            #     self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11]))
+
+    @timeout_decorator.timeout(1, use_signals=False)
     def testDiamond(self):
         """Test the Diamond topology for various k values"""
         for k in [1, 2, 5]:
