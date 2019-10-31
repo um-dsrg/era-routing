@@ -265,7 +265,11 @@ class PathSelectorTestClass(unittest.TestCase):
     @timeout_decorator.timeout(1, use_signals=False)
     def testCircle(self):
         """Test the Circle topology with various k values"""
-        # TODO: k = 1
+        k = 1
+        for algorithm in ["KSP", "RED", "ED"]:
+            self.assertTrue(self.verifyRandomPathSelection("circle", algorithm, k, 0,
+                                                           [[0, 2, 14, 26],
+                                                            [0, 4, 16, 26]]))
 
         k = 2
         for algorithm in ["KSP", "RED", "ED"]:
@@ -274,6 +278,64 @@ class PathSelectorTestClass(unittest.TestCase):
             self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
             self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
             self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
+
+        k = 3
+        for algorithm in ["KSP", "RED", "ED"]:
+            pa = self.runAndVerify("circle", algorithm, k)
+            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
+            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
+
+            self.assertTrue(self.verifyRandomPathSelection("circle", algorithm, k, 0,
+                                                           [[0, 6, 18, 26],
+                                                            [0, 8, 20, 26]]))
+        k = 4
+        for algorithm in ["KSP", "RED", "ED"]:
+            pa = self.runAndVerify("circle", algorithm, k)
+            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 6, 18, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 8, 20, 26]))
+
+            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 7, 19, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 9, 21, 27]))
+
+        k = 5
+        for algorithm in ["KSP", "RED", "ED"]:
+            pa = self.runAndVerify("circle", algorithm, k)
+            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 6, 18, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 8, 20, 26]))
+
+            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 7, 19, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 9, 21, 27]))
+
+            self.assertTrue(self.verifyRandomPathSelection("circle", algorithm, k, 0,
+                                                           [[0, 10, 22, 26],
+                                                            [0, 12, 24, 26]]))
+
+        k = 6
+        for algorithm in ["KSP", "RED", "ED"]:
+            pa = self.runAndVerify("circle", algorithm, k)
+            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 6, 18, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 8, 20, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 10, 22, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 12, 24, 26]))
+
+            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 7, 19, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 9, 21, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 11, 23, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 13, 25, 27]))
 
 
 if __name__ == "__main__":
