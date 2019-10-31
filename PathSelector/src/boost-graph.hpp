@@ -37,7 +37,6 @@ public:
   using link_t = graph_t::edge_descriptor;
   using path_t = std::pair<linkCost_t, std::list<BoostGraph::link_t>>;
   using pathContainer_t = std::list<path_t>;
-  //  using pathContainer_t = std::list<std::pair<linkCost_t, std::list<BoostGraph::link_t>>>;
 
   explicit BoostGraph (const LemonGraph &lemonGraph);
 
@@ -54,7 +53,6 @@ public:
   node_t GetDestinationNode (const link_t &link) const;
 
   void AssignPathsToFlows (Flow::flowContainer_t &flows, const std::string &pathSelectionAlgorithm);
-
   void AddAckPaths (Flow::flowContainer_t &flows);
   void AddShortestPathAck (Flow::flowContainer_t &flows);
 
