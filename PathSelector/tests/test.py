@@ -175,33 +175,82 @@ class PathSelectorTestClass(unittest.TestCase):
         self.assertTrue(pa.VerifyNetworkTopology())
         self.assertTrue(pa.VerifyNumPaths(k))
 
-    def runAndVerify(self, topology: str, algorithm: str, k: int) -> PathAnalyser:
-        """
-        Run the path selector with the given details
-
-        :param topology: The topology to use
-        :param algorithm: The algorithm to run
-        :param k: The k value
-        :return: Instance of the PathAnalyser class
-        """
+    def runPathSelector(self, topology: str, algorithm: str, k: int) -> str:
+        """Run the PathSelector algorithm with the given parameters"""
         print(F"Running the {algorithm} algorithm with k {k}...")
-        outputFile, pathSelCommand = self.genPathSelectorCommand(topology,
+        resultFile, pathSelCommand = self.genPathSelectorCommand(topology,
                                                                  F"{topology}_{algorithm}_K{k}",
                                                                  algorithm, k)
         ret = subprocess.run(pathSelCommand)
         self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
 
-        pa = PathAnalyser(outputFile)
+        return resultFile
+
+    def verifyResultFile(self, resultFile: str, k: int) -> PathAnalyser:
+        """
+        Run the path selector with the given details
+
+        :param resultFile: The location to the generated result file
+        :param k: The k value
+        :return: Instance of the PathAnalyser class
+        """
+        pa = PathAnalyser(resultFile)
         self.verifySetup(pa, k)
 
         return pa
 
-    @timeout_decorator.timeout(1, use_signals=False)
+    def runAndVerify(self, topology: str, algorithm: str, k: int) -> PathAnalyser:
+        """Run the PathSelector algorithm and verify the result file"""
+        resultFile = self.runPathSelector(topology, algorithm, k)
+        return self.verifyResultFile(resultFile, k)
+
+    def verifyRandomPathSelection(self, topology: str, algorithm: str, k: int, flowId: int,
+                                  paths: List[List[int]], maxIterations: int = 50) -> bool:
+        """
+        Ensure that all the paths in the list are at least found once by the
+        algorithm. This function is used to test the random path selection
+        mechanism when there are multiple paths available with equal cost to the
+        kth path.
+
+        :param topology: The topology to run
+        :param algorithm: The algorithm to use
+        :param k: The number of paths to find
+        :param flowId: The flow to test
+        :param paths: The list of paths to compare to
+        :param maxIterations: The maximum number of iterations to try before
+                              failing the test
+
+        :return: True if the test passes, false otherwise
+        """
+        pathFound = [False for _ in paths]
+
+        for _ in range(0, maxIterations):
+            resultFile = self.runPathSelector(topology, algorithm, k)
+            pa = self.verifyResultFile(resultFile, k)
+
+            for pathIndex, pathLinks in enumerate(paths):
+                if pa.DataPathExists(flowId, pathLinks) is True:
+                    pathFound[pathIndex] = True
+
+            if all(path is True for path in pathFound):
+                return True
+
+        return False
+
+    @timeout_decorator.timeout(5, use_signals=False)
     def testDiamond(self):
         """Test the Diamond topology for various k values"""
         for k in [1, 2, 5]:
             for algorithm in ["KSP", "RED", "ED"]:
-                self.runAndVerify("diamond", algorithm, k)
+                if k == 1:
+                    self.assertTrue(self.verifyRandomPathSelection("diamond", algorithm, k, 0,
+                                                                   [[0, 2, 6, 10], [0, 4, 8, 10]]))
+                else:
+                    pa = self.runAndVerify("diamond", algorithm, k)
+                    self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10]))
+                    self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10]))
+                    self.assertTrue(pa.AckPathExists(0, [1, 3, 7, 11]))
+                    self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testLine(self):
