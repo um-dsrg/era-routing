@@ -445,7 +445,28 @@ class PathSelectorTestClass(unittest.TestCase):
                 self.assertTrue(pa.AckPathExists(0, [1, 5, 7, 11, 15]))
                 self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 13, 15]))
 
-        # TODO: Continue from here add the RED and ED algorithms
+        for algorithm in ["RED", "ED"]:
+            for k in [1, 10]:
+                resultFile = self.runPathSelector("diamondParallel", algorithm, k)
+                pa = PathAnalyser(resultFile)
+
+                self.assertTrue(pa.VerifyPathCost(), "Path Cost verification failed")
+                self.assertTrue(pa.VerifyNetworkTopology(),
+                                "Network Topology verification failed")
+                self.assertTrue(pa.VerifyNumPaths(k), "Number of paths verification failed")
+
+                if k == 1:
+                    self.assertTrue(self.verifyRandomPathSelection("diamondParallel", algorithm, k,
+                                                                   0, [[0, 2, 6, 10, 14],
+                                                                       [0, 4, 8, 12, 14]],
+                                                                   verifyResultFile=False))
+                elif k == 10:
+                    self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10, 14]))
+                    self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 12, 14]))
+
+                    # Only two paths are set because of the parallel link
+                    self.assertTrue(pa.AckPathExists(0, [1, 5, 7, 11, 15]))
+                    self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 13, 15]))
 
 
 if __name__ == "__main__":
