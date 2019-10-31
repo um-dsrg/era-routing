@@ -175,7 +175,7 @@ class PathSelectorTestClass(unittest.TestCase):
         self.assertTrue(pa.VerifyNetworkTopology())
         self.assertTrue(pa.VerifyNumPaths(k))
 
-    def runAndVerify(self, topology: str, algorithm: str, k:int) -> PathAnalyser:
+    def runAndVerify(self, topology: str, algorithm: str, k: int) -> PathAnalyser:
         """
         Run the path selector with the given details
 
@@ -197,25 +197,11 @@ class PathSelectorTestClass(unittest.TestCase):
         return pa
 
     @timeout_decorator.timeout(1, use_signals=False)
-    def testDiamondK_1(self):
-        """Test the Diamond topology with k = 1"""
-        k = 1
-        for algorithm in ["KSP", "RED", "ED"]:
-            self.runAndVerify("diamond", algorithm, k)
-
-    @timeout_decorator.timeout(1, use_signals=False)
-    def testDiamondK_2(self):
-        """Test the Diamond topology with k = 2"""
-        k = 2
-        for algorithm in ["KSP", "RED", "ED"]:
-            self.runAndVerify("diamond", algorithm, k)
-
-    @timeout_decorator.timeout(1, use_signals=False)
-    def testDiamondK_5(self):
-        """Test the Diamond topology with k = 5"""
-        k = 5
-        for algorithm in ["KSP", "RED", "ED"]:
-            self.runAndVerify("diamond", algorithm, k)
+    def testDiamond(self):
+        """Test the Diamond topology for various k values"""
+        for k in [1, 2, 5]:
+            for algorithm in ["KSP", "RED", "ED"]:
+                self.runAndVerify("diamond", algorithm, k)
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testLine(self):
