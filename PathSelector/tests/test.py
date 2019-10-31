@@ -226,9 +226,15 @@ class PathSelectorTestClass(unittest.TestCase):
         :return: True if the test passes, false otherwise
         """
         pathFound = [False for _ in paths]
+        print(F"Running the {algorithm} algorithm with k {k}...")
+        for iterationNumber in range(0, maxIterations):
+            print(F"Iteration {iterationNumber}")
+            resFileName = F"{topology}_{algorithm}_K{k}_{iterationNumber}"
+            resultFile, pathSelCommand = self.genPathSelectorCommand(topology, resFileName,
+                                                                     algorithm, k)
+            ret = subprocess.run(pathSelCommand)
+            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
 
-        for _ in range(0, maxIterations):
-            resultFile = self.runPathSelector(topology, algorithm, k)
             pa = None
             if verifyResultFile:
                 pa = self.verifyResultFile(resultFile, k)
@@ -401,6 +407,45 @@ class PathSelectorTestClass(unittest.TestCase):
 
                     self.assertTrue(pa.DataPathExists(0, [0, 2, 6]))
                     self.assertTrue(pa.DataPathExists(0, [0, 4, 6]))
+
+    @timeout_decorator.timeout(1, use_signals=False)
+    def testDiamondParallel(self):
+        """Test the diamondParallel topology for various k values
+
+        ACK verification is missing due to the problem caused in determining
+        which ACK path to choose when having parallel links. This is not a very
+        important feature; and thus is ruled as an exception in this case and
+        treated as such.
+        """
+        algorithm = "KSP"
+        for k in [1, 10]:
+            resultFile = self.runPathSelector("diamondParallel", algorithm, k)
+            pa = PathAnalyser(resultFile)
+
+            self.assertTrue(pa.VerifyPathCost(), "Path Cost verification failed")
+            self.assertTrue(pa.VerifyNetworkTopology(),
+                            "Network Topology verification failed")
+            self.assertTrue(pa.VerifyNumPaths(k), "Number of paths verification failed")
+
+            if k == 1:
+                self.assertTrue(self.verifyRandomPathSelection("diamondParallel", algorithm, k, 0,
+                                                               [[0, 2, 6, 10, 14],
+                                                                [0, 2, 8, 12, 14],
+                                                                [0, 4, 6, 10, 14],
+                                                                [0, 4, 8, 12, 14]],
+                                                               verifyResultFile=False))
+
+            elif k == 10:
+                self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10, 14]))
+                self.assertTrue(pa.DataPathExists(0, [0, 2, 8, 12, 14]))
+                self.assertTrue(pa.DataPathExists(0, [0, 4, 6, 10, 14]))
+                self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 12, 14]))
+
+                # Only two paths are set because of the parallel link
+                self.assertTrue(pa.AckPathExists(0, [1, 5, 7, 11, 15]))
+                self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 13, 15]))
+
+        # TODO: Continue from here add the RED and ED algorithms
 
 
 if __name__ == "__main__":
