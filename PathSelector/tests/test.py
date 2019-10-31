@@ -175,67 +175,70 @@ class PathSelectorTestClass(unittest.TestCase):
         self.assertTrue(pa.VerifyNetworkTopology())
         self.assertTrue(pa.VerifyNumPaths(k))
 
+    def runAndVerify(self, topology: str, algorithm: str, k:int) -> PathAnalyser:
+        """
+        Run the path selector with the given details
+
+        :param topology: The topology to use
+        :param algorithm: The algorithm to run
+        :param k: The k value
+        :return: Instance of the PathAnalyser class
+        """
+        print(F"Running the {algorithm} algorithm with k {k}...")
+        outputFile, pathSelCommand = self.genPathSelectorCommand(topology,
+                                                                 F"{topology}_{algorithm}_K{k}",
+                                                                 algorithm, k)
+        ret = subprocess.run(pathSelCommand)
+        self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
+
+        pa = PathAnalyser(outputFile)
+        self.verifySetup(pa, k)
+
+        return pa
+
     @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondK_1(self):
         """Test the Diamond topology with k = 1"""
         k = 1
         for algorithm in ["KSP", "RED", "ED"]:
-            print(F"Running the {algorithm} algorithm...")
-            outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
-                                                                     F"diamond_{algorithm}_K{k}",
-                                                                     algorithm, k)
-            ret = subprocess.run(pathSelCommand)
-            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
-
-            pa = PathAnalyser(outputFile)
-            self.verifySetup(pa, k)
+            self.runAndVerify("diamond", algorithm, k)
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondK_2(self):
         """Test the Diamond topology with k = 2"""
         k = 2
         for algorithm in ["KSP", "RED", "ED"]:
-            print(F"Running the {algorithm} algorithm...")
-            outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
-                                                                     F"diamond_{algorithm}_K{k}",
-                                                                     algorithm, k)
-            ret = subprocess.run(pathSelCommand)
-            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
-
-            pa = PathAnalyser(outputFile)
-            self.verifySetup(pa, k)
+            self.runAndVerify("diamond", algorithm, k)
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondK_5(self):
         """Test the Diamond topology with k = 5"""
         k = 5
         for algorithm in ["KSP", "RED", "ED"]:
-            print(F"Running the {algorithm} algorithm...")
-            outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
-                                                                     F"diamond_{algorithm}_K{k}",
-                                                                     algorithm, k)
-            ret = subprocess.run(pathSelCommand)
-            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
-
-            pa = PathAnalyser(outputFile)
-            self.verifySetup(pa, k)
+            self.runAndVerify("diamond", algorithm, k)
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testLine(self):
         """Test the Line topology with various k values"""
         for k in [1, 5, 10]:
             for algorithm in ["KSP", "RED", "ED"]:
-                print(F"Running the {algorithm} algorithm with k {k}...")
-                outputFile, pathSelCommand = self.genPathSelectorCommand("line",
-                                                                         F"line_{algorithm}_K{k}",
-                                                                         algorithm, k)
-                ret = subprocess.run(pathSelCommand)
-                self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
+                pa = self.runAndVerify("line", algorithm, k)
 
-                pa = PathAnalyser(outputFile)
-                self.verifySetup(pa, k)
                 self.assertTrue(pa.DataPathExists(0, [0, 2, 4]))
                 self.assertTrue(pa.AckPathExists(0, [1, 3, 5]))
+
+    @timeout_decorator.timeout(1, use_signals=False)
+    def testCircle(self):
+        """Test the Circle topology with various k values"""
+        # TODO: k = 1
+
+        k = 2
+        for algorithm in ["KSP", "RED", "ED"]:
+            pa = self.runAndVerify("circle", algorithm, k)
+            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
+            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
+            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
+            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
 
 
 if __name__ == "__main__":
