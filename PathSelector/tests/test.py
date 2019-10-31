@@ -175,12 +175,12 @@ class PathSelectorTestClass(unittest.TestCase):
         self.assertTrue(pa.VerifyNetworkTopology())
         self.assertTrue(pa.VerifyNumPaths(k))
 
-    # @timeout_decorator.timeout(1, use_signals=False)
+    @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondK_1(self):
         """Test the Diamond topology with k = 1"""
         k = 1
         for algorithm in ["KSP", "RED", "ED"]:
-            print(F"\nRunning the {algorithm} algorithm...")
+            print(F"Running the {algorithm} algorithm...")
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
@@ -195,7 +195,7 @@ class PathSelectorTestClass(unittest.TestCase):
         """Test the Diamond topology with k = 2"""
         k = 2
         for algorithm in ["KSP", "RED", "ED"]:
-            print(F"\nRunning the {algorithm} algorithm...")
+            print(F"Running the {algorithm} algorithm...")
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
@@ -210,7 +210,7 @@ class PathSelectorTestClass(unittest.TestCase):
         """Test the Diamond topology with k = 5"""
         k = 5
         for algorithm in ["KSP", "RED", "ED"]:
-            print(F"\nRunning the {algorithm} algorithm...")
+            print(F"Running the {algorithm} algorithm...")
             outputFile, pathSelCommand = self.genPathSelectorCommand("diamond",
                                                                      F"diamond_{algorithm}_K{k}",
                                                                      algorithm, k)
