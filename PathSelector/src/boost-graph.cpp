@@ -776,7 +776,9 @@ bool
 BoostGraph::PathsEqual (const std::list<BoostGraph::link_t> &pathA,
                         const std::list<BoostGraph::link_t> &pathB)
 {
-  if (pathA.size () == pathB.size ())
+  if (pathA.size () != pathB.size ())
+    return false;
+  else // paths have equal size
     {
       auto itPathA = pathA.begin ();
       auto itPathB = pathB.begin ();
@@ -784,14 +786,11 @@ BoostGraph::PathsEqual (const std::list<BoostGraph::link_t> &pathA,
       while (itPathA != pathA.end () && itPathB != pathB.end ())
         {
           if (GetLinkId (*itPathA) != GetLinkId (*itPathB))
-            {
-              return false;
-            }
+            return false;
 
           itPathA++;
           itPathB++;
         }
+      return true;
     }
-
-  return true;
 }
