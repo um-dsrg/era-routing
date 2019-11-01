@@ -257,16 +257,31 @@ class PathSelectorTestClass(unittest.TestCase):
         for k, algorithm in zip([1, 5], ["KSP", "RED", "ED"]):
             pa = self.runAndVerify(topology, algorithm, k)
             if k == 1:
-                # TODO: I need to update this to test for both flow 0 and flow 1 and update the link
-                # TODO: ids
-                self.assertTrue(self.verifyRandomPathSelection(topology, algorithm, k, 0,
-                                                               [[0, 2, 6, 10], [0, 4, 8, 10]]))
-            else:
                 pa = self.runAndVerify(topology, algorithm, k)
-                self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10]))
-                self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10]))
-                self.assertTrue(pa.AckPathExists(0, [1, 3, 7, 11]))
-                self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11]))
+                # Flow 0
+                self.assertTrue(pa.DataPathExists(0, [0, 4, 18]))
+                self.assertTrue(pa.AckPathExists(0, [1, 5, 19]))
+                # Flow 1
+                self.assertTrue(pa.DataPathExists(1, [2, 12, 20]))
+                self.assertTrue(pa.AckPathExists(1, [3, 13, 21]))
+            else:  # k = 5
+                pa = self.runAndVerify(topology, algorithm, k)
+                # Flow 0
+                self.assertTrue(pa.DataPathExists(0, [0, 4, 18]))
+                self.assertTrue(pa.DataPathExists(0, [0, 6, 10, 14, 18]))
+                self.assertTrue(pa.AckPathExists(0, [1, 5, 19]))
+                self.assertTrue(pa.AckPathExists(0, [1, 7, 11, 15, 19]))
+                if algorithm == "KSP":
+                    self.assertTrue(pa.DataPathExists(0, [0, 6, 9, 12, 17, 14, 18]))
+                    self.assertTrue(pa.AckPathExists(0, [1, 7, 8, 13, 16, 15, 19]))
+                # Flow 1
+                self.assertTrue(pa.DataPathExists(1, [2, 12, 20]))
+                self.assertTrue(pa.DataPathExists(1, [2, 8, 10, 16, 20]))
+                self.assertTrue(pa.AckPathExists(1, [3, 13, 21]))
+                self.assertTrue(pa.AckPathExists(1, [3, 9, 11, 17, 21]))
+                if algorithm == "KSP":
+                    self.assertTrue(pa.DataPathExists(1, [2, 8, 7, 4, 15, 16, 20]))
+                    self.assertTrue(pa.AckPathExists(1, [3, 9, 6, 5, 14, 17, 21]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testDiamond(self):
