@@ -8,7 +8,7 @@
 /**
  * Sets the file cursor to the @oppositeLinks section to prepare for parsing
  */
-void
+bool
 SetFileCursorToOppositeLinksSection (std::ifstream &file)
 {
   std::string currentLine;
@@ -33,9 +33,7 @@ SetFileCursorToOppositeLinksSection (std::ifstream &file)
     }
 
   if (!oppositeLinksSectionFound)
-    {
-      throw std::invalid_argument ("Opposite Links section not found");
-    }
+    return false;
 
   // Move to the beginning of the file
   file.seekg (std::ios::beg);
@@ -43,6 +41,8 @@ SetFileCursorToOppositeLinksSection (std::ifstream &file)
   // Move one line up to where the opposite links definition starts
   for (auto i = 1; i < (lineNumber - 1); ++i)
     file.ignore (std::numeric_limits<std::streamsize>::max (), '\n'); // Extract and ignore a line
+
+  return true;
 }
 
 /**
@@ -64,9 +64,15 @@ GenerateOppositeLinkMap (const std::string &lgfPath, const BoostGraph &boostGrap
       lgfFile.exceptions (std::ifstream::badbit);
       lgfFile.open (lgfPath, std::ifstream::in); // Open file as Read Only
 
-      SetFileCursorToOppositeLinksSection (lgfFile);
+      auto oppositeLinkSectionExists = SetFileCursorToOppositeLinksSection (lgfFile);
 
-      LOG_MSG ("File read successfully. Loading the opposite links from " + lgfPath);
+      if (oppositeLinkSectionExists == false)
+        {
+          std::cout << "Opposite link section not found. Map will not be built" << std::endl;
+          return std::map<id_t, id_t> ();
+        }
+
+      LOG_MSG ("Loading the opposite links from " + lgfPath);
 
       std::map<id_t, id_t> oppositeLinkMap;
       std::string line;
