@@ -8,8 +8,8 @@ function configureDebug {
 }
 
 function configureRelease {
-  cd ${script_path} && mkdir -p build/debug
-  cd ${script_path} && cd build/debug && cmake -G'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release  ../../
+  cd ${script_path} && mkdir -p build/release
+  cd ${script_path} && cd build/release && cmake -G'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release  ../../
 }
 
 function buildDebug {
