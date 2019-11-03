@@ -68,7 +68,7 @@ GenerateOppositeLinkMap (const std::string &lgfPath, const BoostGraph &boostGrap
 
       if (oppositeLinkSectionExists == false)
         {
-          std::cout << "Opposite link section not found. Map will not be built" << std::endl;
+          LOG_MSG ("Opposite link section not found. Map will not be built");
           return std::map<id_t, id_t> ();
         }
 
