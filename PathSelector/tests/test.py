@@ -109,26 +109,35 @@ class PathAnalyser:
 
         return True
 
-    def DataPathExists(self, flowId: int, links: List[int]) -> bool:
-        """Check if a data path with the same links exists for the given flow"""
+    def PathExists(self, flowId: int, dataLinks: List[int], ackLinks: List[int]) -> bool:
+        """Verify that the given Data path and it's respective ACK path exist
+
+        Arguments:
+            flowId {int} -- The Flow id to check the path
+            dataLinks {List[int]} -- List of links that make up the Data path
+            ackLinks {List[int]} -- List of links that make up the Ack path
+
+        Returns:
+            bool -- True if data & ack path exist. False otherwise
+        """
         if flowId in self.flows:
             flow = self.flows[flowId]  # type: Flow
 
+            # Verify the data path exist
+            dataPathId = 0
             for path in flow.dataPaths.values():
-                if path.links == links:
+                if path.links == dataLinks:
+                    dataPathId = path.id
                     return True
 
-        return False
-
-    def AckPathExists(self, flowId: int, links: List[int]) -> bool:
-        """Check if an Ack path with the same links exists for the given flow"""
-        if flowId in self.flows:
-            flow = self.flows[flowId]  # type: Flow
-
-            for path in flow.ackPaths.values():
-                if path.links == links:
+            # Verify that the matching ACK path conforms to the one given
+            if dataPathId in flow.ackPaths:
+                ackPath = flow.ackPaths[dataPathId]
+                if ackPath.links == ackLinks:
                     return True
-        # else
+            else:
+                return False
+
         return False
 
 
@@ -181,7 +190,7 @@ class TestPathSelector(unittest.TestCase):
         resultFile, pathSelCommand = self.genPathSelectorCommand(topology,
                                                                  F"{topology}_{algorithm}_K{k}",
                                                                  algorithm, k)
-        ret = subprocess.run(pathSelCommand)
+        ret = subprocess.run(pathSelCommand, check=True)
         self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
 
         return resultFile
@@ -205,8 +214,8 @@ class TestPathSelector(unittest.TestCase):
         return self.verifyResultFile(resultFile, k)
 
     def verifyRandomPathSelection(self, topology: str, algorithm: str, k: int, flowId: int,
-                                  paths: List[List[int]], verifyResultFile: bool = True,
-                                  maxIterations: int = 50) -> bool:
+                                  dataPaths: List[List[int]], ackPaths: List[List[int]],
+                                  verifyResultFile: bool = True, maxIterations: int = 50) -> bool:
         """
         Ensure that all the paths in the list are at least found once by the
         algorithm. This function is used to test the random path selection
@@ -218,21 +227,26 @@ class TestPathSelector(unittest.TestCase):
         :param algorithm: The algorithm to use
         :param k: The number of paths to find
         :param flowId: The flow to test
-        :param paths: The list of paths to compare to
+        :param dataPaths: The list of data paths that need to be returned by the
+                          algorithm.
+        :param ackPaths: The list of ack paths related to the given data paths.
         :param verifyResultFile: When set to true verify the generated result file.
         :param maxIterations: The maximum number of iterations to try before
                               failing the test
 
         :return: True if the test passes, false otherwise
         """
-        pathFound = [False for _ in paths]
+        self.assertEqual(len(dataPaths), len(ackPaths),
+                         "The number of data paths and ack paths given does not match")
+
+        pathFound = [False for _ in dataPaths]
         print(F"Running the {algorithm} algorithm with k {k}...")
         for iterationNumber in range(0, maxIterations):
             print(F"Iteration {iterationNumber}")
             resFileName = F"{topology}_{algorithm}_K{k}_{iterationNumber}"
             resultFile, pathSelCommand = self.genPathSelectorCommand(topology, resFileName,
                                                                      algorithm, k)
-            ret = subprocess.run(pathSelCommand)
+            ret = subprocess.run(pathSelCommand, check=True)
             self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
 
             pa = None
@@ -241,8 +255,8 @@ class TestPathSelector(unittest.TestCase):
             else:
                 pa = PathAnalyser(resultFile)
 
-            for pathIndex, pathLinks in enumerate(paths):
-                if pa.DataPathExists(flowId, pathLinks) is True:
+            for pathIndex, (dataPathLinks, ackPathLinks) in enumerate(zip(dataPaths, ackPaths)):
+                if pa.PathExists(flowId, dataPathLinks, ackPathLinks) is True:
                     pathFound[pathIndex] = True
 
             if all(path is True for path in pathFound):
@@ -258,30 +272,24 @@ class TestPathSelector(unittest.TestCase):
             pa = self.runAndVerify(topology, algorithm, k)
             if k == 1:
                 pa = self.runAndVerify(topology, algorithm, k)
-                # Flow 0
-                self.assertTrue(pa.DataPathExists(0, [0, 4, 18]))
-                self.assertTrue(pa.AckPathExists(0, [1, 5, 19]))
-                # Flow 1
-                self.assertTrue(pa.DataPathExists(1, [2, 12, 20]))
-                self.assertTrue(pa.AckPathExists(1, [3, 13, 21]))
+                self.assertTrue(pa.PathExists(0, [0, 4, 18], [1, 5, 19]))
+                self.assertTrue(pa.PathExists(1, [2, 12, 20], [3, 13, 21]))
             else:  # k = 5
                 pa = self.runAndVerify(topology, algorithm, k)
                 # Flow 0
-                self.assertTrue(pa.DataPathExists(0, [0, 4, 18]))
-                self.assertTrue(pa.DataPathExists(0, [0, 6, 10, 14, 18]))
-                self.assertTrue(pa.AckPathExists(0, [1, 5, 19]))
-                self.assertTrue(pa.AckPathExists(0, [1, 7, 11, 15, 19]))
+                self.assertTrue(pa.PathExists(0, [0, 4, 18], [1, 5, 19]))
+                self.assertTrue(pa.PathExists(0, [0, 6, 10, 14, 18], [1, 7, 11, 15, 19]))
                 if algorithm == "KSP":
-                    self.assertTrue(pa.DataPathExists(0, [0, 6, 9, 12, 17, 14, 18]))
-                    self.assertTrue(pa.AckPathExists(0, [1, 7, 8, 13, 16, 15, 19]))
+                    self.assertTrue(pa.PathExists(0,
+                                                  [0, 6, 9, 12, 17, 14, 18],
+                                                  [1, 7, 8, 13, 16, 15, 19]))
                 # Flow 1
-                self.assertTrue(pa.DataPathExists(1, [2, 12, 20]))
-                self.assertTrue(pa.DataPathExists(1, [2, 8, 10, 16, 20]))
-                self.assertTrue(pa.AckPathExists(1, [3, 13, 21]))
-                self.assertTrue(pa.AckPathExists(1, [3, 9, 11, 17, 21]))
+                self.assertTrue(pa.PathExists(1, [2, 12, 20], [3, 13, 21]))
+                self.assertTrue(pa.PathExists(1, [2, 8, 10, 16, 20], [3, 9, 11, 17, 21]))
                 if algorithm == "KSP":
-                    self.assertTrue(pa.DataPathExists(1, [2, 8, 7, 4, 15, 16, 20]))
-                    self.assertTrue(pa.AckPathExists(1, [3, 9, 6, 5, 14, 17, 21]))
+                    self.assertTrue(pa.PathExists(1,
+                                                  [2, 8, 7, 4, 15, 16, 20],
+                                                  [3, 9, 6, 5, 14, 17, 21]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testDiamond(self):
@@ -290,13 +298,12 @@ class TestPathSelector(unittest.TestCase):
             for algorithm in ["KSP", "RED", "ED"]:
                 if k == 1:
                     self.assertTrue(self.verifyRandomPathSelection("diamond", algorithm, k, 0,
-                                                                   [[0, 2, 6, 10], [0, 4, 8, 10]]))
+                                                                   [[0, 2, 6, 10], [0, 4, 8, 10]],
+                                                                   [[1, 3, 7, 11], [1, 5, 9, 11]]))
                 else:
                     pa = self.runAndVerify("diamond", algorithm, k)
-                    self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10]))
-                    self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10]))
-                    self.assertTrue(pa.AckPathExists(0, [1, 3, 7, 11]))
-                    self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11]))
+                    self.assertTrue(pa.PathExists(0, [0, 2, 6, 10], [1, 3, 7, 11]))
+                    self.assertTrue(pa.PathExists(0, [0, 4, 8, 10], [1, 5, 9, 11]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testLine(self):
@@ -305,8 +312,7 @@ class TestPathSelector(unittest.TestCase):
             for algorithm in ["KSP", "RED", "ED"]:
                 pa = self.runAndVerify("line", algorithm, k)
 
-                self.assertTrue(pa.DataPathExists(0, [0, 2, 4]))
-                self.assertTrue(pa.AckPathExists(0, [1, 3, 5]))
+                self.assertTrue(pa.PathExists(0, [0, 2, 4], [1, 3, 5]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testCircle(self):
@@ -314,100 +320,73 @@ class TestPathSelector(unittest.TestCase):
         k = 1
         for algorithm in ["KSP", "RED", "ED"]:
             self.assertTrue(self.verifyRandomPathSelection("circle", algorithm, k, 0,
-                                                           [[0, 2, 14, 26],
-                                                            [0, 4, 16, 26]]))
+                                                           [[0, 2, 14, 26], [0, 4, 16, 26]],
+                                                           [[1, 3, 15, 27], [1, 5, 17, 27]]))
 
         k = 2
         for algorithm in ["KSP", "RED", "ED"]:
             pa = self.runAndVerify("circle", algorithm, k)
-            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
-            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 2, 14, 26], [1, 3, 15, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 4, 16, 26], [1, 5, 17, 27]))
 
         k = 3
         for algorithm in ["KSP", "RED", "ED"]:
             pa = self.runAndVerify("circle", algorithm, k)
-            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
-            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 2, 14, 26], [1, 3, 15, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 4, 16, 26], [1, 5, 17, 27]))
 
             self.assertTrue(self.verifyRandomPathSelection("circle", algorithm, k, 0,
-                                                           [[0, 6, 18, 26],
-                                                            [0, 8, 20, 26]]))
+                                                           [[0, 6, 18, 26], [0, 8, 20, 26]],
+                                                           [[1, 17, 19, 27], [1, 9, 21, 27]]))
         k = 4
         for algorithm in ["KSP", "RED", "ED"]:
             pa = self.runAndVerify("circle", algorithm, k)
-            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 6, 18, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 8, 20, 26]))
-
-            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 7, 19, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 9, 21, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 2, 14, 26], [1, 3, 15, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 4, 16, 26], [1, 5, 17, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 6, 18, 26], [1, 7, 19, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 8, 20, 26], [1, 9, 21, 27]))
 
         k = 5
         for algorithm in ["KSP", "RED", "ED"]:
             pa = self.runAndVerify("circle", algorithm, k)
-            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 6, 18, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 8, 20, 26]))
-
-            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 7, 19, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 9, 21, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 2, 14, 26], [1, 3, 15, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 4, 16, 26], [1, 5, 17, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 6, 18, 26], [1, 7, 19, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 8, 20, 26], [1, 9, 21, 27]))
 
             self.assertTrue(self.verifyRandomPathSelection("circle", algorithm, k, 0,
-                                                           [[0, 10, 22, 26],
-                                                            [0, 12, 24, 26]]))
+                                                           [[0, 10, 22, 26], [0, 12, 24, 26]],
+                                                           [[1, 11, 23, 27], [1, 13, 25, 27]]))
 
         k = 6
         for algorithm in ["KSP", "RED", "ED"]:
             pa = self.runAndVerify("circle", algorithm, k)
-            self.assertTrue(pa.DataPathExists(0, [0, 2, 14, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 4, 16, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 6, 18, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 8, 20, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 10, 22, 26]))
-            self.assertTrue(pa.DataPathExists(0, [0, 12, 24, 26]))
-
-            self.assertTrue(pa.AckPathExists(0, [1, 3, 15, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 5, 17, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 7, 19, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 9, 21, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 11, 23, 27]))
-            self.assertTrue(pa.AckPathExists(0, [1, 13, 25, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 2, 14, 26], [1, 3, 15, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 4, 16, 26], [1, 5, 17, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 6, 18, 26], [1, 7, 19, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 8, 20, 26], [1, 9, 21, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 10, 22, 26], [1, 11, 23, 27]))
+            self.assertTrue(pa.PathExists(0, [0, 12, 24, 26], [1, 13, 25, 27]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testTwoDiamond(self):
+        """Test the two conjoined diamond topology with a large k value"""
         k = 20
 
         algorithm = "KSP"
         pa = self.runAndVerify("twoDiamond", algorithm, k)
-        self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10, 12, 16, 20]))
-        self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10, 14, 18, 20]))
-        self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10, 14, 18, 20]))
-        self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10, 12, 16, 20]))
-
-        self.assertTrue(pa.AckPathExists(0, [1, 3, 7, 11, 13, 17, 21]))
-        self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11, 13, 17, 21]))
-        self.assertTrue(pa.AckPathExists(0, [1, 3, 7, 11, 15, 19, 21]))
-        self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11, 15, 19, 21]))
+        self.assertTrue(pa.PathExists(0, [0, 2, 6, 10, 12, 16, 20], [1, 3, 7, 11, 13, 17, 21]))
+        self.assertTrue(pa.PathExists(0, [0, 4, 8, 10, 14, 18, 20], [1, 5, 9, 11, 13, 17, 21]))
+        self.assertTrue(pa.PathExists(0, [0, 2, 6, 10, 14, 18, 20], [1, 3, 7, 11, 15, 19, 21]))
+        self.assertTrue(pa.PathExists(0, [0, 4, 8, 10, 12, 16, 20], [1, 5, 9, 11, 15, 19, 21]))
 
         algorithm = "RED"
         pa = self.runAndVerify("twoDiamond", algorithm, k)
-        self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10, 14, 18, 20]))
-        self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11, 15, 19, 21]))
+        self.assertTrue(pa.PathExists(0, [0, 4, 8, 10, 14, 18, 20], [1, 5, 9, 11, 15, 19, 21]))
 
         algorithm = "ED"
         pa = self.runAndVerify("twoDiamond", algorithm, k)
-        self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 10, 14, 18, 20]))
-        self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 11, 15, 19, 21]))
+        self.assertTrue(pa.PathExists(0, [0, 4, 8, 10, 14, 18, 20], [1, 5, 9, 11, 15, 19, 21]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testLineParallel(self):
@@ -423,6 +402,7 @@ class TestPathSelector(unittest.TestCase):
                 if k == 1:
                     self.assertTrue(self.verifyRandomPathSelection("lineParallel", algorithm, k, 0,
                                                                    [[0, 2, 6], [0, 4, 6]],
+                                                                   [[1, 3, 7], [1, 5, 7]],
                                                                    verifyResultFile=False))
                     resultFile = self.runPathSelector("lineParallel", algorithm, k)
                     pa = PathAnalyser(resultFile)
@@ -438,8 +418,8 @@ class TestPathSelector(unittest.TestCase):
                                     "Network Topology verification failed")
                     self.assertTrue(pa.VerifyNumPaths(k), "Number of paths verification failed")
 
-                    self.assertTrue(pa.DataPathExists(0, [0, 2, 6]))
-                    self.assertTrue(pa.DataPathExists(0, [0, 4, 6]))
+                    self.assertTrue(pa.PathExists(0, [0, 2, 6], [1, 3, 7]))
+                    self.assertTrue(pa.PathExists(0, [0, 4, 6], [1, 5, 7]))
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondParallel(self):
@@ -466,17 +446,17 @@ class TestPathSelector(unittest.TestCase):
                                                                 [0, 2, 8, 12, 14],
                                                                 [0, 4, 6, 10, 14],
                                                                 [0, 4, 8, 12, 14]],
+                                                               [[1, 3, 7, 11, 15],
+                                                                [1, 3, 9, 13, 15],
+                                                                [1, 5, 7, 11, 15],
+                                                                [1, 5, 9, 13, 15]],
                                                                verifyResultFile=False))
 
             elif k == 10:
-                self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10, 14]))
-                self.assertTrue(pa.DataPathExists(0, [0, 2, 8, 12, 14]))
-                self.assertTrue(pa.DataPathExists(0, [0, 4, 6, 10, 14]))
-                self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 12, 14]))
-
-                # Only two paths are set because of the parallel link
-                self.assertTrue(pa.AckPathExists(0, [1, 5, 7, 11, 15]))
-                self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 13, 15]))
+                self.assertTrue(pa.PathExists(0, [0, 2, 6, 10, 14], [1, 3, 7, 11, 15]))
+                self.assertTrue(pa.PathExists(0, [0, 2, 8, 12, 14], [1, 3, 9, 13, 15]))
+                self.assertTrue(pa.PathExists(0, [0, 4, 6, 10, 14], [1, 5, 7, 11, 15]))
+                self.assertTrue(pa.PathExists(0, [0, 4, 8, 12, 14], [1, 5, 9, 13, 15]))
 
         for algorithm in ["RED", "ED"]:
             for k in [1, 10]:
@@ -490,16 +470,15 @@ class TestPathSelector(unittest.TestCase):
 
                 if k == 1:
                     self.assertTrue(self.verifyRandomPathSelection("diamondParallel", algorithm, k,
-                                                                   0, [[0, 2, 6, 10, 14],
-                                                                       [0, 4, 8, 12, 14]],
+                                                                   0,
+                                                                   [[0, 2, 6, 10, 14],
+                                                                    [0, 4, 8, 12, 14]],
+                                                                   [[1, 3, 7, 11, 15],
+                                                                    [1, 5, 9, 13, 15]],
                                                                    verifyResultFile=False))
                 elif k == 10:
-                    self.assertTrue(pa.DataPathExists(0, [0, 2, 6, 10, 14]))
-                    self.assertTrue(pa.DataPathExists(0, [0, 4, 8, 12, 14]))
-
-                    # Only two paths are set because of the parallel link
-                    self.assertTrue(pa.AckPathExists(0, [1, 5, 7, 11, 15]))
-                    self.assertTrue(pa.AckPathExists(0, [1, 5, 9, 13, 15]))
+                    self.assertTrue(pa.PathExists(0, [0, 2, 6, 10, 14], [1, 3, 7, 11, 15]))
+                    self.assertTrue(pa.PathExists(0, [0, 4, 8, 12, 14], [1, 5, 9, 13, 15]))
 
 
 if __name__ == "__main__":
