@@ -78,6 +78,9 @@ GenerateOppositeLinkMap (const std::string &lgfPath, const BoostGraph &boostGrap
       std::string line;
       while (std::getline (lgfFile, line))
         {
+          if (line.compare (0, 6, "@flows") == 0)
+            break; // Found the @flows section; stop parsing the links.
+
           if (!line.empty () && line[0] != '#')
             {
               std::istringstream oppositeLinkSs (line, std::istringstream::in);
