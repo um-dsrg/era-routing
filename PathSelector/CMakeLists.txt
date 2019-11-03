@@ -31,6 +31,7 @@ add_executable(pathSelector
                src/boost-graph.cpp
                src/xml-handler.hpp
                src/xml-handler.cpp
+               src/oppositeLink.cpp
                src/main.cpp)
 
 # Link with the libraries
