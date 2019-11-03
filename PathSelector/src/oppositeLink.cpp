@@ -55,7 +55,7 @@ SetFileCursorToOppositeLinksSection (std::ifstream &file)
  * @return std::map<id_t, id_t> The populated map
  */
 std::map<id_t, id_t>
-GenerateOppositeLinkMap (const std::string &lgfPath)
+GenerateOppositeLinkMap (const std::string &lgfPath, const BoostGraph &boostGraph)
 {
   try
     {
@@ -80,8 +80,13 @@ GenerateOppositeLinkMap (const std::string &lgfPath)
               id_t toLink{0};
 
               oppositeLinkSs >> fromLink >> toLink;
-              // TODO: Verify that the links do actually exist in the boost graph map
-              // TODO: We may need to pass a const instance to the boost graph object
+
+              if (!boostGraph.LinkExists (fromLink) || !boostGraph.LinkExists (toLink))
+                {
+                  throw std::runtime_error ("The link " + std::to_string (fromLink) + " or " +
+                                            std::to_string (toLink) + " does not exist in the map");
+                }
+
               auto [_, insertionSuccessful] = oppositeLinkMap.emplace (fromLink, toLink);
               if (insertionSuccessful == false)
                 {

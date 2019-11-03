@@ -4,6 +4,7 @@
 #include "flow.hpp"
 #include "boost-graph.hpp"
 #include "xml-handler.hpp"
+#include "oppositeLink.hpp"
 
 namespace po = boost::program_options;
 
@@ -56,9 +57,10 @@ main (int argc, const char *argv[])
       BoostGraph boostGraph (lemonGraph);
 
       Flow::flowContainer_t flows{ParseFlows (inputFile, perFlowK, globalK)};
+      auto oppositeLinkMap{GenerateOppositeLinkMap (inputFile, boostGraph)};
 
       boostGraph.AssignPathsToFlows (flows, pathSelectionAlgorithm);
-      boostGraph.AddAckPaths (flows);
+      boostGraph.AddAckPaths (flows, oppositeLinkMap);
       boostGraph.AddShortestPathAck (flows);
 
       if (verbose)

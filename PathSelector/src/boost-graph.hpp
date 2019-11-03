@@ -40,6 +40,7 @@ public:
 
   explicit BoostGraph (const LemonGraph &lemonGraph);
 
+  bool LinkExists (id_t linkId) const;
   link_t GetLink (id_t linkId) const;
   id_t GetLinkId (const link_t &link) const;
   linkCost_t GetLinkCost (const link_t &link) const;
@@ -53,7 +54,7 @@ public:
   node_t GetDestinationNode (const link_t &link) const;
 
   void AssignPathsToFlows (Flow::flowContainer_t &flows, const std::string &pathSelectionAlgorithm);
-  void AddAckPaths (Flow::flowContainer_t &flows);
+  void AddAckPaths (Flow::flowContainer_t &flows, const std::map<id_t, id_t> &oppositeLinkMap);
   void AddShortestPathAck (Flow::flowContainer_t &flows);
 
 private:

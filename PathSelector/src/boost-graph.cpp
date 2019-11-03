@@ -34,6 +34,12 @@ BoostGraph::BoostGraph (const LemonGraph &lemonGraph)
   GenerateBoostGraph (lemonGraph);
 }
 
+bool
+BoostGraph::LinkExists (id_t linkId) const
+{
+  return (m_linkMap.find (linkId) != m_linkMap.end ());
+}
+
 /**
  Return the boost link given a link id.
 
@@ -316,7 +322,7 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
  @param[in,out] flows The flow container.
  */
 void
-BoostGraph::AddAckPaths (Flow::flowContainer_t &flows)
+BoostGraph::AddAckPaths (Flow::flowContainer_t &flows, const std::map<id_t, id_t> &oppositeLinkMap)
 {
   for (auto &flowPair : flows)
     {
@@ -334,26 +340,38 @@ BoostGraph::AddAckPaths (Flow::flowContainer_t &flows)
           Path ackPath (/* do not assign a path id to this path */ false);
           ackPath.id = path.id; // Set the Ack Path id to be identical to the Data path id
 
-          for (const auto &link : path.GetLinks ())
+          for (const auto &linkId : path.GetLinks ())
             {
-              LOG_MSG ("We are working on link " << link);
-              auto &dataLink = m_linkMap.at (link);
+              LOG_MSG ("Working on link " << linkId);
 
-              auto dataSrcNode = boost::source (dataLink, m_graph);
-              auto dataDstNode = boost::target (dataLink, m_graph);
-
-              bool ackLinkFound{false};
               BoostGraph::link_t ackLink;
 
-              // The source and destination nodes are reversed to find the opposite
-              // link
-              std::tie (ackLink, ackLinkFound) = boost::edge (dataDstNode, dataSrcNode, m_graph);
-
-              if (!ackLinkFound)
+              if (oppositeLinkMap.find (linkId) != oppositeLinkMap.end ())
                 {
-                  throw std::runtime_error ("The opposite link for link " + std::to_string (link) +
-                                            " has not been found");
+                  auto oppositeLinkId = oppositeLinkMap.at (linkId);
+                  ackLink = GetLink (oppositeLinkId);
                 }
+              else
+                {
+                  auto &dataLink = m_linkMap.at (linkId);
+
+                  auto dataSrcNode = boost::source (dataLink, m_graph);
+                  auto dataDstNode = boost::target (dataLink, m_graph);
+
+                  bool ackLinkFound{false};
+
+                  // The source and destination nodes are reversed to find the opposite
+                  // link
+                  std::tie (ackLink, ackLinkFound) =
+                      boost::edge (dataDstNode, dataSrcNode, m_graph);
+
+                  if (!ackLinkFound)
+                    {
+                      throw std::runtime_error ("The opposite link for link " +
+                                                std::to_string (linkId) + " has not been found");
+                    }
+                }
+
               ackPath.AddLink (boost::get (&LinkDetails::id, m_graph, ackLink));
             }
 
