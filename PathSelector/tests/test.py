@@ -132,7 +132,7 @@ class PathAnalyser:
         return False
 
 
-class PathSelectorTestClass(unittest.TestCase):
+class TestPathSelector(unittest.TestCase):
     """Class to test the PathSelector Algorithm"""
 
     def setUp(self):
