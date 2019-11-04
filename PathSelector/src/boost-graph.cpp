@@ -331,12 +331,10 @@ BoostGraph::AddShortestPathAck (Flow::flowContainer_t &flows)
 
       auto &srcNode{m_nodeMap.at (flow.sourceId)};
       auto &dstNode{m_nodeMap.at (flow.destinationId)};
+      auto kspFunction = std::bind (&BoostGraph::GetKShortestPaths, this, std::placeholders::_1,
+                                    std::placeholders::_2, std::placeholders::_3);
 
-      auto ackPathContainer =
-          pathContainer_t{boost::yen_ksp (m_graph, dstNode, srcNode,
-                                          /* Link weight attribute */
-                                          boost::get (&LinkDetails::cost, m_graph),
-                                          boost::get (boost::vertex_index_t (), m_graph), 1)};
+      auto ackPathContainer = GetPaths (dstNode, srcNode, 1, kspFunction);
 
       if (ackPathContainer.empty ())
         {
