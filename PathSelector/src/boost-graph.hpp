@@ -62,6 +62,10 @@ private:
   void GenerateBoostNodes (const LemonGraph &lemonGraph);
   void GenerateBoostLinks (const LemonGraph &lemonGraph);
 
+  pathContainer_t
+  GetPaths (node_t srcNode, node_t dstNode, uint32_t k,
+            std::function<pathContainer_t (node_t, node_t, uint32_t)> pathSelectorFunction);
+
   pathContainer_t GetKShortestPaths (node_t srcNode, node_t dstNode, uint32_t k);
   pathContainer_t GetKShortestEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);
   pathContainer_t GetKShortestRelaxedEdgeDisjointPaths (node_t srcNode, node_t dstNode, uint32_t k);

@@ -205,7 +205,12 @@ BoostGraph::GetDestinationNode (const link_t &link) const
   return boost::target (link, m_graph);
 }
 
-// TODO: Add documentation
+/**
+ * @brief Assign a set of paths to each flow
+ *
+ * @param flows Set of flows
+ * @param pathSelectionAlgorithm The path selection algorithm to use
+ */
 void
 BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
                                 const std::string &pathSelectionAlgorithm)
@@ -235,78 +240,8 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
       auto &srcNode{m_nodeMap.at (flow.sourceId)};
       auto &dstNode{m_nodeMap.at (flow.destinationId)};
 
-      auto numPathsToGet = k + 1;
-      pathContainer_t paths;
-      auto lastPathCost = linkCost_t{0.0};
-      auto secondToLastPathCost = linkCost_t{0.0};
-      auto randomlyRemoveExcessPaths{true};
-
-      auto previousNumPathsFound = size_t{0};
-
-      do
-        {
-          previousNumPathsFound = paths.size ();
-          paths = pathSelectorFunction (srcNode, dstNode, numPathsToGet);
-
-          lastPathCost = paths.back ().first;
-          secondToLastPathCost = std::prev (paths.end (), 2)->first;
-
-          if (paths.empty ())
-            throw std::runtime_error ("No paths were found for flow " + std::to_string (flow.id));
-          else if (paths.size () <= k)
-            {
-              randomlyRemoveExcessPaths = false;
-              break;
-            }
-          else if (previousNumPathsFound == paths.size ())
-            break;
-
-          numPathsToGet++;
-        }
-      while (numbersAreClose (lastPathCost, secondToLastPathCost));
-
-      if (randomlyRemoveExcessPaths == false)
-        {
-          AddDataPaths (flow, paths);
-        }
-      else
-        { // Randomly choose which paths that have equal cost to the kth path to keep
-          auto pathIterator = paths.begin ();
-          std::advance (pathIterator, k - 1);
-          auto kthPathCost = pathIterator->first;
-
-          pathContainer_t finalPathSet;
-          pathContainer_t pathsWithEqualCost;
-
-          for (const auto &[pathCost, path] : paths)
-            {
-              if (pathCost < kthPathCost)
-                finalPathSet.push_back (std::make_pair (pathCost, path));
-              else if (numbersAreClose (pathCost, kthPathCost))
-                pathsWithEqualCost.push_back (std::make_pair (pathCost, path));
-            }
-
-          if (finalPathSet.size () >= k)
-            throw std::runtime_error ("Flow " + std::to_string (flowId) +
-                                      " has more paths with lower cost than the kth path than "
-                                      "expected");
-
-          auto numPathsToSelectRandomly = k - finalPathSet.size ();
-
-          pathContainer_t randomlyChosenPaths;
-          std::sample (pathsWithEqualCost.begin (), pathsWithEqualCost.end (),
-                       std::back_inserter (randomlyChosenPaths), numPathsToSelectRandomly,
-                       std::mt19937{std::random_device{}()});
-
-          finalPathSet.splice (finalPathSet.end (), randomlyChosenPaths);
-
-          if (finalPathSet.size () != k)
-            throw std::runtime_error ("Flow " + std::to_string (flowId) + " should have " +
-                                      std::to_string (k) + " paths but it does not. It has " +
-                                      std::to_string (finalPathSet.size ()) + " paths instead");
-
-          AddDataPaths (flow, finalPathSet);
-        }
+      auto pathSet = GetPaths (srcNode, dstNode, k, pathSelectorFunction);
+      AddDataPaths (flow, pathSet);
     }
 }
 
@@ -511,6 +446,90 @@ BoostGraph::GenerateBoostLinks (const LemonGraph &lemonGraph)
                              << " Destination Node "
                              << boost::get (&NodeDetails::id, m_graph, dstNode));
     }
+}
+
+/**
+ * @brief Retrieve K paths from a given source and destination node using a path selection algorithm
+ *
+ * @param srcNode The source node
+ * @param dstNode The destination node
+ * @param k The number of paths to retrieve
+ * @param pathSelectorFunction The path selector function
+ * @return BoostGraph::pathContainer_t The path set found
+ */
+BoostGraph::pathContainer_t
+BoostGraph::GetPaths (
+    node_t srcNode, node_t dstNode, uint32_t k,
+    std::function<pathContainer_t (node_t, node_t, uint32_t)> pathSelectorFunction)
+{
+  auto numPathsToGet = k + 1;
+  pathContainer_t paths;
+  auto lastPathCost = linkCost_t{0.0};
+  auto secondToLastPathCost = linkCost_t{0.0};
+  auto randomlyRemoveExcessPaths{true};
+
+  auto previousNumPathsFound = size_t{0};
+
+  do
+    {
+      previousNumPathsFound = paths.size ();
+      paths = pathSelectorFunction (srcNode, dstNode, numPathsToGet);
+
+      lastPathCost = paths.back ().first;
+      secondToLastPathCost = std::prev (paths.end (), 2)->first;
+
+      if (paths.empty ())
+        throw std::runtime_error ("No paths were found for the given flow");
+      else if (paths.size () <= k)
+        {
+          randomlyRemoveExcessPaths = false;
+          break;
+        }
+      else if (previousNumPathsFound == paths.size ())
+        break;
+
+      numPathsToGet++;
+    }
+  while (numbersAreClose (lastPathCost, secondToLastPathCost));
+
+  if (randomlyRemoveExcessPaths)
+    { // Randomly choose which paths that have equal cost to the kth path to keep
+      auto pathIterator = paths.begin ();
+      std::advance (pathIterator, k - 1);
+      auto kthPathCost = pathIterator->first;
+
+      pathContainer_t finalPathSet;
+      pathContainer_t pathsWithEqualCost;
+
+      for (const auto &[pathCost, path] : paths)
+        {
+          if (pathCost < kthPathCost)
+            finalPathSet.push_back (std::make_pair (pathCost, path));
+          else if (numbersAreClose (pathCost, kthPathCost))
+            pathsWithEqualCost.push_back (std::make_pair (pathCost, path));
+        }
+
+      if (finalPathSet.size () >= k)
+        throw std::runtime_error ("More paths with lower cost than the kth were found.");
+
+      auto numPathsToSelectRandomly = k - finalPathSet.size ();
+
+      pathContainer_t randomlyChosenPaths;
+      std::sample (pathsWithEqualCost.begin (), pathsWithEqualCost.end (),
+                   std::back_inserter (randomlyChosenPaths), numPathsToSelectRandomly,
+                   std::mt19937{std::random_device{}()});
+
+      finalPathSet.splice (finalPathSet.end (), randomlyChosenPaths);
+
+      if (finalPathSet.size () != k)
+        throw std::runtime_error (std::to_string (k) + " paths should have been found but " +
+                                  std::to_string (finalPathSet.size ()) +
+                                  " paths were found instead");
+
+      return finalPathSet;
+    }
+
+  return paths;
 }
 
 /**
