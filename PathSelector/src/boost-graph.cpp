@@ -298,9 +298,7 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
                        std::back_inserter (randomlyChosenPaths), numPathsToSelectRandomly,
                        std::mt19937{std::random_device{}()});
 
-          // TODO: Replace this with splice
-          finalPathSet.insert (finalPathSet.end (), randomlyChosenPaths.begin (),
-                               randomlyChosenPaths.end ());
+          finalPathSet.splice (finalPathSet.end (), randomlyChosenPaths);
 
           if (finalPathSet.size () != k)
             throw std::runtime_error ("Flow " + std::to_string (flowId) + " should have " +
