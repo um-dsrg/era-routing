@@ -30,6 +30,8 @@ class Flow:
                           flowElement.findall("Paths/Path")}  # type: Dict[int, Path]
         self.ackPaths = {int(pathElement.get("Id")): Path(pathElement) for pathElement in
                          flowElement.findall("AckPaths/Path")}  # type: Dict[int, Path]
+        self.ackShortestPath = [int(linkElement.get("Id")) for linkElement
+                                in flowElement.findall("AckShortestPath/Link")]  # type: List[int]
 
 
 class PathAnalyser:
@@ -264,6 +266,34 @@ class TestPathSelector(unittest.TestCase):
 
         return False
 
+    def verifyAckShortestPath(self, topology: str, algorithm: str, k: int, flowId: int,
+                              ackPaths: List[List[int]], maxIterations: int = 50) -> bool:
+        """Verify that the ACK shortest path is chosen at random if multiple paths exist"""
+        pathFound = [False for _ in ackPaths]
+        reverseAckPaths = [ackPath[::-1] for ackPath in ackPaths]
+
+        print(F"AckShortestPath - Running the {algorithm} algorithm with k {k}...")
+
+        for iterationNumber in range(0, maxIterations):
+            print(F"Iteration {iterationNumber}")
+            resFileName = F"{topology}_{algorithm}_K{k}_{iterationNumber}"
+            resultFile, pathSelCommand = self.genPathSelectorCommand(topology, resFileName,
+                                                                     algorithm, k)
+            ret = subprocess.run(pathSelCommand, check=True)
+            self.assertEqual(ret.returncode, 0, "The PathSelector algorithm failed")
+
+            pa = PathAnalyser(resultFile)
+            flow = pa.flows[flowId]
+
+            for pathIndex, ackShortestPath in enumerate(reverseAckPaths):
+                if flow.ackShortestPath == ackShortestPath:
+                    pathFound[pathIndex] = True
+
+            if all(path is True for path in pathFound):
+                return True
+
+        return False
+
     @timeout_decorator.timeout(1, use_signals=False)
     def testButterfly(self):
         """Test the Butterfly topology for all the given algorithms"""
@@ -304,6 +334,10 @@ class TestPathSelector(unittest.TestCase):
                     pa = self.runAndVerify("diamond", algorithm, k)
                     self.assertTrue(pa.PathExists(0, [0, 2, 6, 10], [1, 3, 7, 11]))
                     self.assertTrue(pa.PathExists(0, [0, 4, 8, 10], [1, 5, 9, 11]))
+
+                self.assertTrue(self.verifyAckShortestPath("diamond", algorithm, k, 0,
+                                                           [[1, 3, 7, 11], [1, 5, 9, 11]]),
+                                "AckShortestPath Verification failed")
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testLine(self):
@@ -420,6 +454,10 @@ class TestPathSelector(unittest.TestCase):
 
                     self.assertTrue(pa.PathExists(0, [0, 2, 6], [1, 3, 7]))
                     self.assertTrue(pa.PathExists(0, [0, 4, 6], [1, 5, 7]))
+
+                self.assertTrue(self.verifyAckShortestPath("lineParallel", algorithm, k, 0,
+                                                           [[1, 3, 7], [1, 5, 7]]),
+                                "AckShortestPath Verification failed")
 
     @timeout_decorator.timeout(1, use_signals=False)
     def testDiamondParallel(self):
