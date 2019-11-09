@@ -240,8 +240,15 @@ BoostGraph::AssignPathsToFlows (Flow::flowContainer_t &flows,
       auto &srcNode{m_nodeMap.at (flow.sourceId)};
       auto &dstNode{m_nodeMap.at (flow.destinationId)};
 
-      auto pathSet = GetPaths (srcNode, dstNode, k, pathSelectorFunction);
-      AddDataPaths (flow, pathSet);
+      try
+        {
+          auto pathSet = GetPaths (srcNode, dstNode, k, pathSelectorFunction);
+          AddDataPaths (flow, pathSet);
+      } catch (const std::runtime_error &e)
+        {
+          std::cerr << "Flow " << flowId << " failed." << std::endl;
+          throw;
+      }
     }
 }
 
@@ -501,10 +508,21 @@ BoostGraph::GetPaths (
 
       for (const auto &[pathCost, path] : paths)
         {
-          if (pathCost < kthPathCost)
-            finalPathSet.push_back (std::make_pair (pathCost, path));
-          else if (numbersAreClose (pathCost, kthPathCost))
-            pathsWithEqualCost.push_back (std::make_pair (pathCost, path));
+          /**
+           * The numbers are checked for close proximity before checking if the
+           * current path cost is lower than the kth path cost because there
+           * might be instances where the k+1 path cost is smaller than the kth
+           * path cost, when in reality the numbers would be identical.
+           * For example if path [4] = 4.8000000003 and path [5] = 4.7999999,
+           * path [5] is smaller than path [4]. If you check if the path cost is
+           * smaller before checking they're identical it may cause a bug
+           * because identical paths are inserted into the finalPathSet by
+           * mistake.
+           */
+          if (numbersAreClose (pathCost, kthPathCost))
+            pathsWithEqualCost.emplace_back (pathCost, path);
+          else if (pathCost < kthPathCost)
+            finalPathSet.emplace_back (pathCost, path);
         }
 
       if (finalPathSet.size () >= k)
