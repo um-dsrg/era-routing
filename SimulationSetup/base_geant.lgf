@@ -282,4 +282,10 @@ label   coordinates     type
 # RO <-> MD
 34      37      128     1.0             6.5
 37      34      129     1.0             6.5
+@oppositeLinks
+# Link  Opposite Link
+4       5
+5       4
+6       7
+7       6
 @flows

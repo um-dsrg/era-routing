@@ -100,7 +100,6 @@ class Flow:
         self.start_time = 0
         self.end_time = 0
 
-
     def __str__(self):
         flow_str = ('{}\t{}\t{}\t{:.2f}\t{}\t{}\t{}\t{}\t{}\n'
                     .format(self.flow_id, self.src_node, self.dst_node,
@@ -130,7 +129,8 @@ class Flow:
         elif network_load == 'high':
             return (25.0, 2.5)
         else:
-            raise RuntimeError('The selected network load does not exist.\nNetwork load {}'.format(Flow.network_load))
+            raise RuntimeError(
+                'The selected network load does not exist.\nNetwork load {}'.format(Flow.network_load))
 
     @staticmethod
     def _generate_random_data_rate():
@@ -143,7 +143,8 @@ class Flow:
                 mean, std_deviation = Flow._get_data_rate_properties('low')
                 Flow.low_load_counter -= 1
             else:
-                raise RuntimeError('The number of flows does not tally with the low/high load counters.')
+                raise RuntimeError(
+                    'The number of flows does not tally with the low/high load counters.')
         else:
             mean, std_deviation = Flow._get_data_rate_properties(Flow.network_load)
 
@@ -201,6 +202,8 @@ def parse_lgf_file(base_lgf_file, scaling_factor):
 
     with open(base_lgf_file) as lgf_file:
         parse_links = False
+        parse_nodes = True
+
         for line in lgf_file:
             # Ignore lines that do not start with a number
             if line[0].isdigit():
@@ -210,12 +213,16 @@ def parse_lgf_file(base_lgf_file, scaling_factor):
                                                        nodes,
                                                        scaling_factor)
                     max_link_id = max(max_link_id, link_id)
-                else:  # Parse nodes
+                elif parse_nodes:  # Parse nodes
                     node = Node(line)
                     nodes[node.node_id] = node
 
             if line == '@arcs\n':  # Link section found in the LGF file
                 parse_links = True
+                parse_nodes = False
+            elif line == '@oppositeLinks\n':  # Opposite link section found
+                parse_links = False
+                parse_nodes = False
 
             updated_lgf_file.append(convert_tabs_to_spaces(line))
 
@@ -241,11 +248,11 @@ def generate_random_flow_set(nodes, flow_protocol, num_flows_to_generate):
 
     node_out_cap = [nodes[node_id].outgoing_capacity for node_id in node_ids]
     tot_out_cap = sum(node_out_cap)
-    node_out_cap_fraction = [cap/tot_out_cap for cap in node_out_cap]
+    node_out_cap_fraction = [cap / tot_out_cap for cap in node_out_cap]
 
     node_in_cap = [nodes[node_id].incoming_capacity for node_id in node_ids]
     tot_in_cap = sum(node_in_cap)
-    node_in_cap_fraction = [cap/tot_in_cap for cap in node_in_cap]
+    node_in_cap_fraction = [cap / tot_in_cap for cap in node_in_cap]
 
     flows = dict()
     for _ in range(0, num_flows_to_generate):
@@ -314,7 +321,7 @@ def add_links_to_lgf_file(switch_to_terminal, max_link_id, terminal_switch_dr,
                               with the switches
         updated_lgf_file   -- List of strings representing the LGF file
     """
-    link_ins_loc = updated_lgf_file.index('@flows\n')
+    link_ins_loc = updated_lgf_file.index('@oppositeLinks\n')
     updated_lgf_file.insert(link_ins_loc, '# User Generated links\n')
     link_ins_loc += 1
 
