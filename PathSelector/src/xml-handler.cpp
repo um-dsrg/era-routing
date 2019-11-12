@@ -24,11 +24,11 @@ XmlHandler::XmlHandler ()
  @param outputFile The output path where to store the result.
  @param globalK The value of the \p globalK variable.
  @param perFlowK The value of the \p perFlowK flag.
- @param includeAllKEqualCostPaths The value of the \p includeAllKEqualCostPaths variable.
+ @param algorithm The path selector algorithm used.
  */
 void
 XmlHandler::AddParameterList (const std::string &inputFile, const std::string &outputFile,
-                              const uint32_t globalK, bool perFlowK)
+                              const uint32_t globalK, bool perFlowK, const std::string &algorithm)
 {
   XMLElement *parametersElement = m_xmlDoc.NewElement ("Parameters");
 
@@ -54,6 +54,10 @@ XmlHandler::AddParameterList (const std::string &inputFile, const std::string &o
       perFlowKElement->SetText ("Disabled");
     }
   parametersElement->InsertEndChild (perFlowKElement);
+
+  XMLElement *pathSelAlgorithmElement = m_xmlDoc.NewElement ("PathSelectionAlgorithm");
+  pathSelAlgorithmElement->SetText (algorithm.c_str ());
+  parametersElement->InsertEndChild (pathSelAlgorithmElement);
 
   m_rootNode->InsertEndChild (parametersElement);
 }

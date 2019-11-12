@@ -67,7 +67,8 @@ main (int argc, const char *argv[])
         PrintFlows (flows);
 
       XmlHandler kspResFile;
-      kspResFile.AddParameterList (inputFile, outputFile, globalK, perFlowK);
+      kspResFile.AddParameterList (inputFile, outputFile, globalK, perFlowK,
+                                   pathSelectionAlgorithm);
       kspResFile.AddLinkDetails (boostGraph);
       kspResFile.AddFlows (flows);
       kspResFile.AddNetworkTopology (boostGraph);
