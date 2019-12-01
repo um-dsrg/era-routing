@@ -229,7 +229,6 @@ build/
 
 # MacOs
 .DS_Store
-Icon[
-]
+Icon*
 
 CMakeLists.txt.user
