@@ -1,2 +1,4 @@
-# Development
-Development repository containing all the code related to the PhD.
+# Description
+
+Repository containing the Evolutionary Algorithm and path generation algorithms
+used and published in XX.
