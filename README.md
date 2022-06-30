@@ -16,20 +16,20 @@ Contains all the source code for the Evolutionary Routing Algorithm.
 Contains all the source code to solve the Multi-Commodity Flow problem using the
 LEMON library and GLPK.
 
-## PcLp
+## NetworkTopologyLgfToXml
 
-Contains all the source code to solve the Path Constrained Multi-Commodity Flow
-problem using the LEMON library and GLPK.
+Convert a Lemon Graph File (LGF) to an XML format required by `ns-3`.
 
 ## PathSelector
 
 Implementation of the K-Shortest Path and the Relaxed K Shortest Path algorithm.
 
+## PcLp
+
+Contains all the source code to solve the Path Constrained Multi-Commodity Flow
+problem using the LEMON library and GLPK.
+
 ## SimulationSetup
 
 Contains python utilities to generate a random flow set from the base GÉANT
 network topology graph using the Lemon Graph File (LGF) format.
-
-## NetworkTopologyLgfToXml
-
-Convert a Lemon Graph File (LGF) to an XML format required by `ns-3`.
