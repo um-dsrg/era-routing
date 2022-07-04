@@ -1,0 +1,15 @@
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Hybrid_High_150_Ksp_Mptcp_5PercentMaxNetFlow_Ca_3.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Moea1_High_150_Red_Ppfs_MaxNetFlowNoSplits_Ca_3.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Moea2_High_150_Ksp_Mptcp_MaxNetFlow_Ca_3.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Moea2_High_150_Ksp_Mptcp_MaxNetFlow_Ca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Moea2_High_150_Ksp_Mptcp_MaxNetFlow_Nca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Moea2_High_150_Ksp_Ppfs_MaxNetFlow_Ca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Moea2_High_150_Ksp_Ppfs_MaxNetFlow_Nca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Ospf_High_150_Ospf_Ppfs_None_Ca_3.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/PcLp_High_150_Ksp_Mptcp_None_Ca_3.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/PcLp_High_150_Ksp_Mptcp_None_Ca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/PcLp_High_150_Ksp_Mptcp_None_Nca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/PcLp_High_150_Ksp_Ppfs_None_Ca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/PcLp_High_150_Ksp_Ppfs_None_Nca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/PcLp_High_150_Red_Mptcp_None_Ca_5.pbs
+bash ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/PcLp_High_150_Red_Ppfs_None_Ca_3.pbs

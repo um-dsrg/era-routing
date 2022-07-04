@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+#PBS -q medium
+#
+#PBS -N moea1_High_150_Ksp_Ca_2
+#
+#PBS -l ncpus=1
+#
+#PBS -m a
+#
+#PBS -M noel.farrugia.09@um.edu.mt
+#
+#PBS -e localhost:${HOME}/logs/${PBS_JOBNAME}.err.txt
+#PBS -o localhost:${HOME}/logs/${PBS_JOBNAME}.out.txt
+
+python3 "${HOME}/Documents/Git/Development/GeneticAlgorithm/ga.py" \
+    --input="${HOME}/Documents/Results/Dissertation/Results/NetworkLoad/High/Flows150/Paths/Ksp/K_5/ksp2.xml" \
+    --output="${HOME}/Documents/Results/Dissertation/Results/NetworkLoad/High/Flows150/Moea/Moea1/ConsideringAcks/Ksp/K_5/moeaI_2.xml" \
+    --algorithm="nsga2" \
+    --num_generations 400 \
+    --pop_size 800 \
+    --populationGenerator="RandomFlowAllocation" \
+    --prob_crossover 0.9 \
+    --prob_mutation 0.2 \
+    --mutation_fraction 0.2 \
+    --considerAcks \
+    --status_log \
+    --log_directory="${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Moea/High/Moea1/logs/moea1_High_150_Ksp_Ca_2" \
+    --mutationFunctions="MaximiseFlow, MinimiseCost, MinimisePathsUsed" \
+    --mutationFunctionProbability="0.335, 0.335, 0.33" \
+    --objectives \
+    "net_flow, 1, _calculate_total_network_flow, _get_network_flow_upper_bound" \
+    "delay_met, 1, _calculate_delay_distribution_metric, _get_delay_distribution_upper_bound" \
+    "tot_flow_splits, -1, _calculate_flow_splits_metric, _get_flow_splits_upper_bound"

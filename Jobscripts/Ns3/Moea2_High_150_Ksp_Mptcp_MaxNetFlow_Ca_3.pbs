@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#
+#PBS -q short
+#
+#PBS -N Moea2_High_150_Ksp_Mptcp_MaxNetFlow_Ca_3
+#
+#PBS -l ncpus=1
+#
+#PBS -m a
+#
+#PBS -M noel.farrugia.09@um.edu.mt
+#
+#PBS -e localhost:${HOME}/logs/${PBS_JOBNAME}.err.txt
+#PBS -o localhost:${HOME}/logs/${PBS_JOBNAME}.out.txt
+
+NS3_OUT_PATH=${HOME}/Documents/Git/Development/Ns3/build/optimized/
+NS3_LIB_PATH=${NS3_OUT_PATH}/lib
+
+if [ "${LD_LIBRARY_PATH}" ]
+then
+    export LD_LIBRARY_PATH=${NS3_LIB_PATH}:${LD_LIBRARY_PATH}
+else
+    export LD_LIBRARY_PATH=${NS3_LIB_PATH}
+fi
+
+"${HOME}/Documents/Git/Development/Ns3/build/optimized/examples/multipath-routing/ns3-dev-multipath_routing-optimized" \
+    --input="${HOME}/Documents/Results/Dissertation/Results/NetworkLoad/High/Flows150/Ns3/ConsideringAcks/Ksp/K_5/Moea2/MaxNetFlow/ns3Input_3.xml" \
+    --output="${HOME}/Documents/Results/Dissertation/Results/NetworkLoad/High/Flows150/Ns3/ConsideringAcks/Ksp/K_5/Moea2/MaxNetFlow/Mptcp/ns3Result_3.xml" \
+    --flowMonitorOutput="${HOME}/Documents/Results/Dissertation/Results/NetworkLoad/High/Flows150/Ns3/ConsideringAcks/Ksp/K_5/Moea2/MaxNetFlow/Mptcp/fmNs3Result_3.xml" \
+    --stopTime=120s \
+    --run=1 \
+    --seed=11 \
+    --useSdnSwitches \
+    --switchBufferSize=590000000 \
+    --txBufferRetrieval="InOrder" >> ${HOME}/Documents/Results/Dissertation/Results/Jobscripts/Ns3/Moea2_High_150_Ksp_Mptcp_MaxNetFlow_Ca_3.txt 2>&1
